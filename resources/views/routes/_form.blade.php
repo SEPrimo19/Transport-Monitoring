@@ -1,0 +1,87 @@
+{{-- Shared route fields. Expects $route (model, possibly new), $terminals, $organizations. --}}
+@php $active = (string) old('is_active', $route->is_active ? '1' : '0'); @endphp
+
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <label for="code" class="form-label">Code <span class="text-danger">*</span></label>
+        <input type="text" name="code" id="code" value="{{ old('code', $route->code) }}"
+               class="form-control @error('code') is-invalid @enderror"
+               required minlength="2" maxlength="32" autofocus placeholder="ALN-CAL">
+        @error('code') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        <div class="form-text">Unique across the system.</div>
+    </div>
+    <div class="col-md-8 mb-3">
+        <label for="name" class="form-label">Name <span class="text-danger">*</span></label>
+        <input type="text" name="name" id="name" value="{{ old('name', $route->name) }}"
+               class="form-control @error('name') is-invalid @enderror"
+               required minlength="2" maxlength="120" placeholder="Allen to Calbayog">
+        @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label for="origin_terminal_id" class="form-label">Origin terminal <span class="text-danger">*</span></label>
+        <select name="origin_terminal_id" id="origin_terminal_id"
+                class="form-select @error('origin_terminal_id') is-invalid @enderror" required>
+            <option value="">— select —</option>
+            @foreach ($terminals as $t)
+                <option value="{{ $t->id }}" @selected(old('origin_terminal_id', $route->origin_terminal_id) === $t->id)>{{ $t->code }} — {{ $t->name }}</option>
+            @endforeach
+        </select>
+        @error('origin_terminal_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
+    <div class="col-md-6 mb-3">
+        <label for="destination_terminal_id" class="form-label">Destination terminal <span class="text-danger">*</span></label>
+        <select name="destination_terminal_id" id="destination_terminal_id"
+                class="form-select @error('destination_terminal_id') is-invalid @enderror" required>
+            <option value="">— select —</option>
+            @foreach ($terminals as $t)
+                <option value="{{ $t->id }}" @selected(old('destination_terminal_id', $route->destination_terminal_id) === $t->id)>{{ $t->code }} — {{ $t->name }}</option>
+            @endforeach
+        </select>
+        @error('destination_terminal_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <label for="distance_km" class="form-label">Distance (km) <span class="text-danger">*</span></label>
+        <input type="number" step="0.01" min="0.01" name="distance_km" id="distance_km"
+               value="{{ old('distance_km', $route->distance_km) }}"
+               class="form-control @error('distance_km') is-invalid @enderror" required>
+        @error('distance_km') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
+    <div class="col-md-4 mb-3">
+        <label for="duration_minutes" class="form-label">Duration (min)</label>
+        <input type="number" step="1" min="1" name="duration_minutes" id="duration_minutes"
+               value="{{ old('duration_minutes', $route->duration_minutes) }}"
+               class="form-control @error('duration_minutes') is-invalid @enderror" placeholder="optional">
+        @error('duration_minutes') <div class="invalid-feedback">{{ $message }}</div> @enderror
+    </div>
+    <div class="col-md-4 mb-3">
+        <label for="is_active" class="form-label">Status <span class="text-danger">*</span></label>
+        <select name="is_active" id="is_active"
+                class="form-select @error('is_active') is-invalid @enderror" required>
+            <option value="1" @selected($active === '1')>Active</option>
+            <option value="0" @selected($active === '0')>Inactive</option>
+        </select>
+        @error('is_active') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        <div class="form-text">Inactive routes are hidden from passengers.</div>
+    </div>
+</div>
+
+@if ($ctx->isSuperAdmin())
+    <div class="mb-3">
+        <label for="organization_id" class="form-label">Organization <span class="text-danger">*</span></label>
+        <select name="organization_id" id="organization_id"
+                class="form-select @error('organization_id') is-invalid @enderror" required>
+            <option value="">— select an organization —</option>
+            @foreach ($organizations as $org)
+                <option value="{{ $org->id }}" @selected(old('organization_id', $route->organization_id) === $org->id)>{{ $org->name }}</option>
+            @endforeach
+        </select>
+        @error('organization_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        <div class="form-text">Terminals above must belong to this organization.</div>
+    </div>
+@endif
