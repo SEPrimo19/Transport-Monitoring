@@ -1,0 +1,22 @@
+<?php
+
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DriverController;
+use App\Http\Controllers\VehicleController;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/', fn () => redirect()->route('dashboard'));
+
+// Guest auth — Supabase GoTrue password grant → access token in the session.
+Route::get('/login', [AuthController::class, 'show'])->name('login');
+Route::post('/login', [AuthController::class, 'login'])->name('login.attempt');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// Everything below requires an authenticated, active org_admin / super_admin.
+// The middleware verifies the session/bearer token and fills AdminContext.
+Route::middleware('supabase.admin')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::resource('vehicles', VehicleController::class)->except(['show']);
+    Route::resource('drivers', DriverController::class)->except(['show']);
+});
