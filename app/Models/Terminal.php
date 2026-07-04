@@ -38,4 +38,15 @@ class Terminal extends Model
     {
         return "{$this->code} — {$this->name}";
     }
+
+    public function statusBadge(): string
+    {
+        return $this->is_active ? 'text-bg-success' : 'text-bg-secondary';
+    }
+
+    /** True when both coordinates are set (a terminal can be saved without them). */
+    public function hasCoordinates(): bool
+    {
+        return $this->latitude !== null && $this->longitude !== null;
+    }
 }

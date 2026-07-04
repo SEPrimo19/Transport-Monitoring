@@ -52,6 +52,11 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link @yield('nav_terminals')" href="{{ route('terminals.index') }}">
+                        <i class="bi bi-pin-map me-2"></i>Terminals
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link @yield('nav_routes')" href="{{ route('routes.index') }}">
                         <i class="bi bi-signpost-2 me-2"></i>Routes
                     </a>
