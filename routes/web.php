@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DriverController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RouteController;
 use App\Http\Controllers\VehicleController;
 use Illuminate\Support\Facades\Route;
@@ -21,4 +22,5 @@ Route::middleware('supabase.admin')->group(function () {
     Route::resource('vehicles', VehicleController::class)->except(['show']);
     Route::resource('drivers', DriverController::class)->except(['show']);
     Route::resource('routes', RouteController::class)->except(['show']);
+    Route::resource('reports', ReportController::class)->only(['index', 'show', 'update']);
 });

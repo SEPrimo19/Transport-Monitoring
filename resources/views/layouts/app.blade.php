@@ -57,8 +57,8 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link disabled" href="#" aria-disabled="true">
-                        <i class="bi bi-flag me-2"></i>Reports <span class="badge text-bg-light ms-1">soon</span>
+                    <a class="nav-link @yield('nav_reports')" href="{{ route('reports.index') }}">
+                        <i class="bi bi-flag me-2"></i>Reports
                     </a>
                 </li>
             </ul>
