@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DriverController;
+use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RouteController;
 use App\Http\Controllers\TerminalController;
@@ -25,4 +26,10 @@ Route::middleware('supabase.admin')->group(function () {
     Route::resource('terminals', TerminalController::class)->except(['show']);
     Route::resource('routes', RouteController::class)->except(['show']);
     Route::resource('reports', ReportController::class)->only(['index', 'show', 'update']);
+
+    // Platform tier — super_admin ONLY. Tenants are never deleted (suspend instead).
+    Route::middleware('super.admin')->group(function () {
+        Route::resource('organizations', OrganizationController::class)
+            ->only(['index', 'create', 'store', 'edit', 'update']);
+    });
 });

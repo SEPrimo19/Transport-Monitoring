@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'supabase.admin' => \App\Http\Middleware\AuthenticateSupabaseAdmin::class,
+            'super.admin' => \App\Http\Middleware\RequireSuperAdmin::class,
         ]);
 
         // AuthenticateSupabaseAdmin fills AdminContext, which the tenant

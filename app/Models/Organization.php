@@ -38,4 +38,25 @@ class Organization extends Model
         'region_center_lat' => 'float',
         'region_center_lng' => 'float',
     ];
+
+    /** Matches the organizations_status_chk CHECK constraint. */
+    public const STATUSES = [
+        'active' => 'Active',
+        'suspended' => 'Suspended',
+    ];
+
+    public function statusLabel(): string
+    {
+        return self::STATUSES[$this->status] ?? $this->status;
+    }
+
+    public function statusBadge(): string
+    {
+        return $this->status === 'active' ? 'text-bg-success' : 'text-bg-warning';
+    }
+
+    public function hasRegionCenter(): bool
+    {
+        return $this->region_center_lat !== null && $this->region_center_lng !== null;
+    }
 }

@@ -35,9 +35,8 @@
                 </li>
                 @if ($ctx->isSuperAdmin())
                     <li class="nav-item">
-                        <a class="nav-link disabled" href="#" aria-disabled="true">
+                        <a class="nav-link @yield('nav_organizations')" href="{{ route('organizations.index') }}">
                             <i class="bi bi-buildings me-2"></i>Organizations
-                            <span class="badge text-bg-light ms-1">soon</span>
                         </a>
                     </li>
                 @endif
