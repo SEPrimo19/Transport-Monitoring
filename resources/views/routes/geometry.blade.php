@@ -49,6 +49,12 @@
                 @unless($canRoute) disabled title="Set both terminals’ coordinates to enable road generation" @endunless>
             <i class="bi bi-magic me-1"></i>Generate route along roads
         </button>
+        @if ($tripTrace)
+            <button id="trip-btn" type="button" class="btn btn-outline-primary"
+                    title="Most accurate — uses a real driven GPS trace for the path, distance and duration">
+                <i class="bi bi-record-circle me-1"></i>Generate from a recorded trip
+            </button>
+        @endif
         <button id="via-toggle" type="button" class="btn btn-outline-secondary"
                 @unless($canRoute) disabled @endunless>
             <i class="bi bi-plus-circle me-1"></i>Add via-points: <span id="via-state">off</span>
@@ -126,6 +132,7 @@
             const ORIGIN = @json($origin);            // {lat,lng,code} or null
             const DEST = @json($dest);                // {lat,lng,code} or null
             const DEFAULT_CENTER = @json($defaultCenter);
+            const TRIP = @json($tripTrace);           // real driven trace or null
 
             // Public OSRM demo server (no key). Swap this base to a self-hosted /
             // proxied routing endpoint later. Coordinates are lng,lat for OSRM.
@@ -298,6 +305,32 @@
             }
             if (genBtn) genBtn.addEventListener('click', generateRoute);
 
+            // ── Generate from a recorded trip (highest accuracy) ─────────────
+            // Loads a real driven GPS trace as the polyline and feeds its REAL
+            // distance/duration into the apply-on-save checkbox.
+            const tripBtn = document.getElementById('trip-btn');
+            if (tripBtn && TRIP && Array.isArray(TRIP.points) && TRIP.points.length >= 2) {
+                tripBtn.addEventListener('click', function () {
+                    clearError();
+                    setRouteLine(TRIP.points);
+                    map.fitBounds(routeLine.getBounds(), { padding: [30, 30] });
+                    genKm = TRIP.distance_km;
+                    genMin = (TRIP.duration_minutes != null) ? TRIP.duration_minutes : null;
+                    const day = TRIP.recorded_on ? String(TRIP.recorded_on).substring(0, 10) : '';
+                    routeInfo.innerHTML = '<i class="bi bi-check-circle text-success me-1"></i>From a real trip' +
+                        (day ? ' recorded ' + day : '') + ': <strong>' + TRIP.points.length + ' points</strong>' +
+                        (TRIP.raw_count > TRIP.points.length ? ' (downsampled from ' + TRIP.raw_count + ')' : '') +
+                        (genKm != null ? ' · ' + genKm.toFixed(1) + ' km' : '') +
+                        (genMin != null ? ' · ' + genMin + ' min (real)' : '') + '. Review and Save.';
+                    if (genKm != null) {
+                        document.getElementById('apply-metrics-label').innerHTML =
+                            'Also set route distance (<strong>' + genKm.toFixed(1) + ' km</strong>)' +
+                            (genMin != null ? ' &amp; duration (<strong>' + genMin + ' min</strong>, from a real trip)' : '');
+                        document.getElementById('apply-metrics-wrap').classList.remove('d-none');
+                    }
+                });
+            }
+
             // ── Save ─────────────────────────────────────────────────────────
             document.getElementById('geometry-form').addEventListener('submit', function (ev) {
                 if (!routeLine || routeLine.getLatLngs().length < 2) { ev.preventDefault(); return; }
@@ -312,7 +345,7 @@
                 const durEl = document.getElementById('apply-duration');
                 if (genKm != null && check && check.checked) {
                     distEl.value = genKm.toFixed(2);
-                    durEl.value = genMin;
+                    durEl.value = (genMin != null ? genMin : '');
                 } else {
                     distEl.value = '';
                     durEl.value = '';

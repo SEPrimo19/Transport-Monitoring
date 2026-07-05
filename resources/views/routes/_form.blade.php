@@ -58,6 +58,15 @@
                value="{{ old('duration_minutes', $route->duration_minutes) }}"
                class="form-control @error('duration_minutes') is-invalid @enderror" placeholder="optional">
         @error('duration_minutes') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        @if (($durationStats ?? null))
+            <div class="form-text">
+                <i class="bi bi-graph-up me-1"></i>Real average from {{ $durationStats['count'] }}
+                recent {{ Str::plural('trip', $durationStats['count']) }}:
+                <strong>{{ $durationStats['avg_minutes'] }} min</strong>.
+                <button type="button" class="btn btn-link btn-sm p-0 align-baseline"
+                        onclick="document.getElementById('duration_minutes').value = {{ $durationStats['avg_minutes'] }}">Use this</button>
+            </div>
+        @endif
     </div>
     <div class="col-md-4 mb-3">
         <label for="is_active" class="form-label">Status <span class="text-danger">*</span></label>

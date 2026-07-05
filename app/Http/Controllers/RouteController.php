@@ -62,7 +62,38 @@ class RouteController extends Controller
             'route' => $route,
             'terminals' => $this->terminalsFor($ctx),
             'organizations' => $this->organizationsFor($ctx),
+            'durationStats' => $this->durationStats($route),
         ]);
+    }
+
+    /**
+     * Average real travel time over recent ENDED trips on this route — the accurate
+     * duration, versus OSRM's optimistic car estimate. Degenerate trips (< 60s, e.g.
+     * an immediately-ended test run) are excluded so they don't drag the average down.
+     * Scoped implicitly: the route is already org-bound, and we filter trips by it.
+     *
+     * @return array{count:int, avg_minutes:int}|null
+     */
+    private function durationStats(Route $route): ?array
+    {
+        $rows = DB::table('trips')
+            ->where('route_id', $route->id)
+            ->where('status', 'ended')
+            ->whereNotNull('started_at')->whereNotNull('ended_at')
+            ->whereRaw('extract(epoch from (ended_at - started_at)) >= 60')
+            ->orderByDesc('ended_at')
+            ->limit(20)
+            ->selectRaw('extract(epoch from (ended_at - started_at)) as secs')
+            ->get();
+
+        if ($rows->isEmpty()) {
+            return null;
+        }
+
+        return [
+            'count' => $rows->count(),
+            'avg_minutes' => max(1, (int) round($rows->avg('secs') / 60)),
+        ];
     }
 
     public function update(RouteRequest $request, Route $route): RedirectResponse
