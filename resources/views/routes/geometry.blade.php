@@ -77,10 +77,19 @@
             @csrf
             @method('PUT')
             <input type="hidden" name="points" id="points-field">
+            <input type="hidden" name="apply_distance_km" id="apply-distance">
+            <input type="hidden" name="apply_duration_minutes" id="apply-duration">
             <button id="save-btn" type="submit" class="btn btn-primary" disabled>
                 <i class="bi bi-check-lg me-1"></i>Save polyline
             </button>
         </form>
+
+        <div id="apply-metrics-wrap" class="form-check d-none">
+            <input class="form-check-input" type="checkbox" id="apply-metrics-check" checked>
+            <label class="form-check-label small" for="apply-metrics-check" id="apply-metrics-label">
+                Also set route distance &amp; duration
+            </label>
+        </div>
 
         @if ($route->geometry)
             <form method="POST" action="{{ route('routes.geometry.destroy', $route) }}" class="m-0"
@@ -153,6 +162,7 @@
             const countEl = document.getElementById('point-count');
             const saveBtn = document.getElementById('save-btn');
             let routeLine = null;
+            let genKm = null, genMin = null; // last OSRM-generated distance/duration
 
             function updateCount() {
                 const n = routeLine ? routeLine.getLatLngs().length : 0;
@@ -270,11 +280,15 @@
                     const latlngs = geo.map(c => [c[1], c[0]]);        // -> [lat,lng]
                     setRouteLine(latlngs);
                     map.fitBounds(routeLine.getBounds(), { padding: [30, 30] });
-                    const km = (data.routes[0].distance / 1000);
-                    const min = Math.round(data.routes[0].duration / 60);
+                    genKm = data.routes[0].distance / 1000;
+                    genMin = Math.round(data.routes[0].duration / 60);
                     routeInfo.innerHTML = '<i class="bi bi-check-circle text-success me-1"></i>Generated along roads: <strong>' +
-                        km.toFixed(1) + ' km</strong> · ~' + min + ' min · ' + latlngs.length +
-                        ' points. Review and Save. <span class="text-muted">(you can copy this distance/duration into the route’s Edit form)</span>';
+                        genKm.toFixed(1) + ' km</strong> · ~' + genMin + ' min · ' + latlngs.length +
+                        ' points. Review and Save. <span class="text-muted">(distance is accurate; duration is a car estimate — refine from real trips later.)</span>';
+                    // Offer to write the metrics onto the route at Save time.
+                    document.getElementById('apply-metrics-label').innerHTML =
+                        'Also set route distance (<strong>' + genKm.toFixed(1) + ' km</strong>) &amp; duration (~' + genMin + ' min)';
+                    document.getElementById('apply-metrics-wrap').classList.remove('d-none');
                 } catch (err) {
                     showError('Could not reach the routing service (OSRM). Check your connection, or draw the line manually.');
                 } finally {
@@ -291,6 +305,18 @@
                     return [Math.round(ll.lat * 1e6) / 1e6, Math.round(ll.lng * 1e6) / 1e6];
                 });
                 document.getElementById('points-field').value = JSON.stringify(pts);
+
+                // Attach generated distance/duration only if the admin opted in.
+                const check = document.getElementById('apply-metrics-check');
+                const distEl = document.getElementById('apply-distance');
+                const durEl = document.getElementById('apply-duration');
+                if (genKm != null && check && check.checked) {
+                    distEl.value = genKm.toFixed(2);
+                    durEl.value = genMin;
+                } else {
+                    distEl.value = '';
+                    durEl.value = '';
+                }
             });
 
             updateCount();

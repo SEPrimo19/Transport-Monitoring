@@ -6,6 +6,7 @@ use App\Http\Requests\RouteGeometryRequest;
 use App\Models\Route;
 use App\Models\RouteGeometry;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 
 /**
@@ -42,6 +43,20 @@ class RouteGeometryController extends Controller
     {
         $points = $request->validated()['points'];
 
+        // Optional: also write the generated distance (accurate — road length) and
+        // duration (a driving estimate) onto the route. Validated up-front so a bad
+        // value never leaves the geometry saved but the metrics half-applied.
+        $metrics = null;
+        if ($request->filled('apply_distance_km')) {
+            $metrics = Validator::make(
+                $request->only('apply_distance_km', 'apply_duration_minutes'),
+                [
+                    'apply_distance_km' => ['numeric', 'min:0.01', 'max:99999.99'],
+                    'apply_duration_minutes' => ['nullable', 'integer', 'min:1', 'max:100000'],
+                ],
+            )->validate();
+        }
+
         RouteGeometry::updateOrCreate(
             ['route_id' => $route->id],
             [
@@ -52,8 +67,18 @@ class RouteGeometryController extends Controller
             ],
         );
 
-        return redirect()->route('routes.geometry.edit', $route)
-            ->with('status', 'Polyline saved — '.count($points).' points.');
+        if ($metrics !== null) {
+            $route->update([
+                'distance_km' => $metrics['apply_distance_km'],
+                'duration_minutes' => $metrics['apply_duration_minutes'] ?? $route->duration_minutes,
+            ]);
+        }
+
+        $message = $metrics !== null
+            ? 'Polyline saved ('.count($points).' points); route distance & duration updated.'
+            : 'Polyline saved — '.count($points).' points.';
+
+        return redirect()->route('routes.geometry.edit', $route)->with('status', $message);
     }
 
     public function destroy(Route $route): RedirectResponse
