@@ -59,6 +59,10 @@
                                 <td>{{ $orgNames[$route->organization_id] ?? '—' }}</td>
                             @endif
                             <td class="text-end text-nowrap">
+                                <a href="{{ route('routes.geometry.edit', $route) }}"
+                                   class="btn btn-sm btn-outline-secondary" title="Edit polyline on map">
+                                    <i class="bi bi-geo-alt"></i>
+                                </a>
                                 <a href="{{ route('routes.edit', $route) }}"
                                    class="btn btn-sm btn-outline-secondary" title="Edit">
                                     <i class="bi bi-pencil"></i>

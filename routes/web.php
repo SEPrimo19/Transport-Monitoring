@@ -6,6 +6,7 @@ use App\Http\Controllers\DriverController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RouteController;
+use App\Http\Controllers\RouteGeometryController;
 use App\Http\Controllers\TerminalController;
 use App\Http\Controllers\VehicleController;
 use Illuminate\Support\Facades\Route;
@@ -25,6 +26,10 @@ Route::middleware('supabase.admin')->group(function () {
     Route::resource('drivers', DriverController::class)->except(['show']);
     Route::resource('terminals', TerminalController::class)->except(['show']);
     Route::resource('routes', RouteController::class)->except(['show']);
+    // Polyline map editor for a route (org-scoped via the {route} binding).
+    Route::get('routes/{route}/geometry', [RouteGeometryController::class, 'edit'])->name('routes.geometry.edit');
+    Route::put('routes/{route}/geometry', [RouteGeometryController::class, 'update'])->name('routes.geometry.update');
+    Route::delete('routes/{route}/geometry', [RouteGeometryController::class, 'destroy'])->name('routes.geometry.destroy');
     Route::resource('reports', ReportController::class)->only(['index', 'show', 'update']);
 
     // Platform tier — super_admin ONLY. Tenants are never deleted (suspend instead).

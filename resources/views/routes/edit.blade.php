@@ -27,18 +27,18 @@
                 <div class="card-body">
                     <h2 class="h6 mb-2"><i class="bi bi-bezier2 me-1"></i>Polyline</h2>
                     @if ($route->geometry)
-                        <p class="mb-1">
+                        <p class="mb-2">
                             This route has a stored polyline of
                             <strong>{{ number_format($route->geometry->point_count) }}</strong> points
                             @if ($route->geometry->source)<span class="text-muted">(source: {{ $route->geometry->source }})</span>@endif.
-                        </p>
-                        <p class="text-muted small mb-0">
-                            Stored as <code>[lat, lng]</code> pairs. Editing the polyline needs a map editor
-                            and isn't available here yet — the mobile app reads this for the on-map route overlay.
+                            The mobile app reads this for the on-map route overlay.
                         </p>
                     @else
-                        <p class="text-muted mb-0">No polyline stored for this route yet.</p>
+                        <p class="text-muted mb-2">No polyline stored for this route yet.</p>
                     @endif
+                    <a href="{{ route('routes.geometry.edit', $route) }}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-geo-alt me-1"></i>{{ $route->geometry ? 'Edit polyline on map' : 'Draw polyline on map' }}
+                    </a>
                 </div>
             </div>
         </div>

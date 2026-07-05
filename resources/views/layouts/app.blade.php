@@ -18,6 +18,7 @@
         .brand-dot { width: .85rem; height: .85rem; border-radius: 50%; background: var(--amoec-brand); display: inline-block; }
         .btn-brand { background: var(--amoec-brand); border-color: var(--amoec-brand); color: #fff; }
     </style>
+    @stack('head')
 </head>
 <body>
 <div class="container-fluid">
@@ -112,5 +113,6 @@
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+@stack('scripts')
 </body>
 </html>
