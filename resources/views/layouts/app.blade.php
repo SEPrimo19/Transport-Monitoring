@@ -40,6 +40,11 @@
                             <i class="bi bi-buildings me-2"></i>Organizations
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link @yield('nav_org_admins')" href="{{ route('org-admins.index') }}">
+                            <i class="bi bi-person-gear me-2"></i>Org Admins
+                        </a>
+                    </li>
                 @endif
                 <li class="nav-item">
                     <a class="nav-link @yield('nav_vehicles')" href="{{ route('vehicles.index') }}">

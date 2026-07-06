@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\OrganizationController;
+use App\Http\Controllers\OrgAdminController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RouteController;
 use App\Http\Controllers\RouteGeometryController;
@@ -38,5 +39,11 @@ Route::middleware('supabase.admin')->group(function () {
     Route::middleware('super.admin')->group(function () {
         Route::resource('organizations', OrganizationController::class)
             ->only(['index', 'create', 'store', 'edit', 'update']);
+
+        // Promote a passenger to org_admin of a tenant / demote back to passenger.
+        Route::get('org-admins', [OrgAdminController::class, 'index'])->name('org-admins.index');
+        Route::get('org-admins/create', [OrgAdminController::class, 'create'])->name('org-admins.create');
+        Route::post('org-admins', [OrgAdminController::class, 'store'])->name('org-admins.store');
+        Route::delete('org-admins/{profile}', [OrgAdminController::class, 'destroy'])->name('org-admins.destroy');
     });
 });

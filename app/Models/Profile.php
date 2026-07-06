@@ -10,12 +10,15 @@ use Illuminate\Database\Eloquent\Model;
  * INTENTIONALLY NOT org-scoped (no BelongsToOrganization trait): passengers are
  * org-less (organization_id IS NULL), and the promote-to-driver flow must find a
  * passenger by exact email across the whole table. There is deliberately NO
- * profile-listing screen in the admin — the only reads are:
+ * profile-listing screen for the rider base — the reads are:
  *   (a) a driver's own profile via Driver::profile() (already org-bounded because
- *       the Driver model IS org-scoped), and
- *   (b) the single, guarded exact-email lookup in DriverController::store().
- * Do NOT add a profiles index without first scoping this model, or you'd expose
- * the whole rider base to every org admin.
+ *       the Driver model IS org-scoped),
+ *   (b) the single, guarded exact-email lookups in DriverController::store() and
+ *       OrgAdminController::store() (promote-by-email), and
+ *   (c) OrgAdminController::index(), which lists ONLY role='org_admin' rows and is
+ *       SUPER_ADMIN-ONLY — a small admin set, not the rider base.
+ * Do NOT add an unfiltered profiles index without first scoping this model, or
+ * you'd expose the whole rider base.
  */
 class Profile extends Model
 {
