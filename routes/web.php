@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DriverController;
@@ -30,6 +31,7 @@ Route::middleware('supabase.admin')->group(function () {
     Route::get('routes/{route}/geometry', [RouteGeometryController::class, 'edit'])->name('routes.geometry.edit');
     Route::put('routes/{route}/geometry', [RouteGeometryController::class, 'update'])->name('routes.geometry.update');
     Route::delete('routes/{route}/geometry', [RouteGeometryController::class, 'destroy'])->name('routes.geometry.destroy');
+    Route::resource('assignments', AssignmentController::class)->except(['show']);
     Route::resource('reports', ReportController::class)->only(['index', 'show', 'update']);
 
     // Platform tier — super_admin ONLY. Tenants are never deleted (suspend instead).
