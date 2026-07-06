@@ -75,15 +75,15 @@
             // Directional arrow (rotated by heading) like the mobile app; a plain dot
             // when there's no heading. Coloured by freshness.
             function vehicleIcon(v) {
-                const size = 28;
+                const size = 40;
                 let html;
                 if (v.heading == null) {
-                    html = '<span style="display:block;width:14px;height:14px;margin:' + ((size - 14) / 2) + 'px;' +
-                        'border-radius:50%;background:' + v.color + ';border:2px solid #fff;box-shadow:0 0 2px rgba(0,0,0,.5)"></span>';
+                    html = '<span style="display:block;width:18px;height:18px;margin:' + ((size - 18) / 2) + 'px;' +
+                        'border-radius:50%;background:' + v.color + ';border:2.5px solid #fff;box-shadow:0 0 3px rgba(0,0,0,.6)"></span>';
                 } else {
                     html = '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" ' +
-                        'style="transform:rotate(' + v.heading + 'deg);transform-origin:50% 50%;filter:drop-shadow(0 0 1px rgba(0,0,0,.6))">' +
-                        '<path d="M12 2 L18.5 21 L12 16.5 L5.5 21 Z" fill="' + v.color + '" stroke="#fff" stroke-width="1.4"/></svg>';
+                        'style="transform:rotate(' + v.heading + 'deg);transform-origin:50% 50%;filter:drop-shadow(0 1px 2px rgba(0,0,0,.55))">' +
+                        '<path d="M12 1.5 L19 21.5 L12 16.5 L5 21.5 Z" fill="' + v.color + '" stroke="#fff" stroke-width="1.6"/></svg>';
                 }
                 return L.divIcon({ className: 'ops-veh', iconSize: [size, size], iconAnchor: [size / 2, size / 2], html: html });
             }
