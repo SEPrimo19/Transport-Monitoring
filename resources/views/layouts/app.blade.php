@@ -72,6 +72,11 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link @yield('nav_schedules')" href="{{ route('schedules.index') }}">
+                        <i class="bi bi-calendar-week me-2"></i>Schedules
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link @yield('nav_assignments')" href="{{ route('assignments.index') }}">
                         <i class="bi bi-clipboard-check me-2"></i>Assignments
                     </a>
