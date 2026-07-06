@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Support\AdminContext;
 use Closure;
+use Firebase\JWT\ExpiredException;
 use Firebase\JWT\JWK;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
@@ -41,9 +42,22 @@ class AuthenticateSupabaseAdmin
             return $this->deny($request, 'Missing bearer token.');
         }
 
+        JWT::$leeway = 60; // tolerate minor clock skew
         try {
-            JWT::$leeway = 60; // tolerate minor clock skew
             $claims = $this->decodeToken($token);
+        } catch (ExpiredException $e) {
+            // The ~1h access token lapsed — try to silently renew it with the stored
+            // refresh token instead of bouncing the admin to the login screen.
+            $token = $this->attemptRefresh($request);
+            if ($token === null) {
+                return $this->deny($request, 'Your session expired. Please sign in again.');
+            }
+
+            try {
+                $claims = $this->decodeToken($token);
+            } catch (\Throwable $e2) {
+                return $this->deny($request, 'Your session expired. Please sign in again.');
+            }
         } catch (\Throwable $e) {
             return $this->deny($request, 'Invalid or expired token.');
         }
@@ -95,10 +109,61 @@ class AuthenticateSupabaseAdmin
         // Asymmetric signing keys (default for current Supabase projects).
         try {
             return JWT::decode($token, JWK::parseKeySet($this->jwks(false)));
+        } catch (ExpiredException $e) {
+            throw $e; // a valid-but-expired token: don't burn a JWKS refetch on it
         } catch (\Throwable $e) {
             // Possible key rotation → bust cache and retry once with fresh JWKS.
             return JWT::decode($token, JWK::parseKeySet($this->jwks(true)));
         }
+    }
+
+    /**
+     * Exchange the session's refresh token for a fresh access token via GoTrue.
+     * Returns the new access token (and stores the rotated pair in the session) or
+     * null when there's no refresh token or the exchange fails (revoked/expired).
+     * Only the browser/session flow carries a refresh token — bearer API callers
+     * manage their own tokens and simply get denied on expiry.
+     */
+    private function attemptRefresh(Request $request): ?string
+    {
+        if (! $request->hasSession()) {
+            return null;
+        }
+
+        $refreshToken = $request->session()->get('supabase_refresh_token');
+        if (empty($refreshToken)) {
+            return null;
+        }
+
+        try {
+            $response = Http::withHeaders(['apikey' => (string) config('supabase.anon_key')])
+                ->acceptJson()
+                ->asJson()
+                ->timeout(15)
+                ->post(rtrim((string) config('supabase.url'), '/').'/auth/v1/token?grant_type=refresh_token', [
+                    'refresh_token' => $refreshToken,
+                ]);
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        if (! $response->successful()) {
+            return null;
+        }
+
+        $access = $response->json('access_token');
+        $newRefresh = $response->json('refresh_token');
+        if (empty($access)) {
+            return null;
+        }
+
+        // GoTrue rotates the refresh token on use — persist the new pair.
+        $request->session()->put('supabase_token', $access);
+        if (! empty($newRefresh)) {
+            $request->session()->put('supabase_refresh_token', $newRefresh);
+        }
+
+        return $access;
     }
 
     /** Read the `alg` from the JWT header segment (url-safe base64, padded). */
@@ -150,11 +215,11 @@ class AuthenticateSupabaseAdmin
             return response()->json(['error' => $message], 401);
         }
 
-        // Browser flow: drop any stale/rejected token and send them to the login
+        // Browser flow: drop any stale/rejected tokens and send them to the login
         // screen with the reason. guest() remembers where they were headed so
         // AuthController::login() can `intended()` them back after signing in.
         if ($request->hasSession()) {
-            $request->session()->forget('supabase_token');
+            $request->session()->forget(['supabase_token', 'supabase_refresh_token']);
         }
 
         return redirect()->guest(route('login'))->with('error', $message);

@@ -48,6 +48,7 @@ class AuthController extends Controller
             ]);
 
         $token = $response->successful() ? $response->json('access_token') : null;
+        $refreshToken = $response->successful() ? $response->json('refresh_token') : null;
 
         if (empty($token)) {
             // GoTrue returns 400 for bad creds; never leak which field was wrong.
@@ -57,9 +58,13 @@ class AuthController extends Controller
         }
 
         // Rotate the session id on privilege change (fixation defence), THEN store
-        // the token so it survives the regenerate.
+        // the tokens so they survive the regenerate. The refresh token lets the
+        // middleware silently renew the ~1h access token instead of bouncing to login.
         $request->session()->regenerate();
         $request->session()->put('supabase_token', $token);
+        if (! empty($refreshToken)) {
+            $request->session()->put('supabase_refresh_token', $refreshToken);
+        }
 
         // Authorization (active org_admin / super_admin) is enforced by the
         // supabase.admin middleware on the destination. `intended()` returns them
@@ -69,7 +74,7 @@ class AuthController extends Controller
 
     public function logout(Request $request): RedirectResponse
     {
-        $request->session()->forget('supabase_token');
+        $request->session()->forget(['supabase_token', 'supabase_refresh_token']);
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
