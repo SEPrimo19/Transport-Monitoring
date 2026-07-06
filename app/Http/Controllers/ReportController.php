@@ -7,7 +7,7 @@ use App\Models\Report;
 use App\Support\AdminContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -60,7 +60,47 @@ class ReportController extends Controller
             ? Organization::whereKey($report->organization_id)->value('name')
             : null;
 
-        return view('reports.show', ['report' => $report, 'orgName' => $orgName]);
+        return view('reports.show', [
+            'report' => $report,
+            'orgName' => $orgName,
+            'evidenceUrl' => $report->evidence_object_path
+                ? $this->signedEvidenceUrl($report->evidence_object_path)
+                : null,
+        ]);
+    }
+
+    /**
+     * A short-lived signed URL for a private report-evidence object, created with
+     * the admin's own GoTrue token via the Storage API. Access is gated by the
+     * "report evidence admin read" storage policy (migration 017) — org-scoped, no
+     * service_role. Returns null on any failure so the view degrades to metadata.
+     */
+    private function signedEvidenceUrl(string $path): ?string
+    {
+        $token = session('supabase_token');
+        if (! $token) {
+            return null;
+        }
+
+        $base = rtrim(config('supabase.url'), '/');
+        $encoded = collect(explode('/', $path))
+            ->map(fn ($seg) => rawurlencode($seg))
+            ->implode('/');
+
+        try {
+            $resp = Http::withToken($token)
+                ->withHeaders(['apikey' => config('supabase.anon_key')])
+                ->timeout(10)
+                ->post("{$base}/storage/v1/object/sign/report-evidence/{$encoded}", ['expiresIn' => 3600]);
+
+            if ($resp->successful() && ($signed = $resp->json('signedURL'))) {
+                return $base.'/storage/v1'.$signed;
+            }
+        } catch (\Throwable $e) {
+            // fall through — the view shows the filename + a "couldn't load" note
+        }
+
+        return null;
     }
 
     public function update(Request $request, Report $report, AdminContext $ctx): RedirectResponse

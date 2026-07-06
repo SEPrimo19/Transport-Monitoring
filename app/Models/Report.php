@@ -31,6 +31,9 @@ class Report extends Model
     protected $casts = [
         'resolved_at' => 'datetime',
         'created_at' => 'datetime',
+        'passenger_reported_at' => 'datetime',
+        'passenger_latitude' => 'float',
+        'passenger_longitude' => 'float',
     ];
 
     /** enum value => mobile-facing label. */
@@ -92,5 +95,25 @@ class Report extends Model
             'dismissed' => 'text-bg-secondary',
             default => 'text-bg-light',
         };
+    }
+
+    public function hasEvidence(): bool
+    {
+        return ! empty($this->evidence_object_path);
+    }
+
+    public function evidenceIsImage(): bool
+    {
+        return str_starts_with((string) $this->evidence_mime_type, 'image/');
+    }
+
+    public function evidenceIsVideo(): bool
+    {
+        return str_starts_with((string) $this->evidence_mime_type, 'video/');
+    }
+
+    public function hasPassengerLocation(): bool
+    {
+        return $this->passenger_latitude !== null && $this->passenger_longitude !== null;
     }
 }

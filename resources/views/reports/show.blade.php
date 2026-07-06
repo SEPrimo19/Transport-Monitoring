@@ -30,6 +30,15 @@
                         <dt class="col-sm-3">Submitted</dt>
                         <dd class="col-sm-9">{{ $report->created_at?->format('M j, Y g:i A') ?? '—' }}</dd>
 
+                        @if ($report->hasPassengerLocation())
+                            <dt class="col-sm-3">Reported from</dt>
+                            <dd class="col-sm-9">
+                                {{ number_format($report->passenger_latitude, 5) }}, {{ number_format($report->passenger_longitude, 5) }}
+                                <a href="https://www.openstreetmap.org/?mlat={{ $report->passenger_latitude }}&mlon={{ $report->passenger_longitude }}#map=16/{{ $report->passenger_latitude }}/{{ $report->passenger_longitude }}"
+                                   target="_blank" rel="noopener" class="ms-1">view on map</a>
+                            </dd>
+                        @endif
+
                         @if ($report->vehicle)
                             <dt class="col-sm-3">Vehicle</dt>
                             <dd class="col-sm-9">{{ $report->vehicle->plate_number }}</dd>
@@ -54,6 +63,51 @@
                             </dd>
                         @endif
                     </dl>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body">
+                    <h2 class="h6 mb-3"><i class="bi bi-paperclip me-1"></i>Evidence</h2>
+                    @if (! $report->hasEvidence())
+                        <p class="text-muted mb-0">No evidence was attached to this report.</p>
+                    @elseif ($evidenceUrl)
+                        @if ($report->evidenceIsImage())
+                            <a href="{{ $evidenceUrl }}" target="_blank" rel="noopener">
+                                <img src="{{ $evidenceUrl }}" alt="Report evidence"
+                                     class="img-fluid rounded border" style="max-height: 460px;">
+                            </a>
+                        @elseif ($report->evidenceIsVideo())
+                            <video controls class="w-100 rounded border" style="max-height: 460px;">
+                                <source src="{{ $evidenceUrl }}" type="{{ $report->evidence_mime_type }}">
+                                Your browser can’t play this video — use Download below.
+                            </video>
+                        @else
+                            <p class="text-muted">Attachment of type <code>{{ $report->evidence_mime_type }}</code>.</p>
+                        @endif
+
+                        <div class="d-flex align-items-center gap-2 mt-2 small">
+                            <i class="bi bi-file-earmark text-muted"></i>
+                            <span class="text-muted text-truncate">{{ $report->evidence_file_name ?? 'attachment' }}</span>
+                            <span class="badge text-bg-light border">{{ $report->evidence_mime_type }}</span>
+                            <a href="{{ $evidenceUrl }}" target="_blank" rel="noopener" download
+                               class="ms-auto btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-download me-1"></i>Download
+                            </a>
+                        </div>
+                        <p class="text-muted small mt-1 mb-0">
+                            <i class="bi bi-shield-lock me-1"></i>Private file — this secure link expires in about an hour.
+                        </p>
+                    @else
+                        <p class="mb-1">
+                            <i class="bi bi-exclamation-triangle text-warning me-1"></i>Couldn’t load the attachment right now.
+                        </p>
+                        <p class="text-muted small mb-0">
+                            File: {{ $report->evidence_file_name ?? '—' }}
+                            @if ($report->evidence_mime_type)(<code>{{ $report->evidence_mime_type }}</code>)@endif.
+                            Your session may have expired — reload the page or sign in again.
+                        </p>
+                    @endif
                 </div>
             </div>
         </div>
