@@ -77,6 +77,11 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link @yield('nav_trips')" href="{{ route('trips.index') }}">
+                        <i class="bi bi-clock-history me-2"></i>Trips
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link @yield('nav_reports')" href="{{ route('reports.index') }}">
                         <i class="bi bi-flag me-2"></i>Reports
                     </a>

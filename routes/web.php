@@ -11,6 +11,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RouteController;
 use App\Http\Controllers\RouteGeometryController;
 use App\Http\Controllers\TerminalController;
+use App\Http\Controllers\TripController;
 use App\Http\Controllers\VehicleController;
 use Illuminate\Support\Facades\Route;
 
@@ -36,6 +37,7 @@ Route::middleware('supabase.admin')->group(function () {
     Route::put('routes/{route}/geometry', [RouteGeometryController::class, 'update'])->name('routes.geometry.update');
     Route::delete('routes/{route}/geometry', [RouteGeometryController::class, 'destroy'])->name('routes.geometry.destroy');
     Route::resource('assignments', AssignmentController::class)->except(['show']);
+    Route::resource('trips', TripController::class)->only(['index', 'show']);
     Route::resource('reports', ReportController::class)->only(['index', 'show', 'update']);
 
     // Platform tier — super_admin ONLY. Tenants are never deleted (suspend instead).
