@@ -34,6 +34,11 @@
                         <i class="bi bi-speedometer2 me-2"></i>Dashboard
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link @yield('nav_operations')" href="{{ route('operations.index') }}">
+                        <i class="bi bi-broadcast me-2"></i>Live Ops
+                    </a>
+                </li>
                 @if ($ctx->isSuperAdmin())
                     <li class="nav-item">
                         <a class="nav-link @yield('nav_organizations')" href="{{ route('organizations.index') }}">

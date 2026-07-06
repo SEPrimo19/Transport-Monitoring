@@ -4,6 +4,7 @@ use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DriverController;
+use App\Http\Controllers\OperationsController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\OrgAdminController;
 use App\Http\Controllers\ReportController;
@@ -24,6 +25,8 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // The middleware verifies the session/bearer token and fills AdminContext.
 Route::middleware('supabase.admin')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/operations', [OperationsController::class, 'index'])->name('operations.index');
+    Route::get('/operations/data', [OperationsController::class, 'data'])->name('operations.data');
     Route::resource('vehicles', VehicleController::class)->except(['show']);
     Route::resource('drivers', DriverController::class)->except(['show']);
     Route::resource('terminals', TerminalController::class)->except(['show']);
