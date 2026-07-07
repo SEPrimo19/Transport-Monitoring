@@ -20,7 +20,9 @@ Route::get('/', fn () => redirect()->route('dashboard'));
 
 // Guest auth — Supabase GoTrue password grant → access token in the session.
 Route::get('/login', [AuthController::class, 'show'])->name('login');
-Route::post('/login', [AuthController::class, 'login'])->name('login.attempt');
+Route::post('/login', [AuthController::class, 'login'])
+    ->middleware('throttle:8,1') // slow brute-force / credential-stuffing (8/min per IP)
+    ->name('login.attempt');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Everything below requires an authenticated, active org_admin / super_admin.
