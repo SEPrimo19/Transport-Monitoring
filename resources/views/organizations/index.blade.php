@@ -5,7 +5,7 @@
 @section('nav_organizations', 'active')
 
 @section('content')
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="page-toolbar d-flex justify-content-between align-items-center">
         <p class="text-muted mb-0">
             {{ $organizations->count() }} {{ Str::plural('tenant', $organizations->count()) }} on the platform
         </p>
@@ -52,8 +52,14 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center text-muted py-4">
-                                No organizations yet. <a href="{{ route('organizations.create') }}">Add the first one</a>.
+                            <td colspan="8" class="p-0">
+                                <div class="empty-state text-center">
+                                    <i class="bi bi-buildings"></i>
+                                    <p class="empty-state-title mb-1">No organizations yet</p>
+                                    <p class="text-muted small mb-0">
+                                        <a href="{{ route('organizations.create') }}">Add the first one</a>.
+                                    </p>
+                                </div>
                             </td>
                         </tr>
                     @endforelse

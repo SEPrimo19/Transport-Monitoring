@@ -23,9 +23,8 @@
             <a href="{{ route('operations.index') }}" class="text-decoration-none text-reset">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body d-flex align-items-center">
-                        <span class="rounded-circle d-inline-flex align-items-center justify-content-center me-3"
-                              style="width:3rem;height:3rem;background:rgba(25,135,84,.12)">
-                            <i class="bi bi-broadcast fs-4 text-success"></i>
+                        <span class="stat-icon stat-icon--brand me-3">
+                            <i class="bi bi-broadcast fs-4"></i>
                         </span>
                         <div>
                             <div class="h3 mb-0 fw-semibold">{{ number_format($liveNow) }}</div>
@@ -40,9 +39,8 @@
             <a href="{{ route('reports.index', ['status' => 'submitted']) }}" class="text-decoration-none text-reset">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body d-flex align-items-center">
-                        <span class="rounded-circle d-inline-flex align-items-center justify-content-center me-3"
-                              style="width:3rem;height:3rem;background:{{ $reportsPending > 0 ? 'rgba(255,193,7,.18)' : 'rgba(108,117,125,.12)' }}">
-                            <i class="bi bi-flag fs-4 {{ $reportsPending > 0 ? 'text-warning' : 'text-secondary' }}"></i>
+                        <span class="stat-icon {{ $reportsPending > 0 ? 'stat-icon--warning' : 'stat-icon--muted' }} me-3">
+                            <i class="bi bi-flag fs-4"></i>
                         </span>
                         <div>
                             <div class="h3 mb-0 fw-semibold">{{ number_format($reportsPending) }}</div>
@@ -67,7 +65,9 @@
                                     <div class="text-muted small text-uppercase">{{ $t['label'] }}</div>
                                     <div class="display-6 fw-semibold">{{ number_format($t['value']) }}</div>
                                 </div>
-                                <i class="bi bi-{{ $t['icon'] }} fs-3 text-secondary"></i>
+                                <span class="stat-icon stat-icon--muted stat-icon--sm">
+                                    <i class="bi bi-{{ $t['icon'] }} fs-5"></i>
+                                </span>
                             </div>
                             <div class="small text-muted mt-1">{{ $t['sub'] }}</div>
                         </div>

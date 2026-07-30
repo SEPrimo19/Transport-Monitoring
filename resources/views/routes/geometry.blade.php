@@ -17,7 +17,7 @@
 @endpush
 
 @section('content')
-    <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+    <div class="page-toolbar d-flex justify-content-between align-items-start flex-wrap gap-2">
         <div>
             <span class="badge text-bg-light border fs-6">{{ $route->code }}</span>
             <span class="ms-1">{{ $route->name }}</span>

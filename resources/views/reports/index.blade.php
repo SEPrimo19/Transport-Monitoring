@@ -5,14 +5,14 @@
 @section('nav_reports', 'active')
 
 @section('content')
-    <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
+    <div class="page-toolbar d-flex flex-wrap gap-2 align-items-center">
         <a href="{{ route('reports.index') }}"
-           class="btn btn-sm {{ $activeStatus ? 'btn-outline-secondary' : 'btn-secondary' }}">
+           class="btn btn-sm {{ $activeStatus ? 'btn-outline-secondary' : 'btn-primary' }}">
             All <span class="badge text-bg-light ms-1">{{ $counts->sum() }}</span>
         </a>
         @foreach (\App\Models\Report::STATUSES as $value => $label)
             <a href="{{ route('reports.index', ['status' => $value]) }}"
-               class="btn btn-sm {{ $activeStatus === $value ? 'btn-secondary' : 'btn-outline-secondary' }}">
+               class="btn btn-sm {{ $activeStatus === $value ? 'btn-primary' : 'btn-outline-secondary' }}">
                 {{ $label }} <span class="badge text-bg-light ms-1">{{ $counts[$value] ?? 0 }}</span>
             </a>
         @endforeach
@@ -68,8 +68,13 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ $ctx->isSuperAdmin() ? 8 : 7 }}" class="text-center text-muted py-4">
-                                No reports{{ $activeStatus ? ' marked “' . \App\Models\Report::STATUSES[$activeStatus] . '”' : ' yet' }}.
+                            <td colspan="{{ $ctx->isSuperAdmin() ? 8 : 7 }}" class="p-0">
+                                <div class="empty-state text-center">
+                                    <i class="bi bi-flag"></i>
+                                    <p class="empty-state-title mb-0">
+                                        No reports{{ $activeStatus ? ' marked “' . \App\Models\Report::STATUSES[$activeStatus] . '”' : ' yet' }}.
+                                    </p>
+                                </div>
                             </td>
                         </tr>
                     @endforelse

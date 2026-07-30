@@ -5,7 +5,7 @@
 @section('nav_org_admins', 'active')
 
 @section('content')
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="page-toolbar d-flex justify-content-between align-items-center">
         <p class="text-muted mb-0">
             {{ $admins->count() }} {{ Str::plural('org admin', $admins->count()) }} across all organizations
         </p>
@@ -45,8 +45,14 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="text-center text-muted py-4">
-                                No org admins yet. <a href="{{ route('org-admins.create') }}">Promote a passenger to administer a tenant</a>.
+                            <td colspan="4" class="p-0">
+                                <div class="empty-state text-center">
+                                    <i class="bi bi-person-gear"></i>
+                                    <p class="empty-state-title mb-1">No org admins yet</p>
+                                    <p class="text-muted small mb-0">
+                                        <a href="{{ route('org-admins.create') }}">Promote a passenger to administer a tenant</a>.
+                                    </p>
+                                </div>
                             </td>
                         </tr>
                     @endforelse

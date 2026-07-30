@@ -5,7 +5,7 @@
 @section('nav_vehicles', 'active')
 
 @section('content')
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="page-toolbar d-flex justify-content-between align-items-center">
         <p class="text-muted mb-0">
             {{ $vehicles->count() }} {{ Str::plural('vehicle', $vehicles->count()) }}
             {{ $ctx->isSuperAdmin() ? 'across all organizations' : 'in your fleet' }}
@@ -63,8 +63,14 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ $ctx->isSuperAdmin() ? 6 : 5 }}" class="text-center text-muted py-4">
-                                No vehicles yet. <a href="{{ route('vehicles.create') }}">Add the first one</a>.
+                            <td colspan="{{ $ctx->isSuperAdmin() ? 6 : 5 }}" class="p-0">
+                                <div class="empty-state text-center">
+                                    <i class="bi bi-bus-front"></i>
+                                    <p class="empty-state-title mb-1">No vehicles yet</p>
+                                    <p class="text-muted small mb-0">
+                                        <a href="{{ route('vehicles.create') }}">Add the first one</a>.
+                                    </p>
+                                </div>
                             </td>
                         </tr>
                     @endforelse

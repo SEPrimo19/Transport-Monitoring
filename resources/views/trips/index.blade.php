@@ -14,7 +14,7 @@
 
 @section('content')
     {{-- Status filter chips --}}
-    <div class="d-flex flex-wrap gap-2 mb-3">
+    <div class="page-toolbar d-flex flex-wrap gap-2">
         <a href="{{ route('trips.index') }}"
            class="btn btn-sm {{ $activeStatus === null ? 'btn-primary' : 'btn-outline-secondary' }}">
             All <span class="badge text-bg-light ms-1">{{ $counts->sum() }}</span>
@@ -73,7 +73,12 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="8" class="text-center text-muted py-4">No trips recorded yet.</td>
+                                    <td colspan="8" class="p-0">
+                                        <div class="empty-state text-center">
+                                            <i class="bi bi-clock-history"></i>
+                                            <p class="empty-state-title mb-0">No trips recorded yet</p>
+                                        </div>
+                                    </td>
                                 </tr>
                             @endforelse
                         </tbody>

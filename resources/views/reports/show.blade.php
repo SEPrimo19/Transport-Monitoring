@@ -9,7 +9,7 @@
         <div class="col-12 col-lg-8">
             <div class="card border-0 shadow-sm mb-3">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="d-flex justify-content-between align-items-start pb-3 mb-3 border-bottom">
                         <div>
                             <span class="badge text-bg-light border">{{ $report->categoryLabel() }}</span>
                             <span class="badge {{ $report->statusBadge() }} ms-1">{{ $report->statusLabel() }}</span>
@@ -100,7 +100,7 @@
                         </p>
                     @else
                         <p class="mb-1">
-                            <i class="bi bi-exclamation-triangle text-warning me-1"></i>Couldn’t load the attachment right now.
+                            <i class="bi bi-exclamation-triangle text-warning-emphasis me-1"></i>Couldn’t load the attachment right now.
                         </p>
                         <p class="text-muted small mb-0">
                             File: {{ $report->evidence_file_name ?? '—' }}

@@ -5,7 +5,7 @@
 @section('nav_terminals', 'active')
 
 @section('content')
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="page-toolbar d-flex justify-content-between align-items-center">
         <p class="text-muted mb-0">
             {{ $terminals->count() }} {{ Str::plural('terminal', $terminals->count()) }}
             {{ $ctx->isSuperAdmin() ? 'across all organizations' : 'in your organization' }}
@@ -84,8 +84,14 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ $ctx->isSuperAdmin() ? 8 : 7 }}" class="text-center text-muted py-4">
-                                No terminals yet. <a href="{{ route('terminals.create') }}">Add the first one</a>.
+                            <td colspan="{{ $ctx->isSuperAdmin() ? 8 : 7 }}" class="p-0">
+                                <div class="empty-state text-center">
+                                    <i class="bi bi-pin-map"></i>
+                                    <p class="empty-state-title mb-1">No terminals yet</p>
+                                    <p class="text-muted small mb-0">
+                                        <a href="{{ route('terminals.create') }}">Add the first one</a>.
+                                    </p>
+                                </div>
                             </td>
                         </tr>
                     @endforelse

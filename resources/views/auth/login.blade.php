@@ -7,8 +7,48 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <style>
-        body { background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%); min-height: 100vh; display: flex; align-items: center; }
+        /* No org is known yet at sign-in (auth precedes tenant resolution),
+           so --amoec-brand falls back to the same neutral default the admin
+           shell uses when an org has no primary_color set. If $brandColor is
+           ever shared with this view too, this whole page re-themes for free. */
+        :root { --amoec-brand: {{ $brandColor ?? '#0d6efd' }}; --amoec-brand-rgb: 13, 110, 253; }
+
+        body {
+            background: linear-gradient(160deg, #1f2937 0%, #111827 100%);
+            min-height: 100vh; display: flex; align-items: center;
+        }
+        @supports (color: color-mix(in srgb, red, blue)) {
+            body {
+                background: linear-gradient(160deg,
+                    color-mix(in srgb, var(--amoec-brand) 80%, #111827) 0%,
+                    #111827 100%);
+            }
+        }
         .login-card { max-width: 420px; width: 100%; }
+        .login-icon {
+            width: 3.25rem; height: 3.25rem; border-radius: .85rem;
+            background: var(--amoec-brand); color: #fff;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; margin: 0 auto;
+        }
+        .btn-primary {
+            --bs-btn-bg: var(--amoec-brand);
+            --bs-btn-border-color: var(--amoec-brand);
+            --bs-btn-hover-bg: var(--amoec-brand);
+            --bs-btn-hover-border-color: var(--amoec-brand);
+            --bs-btn-active-bg: var(--amoec-brand);
+            --bs-btn-active-border-color: var(--amoec-brand);
+            --bs-btn-focus-shadow-rgb: var(--amoec-brand-rgb);
+        }
+        .btn-primary:hover { filter: brightness(.93); }
+        .btn-primary:active, .btn-primary:focus-visible { filter: brightness(.86); }
+        .form-control:focus {
+            border-color: var(--amoec-brand);
+            box-shadow: 0 0 0 .25rem rgba(var(--amoec-brand-rgb), .2);
+        }
+        a:focus-visible, .btn:focus-visible {
+            outline: 2px solid var(--amoec-brand); outline-offset: 2px; border-radius: .25rem;
+        }
     </style>
 </head>
 <body>
@@ -17,16 +57,16 @@
         <div class="card shadow-lg border-0">
             <div class="card-body p-4 p-md-5">
                 <div class="text-center mb-4">
-                    <i class="bi bi-bus-front-fill text-primary" style="font-size: 2.5rem;"></i>
-                    <h1 class="h4 mt-2 mb-0">{{ config('app.name', 'AMOEC Admin') }}</h1>
+                    <span class="login-icon"><i class="bi bi-bus-front-fill"></i></span>
+                    <h1 class="h4 mt-3 mb-0">{{ config('app.name', 'AMOEC Admin') }}</h1>
                     <p class="text-muted small mb-0">Sign in to the admin console</p>
                 </div>
 
                 @if (session('status'))
-                    <div class="alert alert-success py-2">{{ session('status') }}</div>
+                    <div class="alert alert-success py-2"><i class="bi bi-check-circle me-1"></i>{{ session('status') }}</div>
                 @endif
                 @if (session('error'))
-                    <div class="alert alert-danger py-2">{{ session('error') }}</div>
+                    <div class="alert alert-danger py-2"><i class="bi bi-exclamation-triangle me-1"></i>{{ session('error') }}</div>
                 @endif
 
                 <form method="POST" action="{{ route('login.attempt') }}" novalidate>

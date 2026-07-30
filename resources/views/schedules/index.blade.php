@@ -5,7 +5,7 @@
 @section('nav_schedules', 'active')
 
 @section('content')
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="page-toolbar d-flex justify-content-between align-items-center">
         <p class="text-muted mb-0">
             {{ $schedules->count() }} {{ Str::plural('timetable', $schedules->count()) }}
             {{ $ctx->isSuperAdmin() ? 'across all organizations' : 'in your organization' }}
@@ -61,8 +61,14 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ $ctx->isSuperAdmin() ? 7 : 6 }}" class="text-center text-muted py-4">
-                                No schedules yet. <a href="{{ route('schedules.create') }}">Publish a route timetable</a>.
+                            <td colspan="{{ $ctx->isSuperAdmin() ? 7 : 6 }}" class="p-0">
+                                <div class="empty-state text-center">
+                                    <i class="bi bi-calendar-week"></i>
+                                    <p class="empty-state-title mb-1">No schedules yet</p>
+                                    <p class="text-muted small mb-0">
+                                        <a href="{{ route('schedules.create') }}">Publish a route timetable</a>.
+                                    </p>
+                                </div>
                             </td>
                         </tr>
                     @endforelse

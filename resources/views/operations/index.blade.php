@@ -16,7 +16,7 @@
 @endpush
 
 @section('content')
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+    <div class="page-toolbar d-flex justify-content-between align-items-center flex-wrap gap-2">
         <p class="text-muted mb-0">
             <strong id="ops-count">{{ count($vehicles) }}</strong> {{ Str::plural('vehicle', count($vehicles)) }} transmitting
             {{ $ctx->isSuperAdmin() ? 'across all organizations' : 'in your organization' }}
