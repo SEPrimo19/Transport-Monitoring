@@ -34,7 +34,7 @@
                             <td class="text-end text-nowrap">
                                 <form method="POST" action="{{ route('org-admins.destroy', $admin) }}"
                                       class="d-inline"
-                                      onsubmit="return confirm('Remove {{ $admin->full_name ?: 'this account' }} as an org admin? They become a plain passenger and lose console access.');">
+                                      data-confirm="Remove {{ $admin->full_name ?: 'this account' }} as an org admin? They become a plain passenger and lose console access." data-confirm-action="Remove">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger">

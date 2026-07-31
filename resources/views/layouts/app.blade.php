@@ -8,23 +8,32 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     @php
-        // Same-tenant hex -> "r, g, b" so brand-tinted rgba() overlays (hover
-        // washes, focus rings, stat chips) work for whatever colour an org
-        // picks, not just the AMOEC green. Falls back safely if primary_color
-        // is ever something other than a clean 6-digit hex.
-        $brand = trim($brandColor ?? '#0d6efd');
-        $brandRgb = '13, 110, 253';
-        if (preg_match('/^#?([0-9a-f]{6})$/i', $brand, $m)) {
-            $hex = $m[1];
-            $brandRgb = hexdec(substr($hex, 0, 2)) . ', ' . hexdec(substr($hex, 2, 2)) . ', ' . hexdec(substr($hex, 4, 2));
-        }
+        // Normalise the tenant brand colour to a VALID css hex, whatever shape the
+        // DB stores it in ("#165935", bare "165935", upper-case, or malformed).
+        // This is load-bearing: a bare or invalid value makes `--amoec-brand`
+        // resolve to nothing, so every white-on-brand element (primary/brand
+        // buttons, the active nav item, the brand monogram, the avatar) renders
+        // white-on-transparent = invisible. The rgb triplet below always matches
+        // the resolved colour so the tinted overlays can't drift from the solids.
+        $rawBrand = strtolower(ltrim(trim((string) ($brandColor ?? '')), '#'));
+        $brand = preg_match('/^[0-9a-f]{6}$/', $rawBrand) ? '#' . $rawBrand : '#165935';
+        $hex = ltrim($brand, '#');
+        $br = hexdec(substr($hex, 0, 2));
+        $bg = hexdec(substr($hex, 2, 2));
+        $bb = hexdec(substr($hex, 4, 2));
+        $brandRgb = $br . ', ' . $bg . ', ' . $bb;
+        // Foreground that stays legible ON the brand fill: dark text for a light
+        // brand colour, white for a dark one (YIQ perceived brightness). Without
+        // this a light tenant brand renders white-on-light = invisible on every
+        // solid brand element (buttons, active nav item, monogram, avatar).
+        $brandOn = ((($br * 299) + ($bg * 587) + ($bb * 114)) / 1000) >= 150 ? '#212529' : '#ffffff';
     @endphp
     <style>
         /* ==========================================================
            AMOEC Track — admin console design layer
            Everything here is plain CSS over CDN Bootstrap 5.3 (no
            build step). Primary actions/accents are re-themed through
-           Bootstrap's own --bs-btn-*/--bs-border-radius* CSS variable
+           Bootstrap's own --bs-btn-* and --bs-border-radius-* CSS variable
            API rather than blanket colour overrides, so hover/active/
            disabled/focus states stay framework-correct per component.
            Semantic status colours (success/warning/danger badges for
@@ -35,6 +44,7 @@
         :root {
             --amoec-brand: {{ $brand }};
             --amoec-brand-rgb: {{ $brandRgb }};
+            --amoec-on-brand: {{ $brandOn }};
             --bs-border-radius: .5rem;
             --bs-border-radius-sm: .35rem;
             --bs-border-radius-lg: .65rem;
@@ -57,10 +67,16 @@
 
         /* ---- Sidebar --------------------------------------------- */
         .sidebar { min-height: 100vh; background: #fff; border-right: 1px solid #e5e7eb; }
+        /* Desktop: sidebar stays put while only the main panel scrolls; it
+           scrolls internally if the nav ever outgrows the viewport. On narrow
+           screens it stacks on top and scrolls with the page as normal. */
+        @media (min-width: 768px) {
+            .sidebar { position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+        }
 
         .brand-mark {
             width: 2rem; height: 2rem; border-radius: .5rem;
-            background: var(--amoec-brand); color: #fff;
+            background: var(--amoec-brand); color: var(--amoec-on-brand);
             display: inline-flex; align-items: center; justify-content: center;
             font-size: .72rem; font-weight: 700; letter-spacing: .02em; flex: none;
         }
@@ -79,17 +95,21 @@
             transition: background-color .15s ease, color .15s ease;
         }
         .sidebar .nav-link i { width: 1.1rem; text-align: center; }
-        .sidebar .nav-link:hover { background: rgba(var(--amoec-brand-rgb), .08); color: var(--amoec-brand); }
+        .sidebar .nav-link:hover { background: rgba(var(--amoec-brand-rgb), .14); color: var(--amoec-brand); }
         .sidebar .nav-link.active {
-            background: var(--amoec-brand); color: #fff; font-weight: 600;
+            background: var(--amoec-brand); color: var(--amoec-on-brand); font-weight: 600;
             box-shadow: 0 2px 6px rgba(var(--amoec-brand-rgb), .3);
         }
-        .sidebar .nav-link.disabled { color: #9ca3af; }
+        /* #9ca3af measured ~2.5:1 on white — fails legibility even for a
+           "muted" state. #6c757d (the same gray already used by
+           .nav-section-label above) reads ~4.7:1, so a disabled item is
+           unmistakably muted but still readable, not washed to nothing. */
+        .sidebar .nav-link.disabled { color: #6c757d; }
 
         /* ---- Topbar / user menu ------------------------------------ */
         .user-avatar {
             width: 1.85rem; height: 1.85rem; border-radius: 50%;
-            background: var(--amoec-brand); color: #fff;
+            background: var(--amoec-brand); color: var(--amoec-on-brand);
             display: inline-flex; align-items: center; justify-content: center;
             font-size: .8rem; font-weight: 700; flex: none;
         }
@@ -109,20 +129,20 @@
            stay correct for free. */
         .btn { font-weight: 500; }
         .btn-primary, .btn-brand {
-            --bs-btn-color: #fff;
+            --bs-btn-color: var(--amoec-on-brand);
             --bs-btn-bg: var(--amoec-brand);
             --bs-btn-border-color: var(--amoec-brand);
-            --bs-btn-hover-color: #fff;
+            --bs-btn-hover-color: var(--amoec-on-brand);
             --bs-btn-hover-bg: var(--amoec-brand);
             --bs-btn-hover-border-color: var(--amoec-brand);
-            --bs-btn-active-color: #fff;
+            --bs-btn-active-color: var(--amoec-on-brand);
             --bs-btn-active-bg: var(--amoec-brand);
             --bs-btn-active-border-color: var(--amoec-brand);
-            --bs-btn-disabled-color: #fff;
+            --bs-btn-disabled-color: var(--amoec-on-brand);
             --bs-btn-disabled-bg: var(--amoec-brand);
             --bs-btn-disabled-border-color: var(--amoec-brand);
             --bs-btn-focus-shadow-rgb: var(--amoec-brand-rgb);
-            color: #fff; background-color: var(--amoec-brand); border-color: var(--amoec-brand);
+            color: var(--amoec-on-brand); background-color: var(--amoec-brand); border-color: var(--amoec-brand);
         }
         .btn-primary:hover, .btn-brand:hover { filter: brightness(.93); }
         .btn-primary:active, .btn-brand:active,
@@ -131,10 +151,10 @@
         .btn-outline-primary {
             --bs-btn-color: var(--amoec-brand);
             --bs-btn-border-color: var(--amoec-brand);
-            --bs-btn-hover-color: #fff;
+            --bs-btn-hover-color: var(--amoec-on-brand);
             --bs-btn-hover-bg: var(--amoec-brand);
             --bs-btn-hover-border-color: var(--amoec-brand);
-            --bs-btn-active-color: #fff;
+            --bs-btn-active-color: var(--amoec-on-brand);
             --bs-btn-active-bg: var(--amoec-brand);
             --bs-btn-active-border-color: var(--amoec-brand);
             --bs-btn-disabled-color: var(--amoec-brand);
@@ -146,7 +166,7 @@
         .page-link { color: var(--amoec-brand); }
         .page-link:hover { color: var(--amoec-brand); background-color: rgba(var(--amoec-brand-rgb), .08); }
         .page-link:focus { box-shadow: 0 0 0 .25rem rgba(var(--amoec-brand-rgb), .25); }
-        .page-item.active .page-link { background-color: var(--amoec-brand); border-color: var(--amoec-brand); }
+        .page-item.active .page-link { background-color: var(--amoec-brand); border-color: var(--amoec-brand); color: var(--amoec-on-brand); }
 
         /* ---- Form controls: brand-coloured focus, not stock Bootstrap blue */
         .form-control:focus, .form-select:focus {
@@ -332,6 +352,59 @@
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+{{-- Reusable confirmation dialog. Any <form data-confirm="…"> opens this styled
+     modal instead of the native browser confirm(). Optional data-confirm-title
+     sets the heading and data-confirm-action sets the confirm button label. --}}
+<div class="modal fade" id="appConfirmModal" tabindex="-1" aria-labelledby="appConfirmTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="appConfirmTitle">Please confirm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="appConfirmBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="appConfirmAccept">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    (function () {
+        var modalEl = document.getElementById('appConfirmModal');
+        if (!modalEl || typeof bootstrap === 'undefined') return;
+        var modal = new bootstrap.Modal(modalEl);
+        var titleEl = document.getElementById('appConfirmTitle');
+        var bodyEl = document.getElementById('appConfirmBody');
+        var acceptEl = document.getElementById('appConfirmAccept');
+        var pending = null;
+
+        // Intercept any form that opts in with data-confirm; show the modal
+        // instead of letting the browser's native confirm() fire.
+        document.addEventListener('submit', function (e) {
+            var form = e.target.closest && e.target.closest('form[data-confirm]');
+            if (!form) return;
+            e.preventDefault();
+            pending = form;
+            titleEl.textContent = form.dataset.confirmTitle || 'Please confirm';
+            bodyEl.textContent = form.dataset.confirm || 'Are you sure?';
+            acceptEl.textContent = form.dataset.confirmAction || 'Confirm';
+            modal.show();
+        });
+
+        acceptEl.addEventListener('click', function () {
+            if (!pending) return;
+            var form = pending;
+            pending = null;
+            modal.hide();
+            form.submit(); // native submit() does not re-fire the submit handler
+        });
+
+        modalEl.addEventListener('hidden.bs.modal', function () { pending = null; });
+    })();
+</script>
 @stack('scripts')
 </body>
 </html>

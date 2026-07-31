@@ -69,7 +69,7 @@
                                 </a>
                                 <form method="POST" action="{{ route('routes.destroy', $route) }}"
                                       class="d-inline"
-                                      onsubmit="return confirm('Delete route {{ $route->code }}? This cannot be undone.');">
+                                      data-confirm="Delete route {{ $route->code }}? This cannot be undone." data-confirm-action="Delete">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">

@@ -52,7 +52,7 @@
                                 </a>
                                 <form method="POST" action="{{ route('vehicles.destroy', $vehicle) }}"
                                       class="d-inline"
-                                      onsubmit="return confirm('Delete {{ $vehicle->plate_number }}? This cannot be undone.');">
+                                      data-confirm="Delete {{ $vehicle->plate_number }}? This cannot be undone." data-confirm-action="Delete">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">

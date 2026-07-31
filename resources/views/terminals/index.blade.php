@@ -72,7 +72,7 @@
                                 @else
                                     <form method="POST" action="{{ route('terminals.destroy', $terminal) }}"
                                           class="d-inline"
-                                          onsubmit="return confirm('Delete terminal {{ $terminal->code }}? This cannot be undone.');">
+                                          data-confirm="Delete terminal {{ $terminal->code }}? This cannot be undone." data-confirm-action="Delete">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">

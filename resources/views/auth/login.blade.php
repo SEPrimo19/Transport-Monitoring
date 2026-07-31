@@ -6,12 +6,20 @@
     <title>Sign in · {{ config('app.name', 'AMOEC Admin') }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    @php
+        // No org is known yet at sign-in (auth precedes tenant resolution), so
+        // $brandColor isn't actually shared with this view today — but this
+        // validates it the same way layouts/app.blade.php does, so the moment
+        // a controller starts passing it here, an unvalidated DB value (bare
+        // "165935", malformed, etc.) can't silently make --amoec-brand invalid
+        // CSS, which would render .btn-primary / .login-icon white-on-nothing.
+        $rawLoginBrand = strtolower(ltrim(trim((string) ($brandColor ?? '')), '#'));
+        $loginBrand = preg_match('/^[0-9a-f]{6}$/', $rawLoginBrand) ? '#' . $rawLoginBrand : '#0d6efd';
+        $loginHex = ltrim($loginBrand, '#');
+        $loginBrandRgb = hexdec(substr($loginHex, 0, 2)) . ', ' . hexdec(substr($loginHex, 2, 2)) . ', ' . hexdec(substr($loginHex, 4, 2));
+    @endphp
     <style>
-        /* No org is known yet at sign-in (auth precedes tenant resolution),
-           so --amoec-brand falls back to the same neutral default the admin
-           shell uses when an org has no primary_color set. If $brandColor is
-           ever shared with this view too, this whole page re-themes for free. */
-        :root { --amoec-brand: {{ $brandColor ?? '#0d6efd' }}; --amoec-brand-rgb: 13, 110, 253; }
+        :root { --amoec-brand: {{ $loginBrand }}; --amoec-brand-rgb: {{ $loginBrandRgb }}; }
 
         body {
             background: linear-gradient(160deg, #1f2937 0%, #111827 100%);

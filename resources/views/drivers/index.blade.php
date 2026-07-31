@@ -51,7 +51,7 @@
                                 </a>
                                 <form method="POST" action="{{ route('drivers.destroy', $driver) }}"
                                       class="d-inline"
-                                      onsubmit="return confirm('Remove {{ $driver->profile?->full_name }} from the fleet? They will revert to a passenger account.');">
+                                      data-confirm="Remove {{ $driver->profile?->full_name }} from the fleet? They will revert to a passenger account." data-confirm-action="Remove">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove from fleet">

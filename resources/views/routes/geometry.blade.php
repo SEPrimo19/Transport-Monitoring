@@ -99,7 +99,7 @@
 
         @if ($route->geometry)
             <form method="POST" action="{{ route('routes.geometry.destroy', $route) }}" class="m-0"
-                  onsubmit="return confirm('Remove this route’s polyline? The mobile map overlay for {{ $route->code }} will be blank until you draw a new one.');">
+                  data-confirm="Remove this route’s polyline? The mobile map overlay for {{ $route->code }} will be blank until you draw a new one." data-confirm-action="Remove polyline">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="btn btn-outline-danger">

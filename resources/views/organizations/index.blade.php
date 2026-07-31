@@ -33,9 +33,19 @@
                     @forelse ($organizations as $org)
                         <tr>
                             <td>
+                                @php
+                                    // Same validation the app shell applies to its own brand
+                                    // colour (layouts/app.blade.php): a stored value without
+                                    // a leading "#" (or otherwise malformed) is invalid CSS,
+                                    // so `background: 165935` renders nothing and this swatch
+                                    // would look blank but for its border. Fall back cleanly
+                                    // instead of showing a broken colour.
+                                    $rawSwatch = strtolower(ltrim(trim((string) ($org->primary_color ?? '')), '#'));
+                                    $swatchColor = preg_match('/^[0-9a-f]{6}$/', $rawSwatch) ? '#' . $rawSwatch : null;
+                                @endphp
                                 <span class="d-inline-block rounded border"
-                                      style="width:1.5rem;height:1.5rem;background: {{ $org->primary_color ?: '#e9ecef' }};"
-                                      title="{{ $org->primary_color ?: 'no brand colour' }}"></span>
+                                      style="width:1.5rem;height:1.5rem;background: {{ $swatchColor ?? '#e9ecef' }};"
+                                      title="{{ $swatchColor ?? 'no brand colour' }}"></span>
                             </td>
                             <td class="fw-semibold">{{ $org->name }}</td>
                             <td><code>{{ $org->slug }}</code></td>

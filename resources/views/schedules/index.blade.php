@@ -50,7 +50,7 @@
                                     <i class="bi bi-pencil"></i>
                                 </a>
                                 <form method="POST" action="{{ route('schedules.destroy', $s) }}" class="d-inline"
-                                      onsubmit="return confirm('Delete this schedule? This cannot be undone.');">
+                                      data-confirm="Delete this schedule? This cannot be undone." data-confirm-action="Delete">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">

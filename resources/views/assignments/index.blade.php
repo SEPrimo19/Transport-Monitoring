@@ -63,7 +63,7 @@
                                 </a>
                                 <form method="POST" action="{{ route('assignments.destroy', $a) }}"
                                       class="d-inline"
-                                      onsubmit="return confirm('Delete this assignment? If the driver has run trips on it, deactivate it instead.');">
+                                      data-confirm="Delete this assignment? If the driver has run trips on it, deactivate it instead." data-confirm-action="Delete">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
