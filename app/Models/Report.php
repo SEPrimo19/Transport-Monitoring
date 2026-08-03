@@ -34,6 +34,7 @@ class Report extends Model
         'passenger_reported_at' => 'datetime',
         'passenger_latitude' => 'float',
         'passenger_longitude' => 'float',
+        'is_anonymous' => 'boolean',
     ];
 
     /** enum value => mobile-facing label. */
@@ -59,6 +60,21 @@ class Report extends Model
     public function reporter(): BelongsTo
     {
         return $this->belongsTo(Profile::class, 'passenger_profile_id');
+    }
+
+    /**
+     * Reporter name for admin display, honouring the passenger's anonymity choice.
+     * When the report was filed anonymously the reporter FK is still stored (own
+     * history + abuse traceability) but the identity is MASKED here — the one place
+     * admins read a reporter's name. Returns null when there is genuinely no name.
+     */
+    public function reporterDisplayName(): ?string
+    {
+        if ($this->is_anonymous) {
+            return 'Anonymous';
+        }
+
+        return $this->reporter?->full_name;
     }
 
     public function resolvedBy(): BelongsTo

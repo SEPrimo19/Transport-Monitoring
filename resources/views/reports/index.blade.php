@@ -42,7 +42,13 @@
                                 {{ $report->created_at?->format('M j, Y') }}
                                 <div class="text-muted small">{{ $report->created_at?->format('g:i A') }}</div>
                             </td>
-                            <td>{{ $report->reporter?->full_name ?? '—' }}</td>
+                            <td>
+                                @if ($report->is_anonymous)
+                                    <span class="text-muted fst-italic"><i class="bi bi-incognito me-1"></i>Anonymous</span>
+                                @else
+                                    {{ $report->reporterDisplayName() ?? '—' }}
+                                @endif
+                            </td>
                             <td><span class="badge text-bg-light border">{{ $report->categoryLabel() }}</span></td>
                             <td class="text-nowrap">
                                 @if ($report->vehicle)

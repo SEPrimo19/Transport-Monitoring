@@ -25,7 +25,14 @@
 
                     <dl class="row mb-0 small">
                         <dt class="col-sm-3">Reporter</dt>
-                        <dd class="col-sm-9">{{ $report->reporter?->full_name ?? '—' }}</dd>
+                        <dd class="col-sm-9">
+                            @if ($report->is_anonymous)
+                                <span class="text-muted fst-italic"><i class="bi bi-incognito me-1"></i>Anonymous</span>
+                                <span class="badge text-bg-light border ms-1">identity hidden by reporter</span>
+                            @else
+                                {{ $report->reporterDisplayName() ?? '—' }}
+                            @endif
+                        </dd>
 
                         <dt class="col-sm-3">Submitted</dt>
                         <dd class="col-sm-9">{{ $report->created_at?->format('M j, Y g:i A') ?? '—' }}</dd>
