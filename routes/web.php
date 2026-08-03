@@ -1,12 +1,15 @@
 <?php
 
+use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DriverController;
+use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\OperationsController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\OrgAdminController;
+use App\Http\Controllers\OrgProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RouteController;
 use App\Http\Controllers\RouteGeometryController;
@@ -44,10 +47,24 @@ Route::middleware('supabase.admin')->group(function () {
     Route::resource('trips', TripController::class)->only(['index', 'show']);
     Route::resource('reports', ReportController::class)->only(['index', 'show', 'update']);
 
+    // Self-service for the signed-in admin (both tiers): change display name / password.
+    Route::get('account', [AccountController::class, 'edit'])->name('account.edit');
+    Route::put('account', [AccountController::class, 'update'])->name('account.update');
+
+    // A cooperative's own profile, branding and data-retention setting. org_admin
+    // edits ITS OWN org (id comes from AdminContext, never the request); a
+    // super_admin manages every org through the Organizations screens instead.
+    Route::get('organization', [OrgProfileController::class, 'edit'])->name('organization.edit');
+    Route::put('organization', [OrgProfileController::class, 'update'])->name('organization.update');
+
     // Platform tier — super_admin ONLY. Tenants are never deleted (suspend instead).
     Route::middleware('super.admin')->group(function () {
         Route::resource('organizations', OrganizationController::class)
             ->only(['index', 'create', 'store', 'edit', 'update']);
+
+        // One-flow onboarding: create a tenant + promote its first org_admin.
+        Route::get('onboarding', [OnboardingController::class, 'create'])->name('onboarding.create');
+        Route::post('onboarding', [OnboardingController::class, 'store'])->name('onboarding.store');
 
         // Promote a passenger to org_admin of a tenant / demote back to passenger.
         Route::get('org-admins', [OrgAdminController::class, 'index'])->name('org-admins.index');

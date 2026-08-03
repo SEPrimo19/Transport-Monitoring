@@ -260,6 +260,11 @@
                             <i class="bi bi-person-gear me-2"></i>Org Admins
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link @yield('nav_onboarding')" href="{{ route('onboarding.create') }}">
+                            <i class="bi bi-rocket-takeoff me-2"></i>Onboard co-op
+                        </a>
+                    </li>
                 @endif
                 <li class="nav-section-label">Fleet</li>
                 <li class="nav-item">
@@ -304,6 +309,14 @@
                         <i class="bi bi-flag me-2"></i>Reports
                     </a>
                 </li>
+                @if ($ctx->isOrgAdmin())
+                    <li class="nav-section-label">Settings</li>
+                    <li class="nav-item">
+                        <a class="nav-link @yield('nav_organization')" href="{{ route('organization.edit') }}">
+                            <i class="bi bi-building-gear me-2"></i>Organization
+                        </a>
+                    </li>
+                @endif
             </ul>
         </nav>
 
@@ -321,6 +334,12 @@
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><span class="dropdown-item-text small text-muted">{{ $ctx->email }}</span></li>
                         <li><span class="dropdown-item-text small"><span class="badge text-bg-secondary">{{ $ctx->role }}</span></span></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" href="{{ route('account.edit') }}">
+                                <i class="bi bi-person-gear me-2"></i>My account
+                            </a>
+                        </li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <form method="POST" action="{{ route('logout') }}" class="m-0">

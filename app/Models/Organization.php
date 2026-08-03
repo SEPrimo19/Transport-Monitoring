@@ -31,12 +31,14 @@ class Organization extends Model
         'contact_email',
         'contact_phone',
         'status',
+        'location_retention_days',
     ];
 
     protected $casts = [
         'region_bbox' => 'array',
         'region_center_lat' => 'float',
         'region_center_lng' => 'float',
+        'location_retention_days' => 'integer',
     ];
 
     /** Matches the organizations_status_chk CHECK constraint. */
@@ -58,5 +60,13 @@ class Organization extends Model
     public function hasRegionCenter(): bool
     {
         return $this->region_center_lat !== null && $this->region_center_lng !== null;
+    }
+
+    /** Human-readable retention window for display. */
+    public function retentionLabel(): string
+    {
+        return $this->location_retention_days
+            ? $this->location_retention_days.' '.\Illuminate\Support\Str::plural('day', $this->location_retention_days)
+            : 'Kept indefinitely';
     }
 }
