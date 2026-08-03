@@ -36,6 +36,9 @@ class OrganizationRequest extends FormRequest
             'map_style_url' => ['nullable', 'url', 'max:500'],
             'contact_email' => ['nullable', 'email', 'max:200'],
             'contact_phone' => ['nullable', 'string', 'max:40'],
+            // Optional logo upload (edit only). `image` rejects SVG (XSS vector);
+            // 1 MB cap matches the org-logos bucket file_size_limit.
+            'logo_file' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:1024'],
         ];
 
         // slug is set once, at creation. On update the form doesn't send it.

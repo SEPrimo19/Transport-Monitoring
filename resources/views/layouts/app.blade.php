@@ -80,6 +80,17 @@
             display: inline-flex; align-items: center; justify-content: center;
             font-size: .72rem; font-weight: 700; letter-spacing: .02em; flex: none;
         }
+        /* Per-tenant logo image in the sidebar header (replaces the monogram when
+           the org has a logo). A clean 52px square; contain-fit on white so any
+           logo shape fills the box without distortion. */
+        .brand-logo {
+            width: 3.25rem; height: 3.25rem; border-radius: .65rem;
+            object-fit: contain; background: #fff; flex: none;
+        }
+        /* Keep the no-logo monogram the same footprint as the logo so the header
+           height is identical whether an org has a logo or not. */
+        .brand-mark { width: 3.25rem; height: 3.25rem; border-radius: .65rem; font-size: 1rem; }
+        .brand-wordmark { font-size: 1.15rem; }
         .brand-wordmark { font-size: 1rem; letter-spacing: -.01em; }
 
         .nav-section-label {
@@ -232,9 +243,13 @@
 <div class="container-fluid">
     <div class="row">
         <nav class="col-12 col-md-3 col-lg-2 sidebar p-3">
-            <div class="d-flex align-items-center gap-2 mb-4">
-                <span class="brand-mark">{{ Str::substr(config('app.name', 'AMOEC Admin'), 0, 2) }}</span>
-                <strong class="text-truncate brand-wordmark">{{ config('app.name', 'AMOEC Admin') }}</strong>
+            <div class="d-flex align-items-center gap-3 mb-4">
+                @if (! empty($orgLogoUrl))
+                    <img src="{{ $orgLogoUrl }}" alt="{{ $brandLabel }} logo" class="brand-logo">
+                @else
+                    <span class="brand-mark">{{ $brandMark ?? Str::substr(config('app.name', 'AMOEC Admin'), 0, 2) }}</span>
+                @endif
+                <strong class="text-truncate brand-wordmark">{{ $brandLabel ?? config('app.name', 'AMOEC Admin') }}</strong>
             </div>
             <ul class="nav flex-column">
                 <li class="nav-section-label">Overview</li>

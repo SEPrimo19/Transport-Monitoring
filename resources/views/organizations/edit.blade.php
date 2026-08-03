@@ -9,7 +9,7 @@
         <div class="col-12 col-lg-9">
             <div class="card border-0 shadow-sm">
                 <div class="card-body p-4">
-                    <form method="POST" action="{{ route('organizations.update', $organization) }}" novalidate>
+                    <form method="POST" action="{{ route('organizations.update', $organization) }}" enctype="multipart/form-data" novalidate>
                         @csrf
                         @method('PUT')
                         @include('organizations._form')

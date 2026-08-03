@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\OrganizationRequest;
 use App\Models\Organization;
+use App\Support\OrgLogoUploader;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -48,7 +50,10 @@ class OrganizationController extends Controller
 
     public function store(OrganizationRequest $request): RedirectResponse
     {
-        $org = Organization::create($request->validated());
+        // Logo upload is an EDIT-only action (needs the org id to scope the storage
+        // path), so create ignores any logo_file and only the Logo URL text field
+        // applies here.
+        $org = Organization::create(Arr::except($request->validated(), ['logo_file']));
 
         return redirect()->route('organizations.index')
             ->with('status', "Organization \u{201C}{$org->name}\u{201D} was created.");
@@ -59,10 +64,30 @@ class OrganizationController extends Controller
         return view('organizations.edit', ['organization' => $organization]);
     }
 
-    public function update(OrganizationRequest $request, Organization $organization): RedirectResponse
+    public function update(OrganizationRequest $request, Organization $organization, OrgLogoUploader $logos): RedirectResponse
     {
         // validated() omits slug on update (immutable) — it's preserved untouched.
-        $organization->update($request->validated());
+        $data = Arr::except($request->validated(), ['logo_file']);
+
+        // A chosen file overrides the Logo URL text field. super_admin may write
+        // any org's folder (enforced by the bucket RLS in migration 025).
+        // "Remove logo" (when no new file is chosen) clears it back to the mark.
+        if ($request->hasFile('logo_file')) {
+            try {
+                $data['logo_url'] = $logos->upload(
+                    $organization->id,
+                    $request->file('logo_file'),
+                    (string) $request->session()->get('supabase_token')
+                );
+            } catch (\RuntimeException $e) {
+                return back()->withInput()->with('error', $e->getMessage());
+            }
+        } elseif ($request->boolean('remove_logo')) {
+            $logos->deleteIfOwned($organization->logo_url, (string) $request->session()->get('supabase_token'));
+            $data['logo_url'] = null;
+        }
+
+        $organization->update($data);
 
         return redirect()->route('organizations.index')
             ->with('status', "Organization \u{201C}{$organization->name}\u{201D} was updated.");

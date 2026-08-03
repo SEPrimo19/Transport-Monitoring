@@ -79,6 +79,33 @@
 </div>
 <p class="text-muted small mb-0">Leave a colour blank to use the app default. Hex format <code>#rrggbb</code>.</p>
 
+@if ($organization->exists)
+    <div class="mt-3">
+        <label for="logo_file" class="form-label">Upload logo</label>
+        <div class="d-flex align-items-center gap-3">
+            @if ($organization->logo_url)
+                <img src="{{ $organization->logo_url }}" alt="Current logo"
+                     style="width:48px;height:48px;object-fit:contain;background:#fff;border:1px solid #e5e7eb;border-radius:.5rem;">
+            @endif
+            <div class="flex-grow-1">
+                <input type="file" name="logo_file" id="logo_file"
+                       accept="image/png,image/jpeg,image/webp"
+                       class="form-control @error('logo_file') is-invalid @enderror">
+                @error('logo_file') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                <div class="form-text">PNG, JPG or WebP up to 1 MB. A file replaces the Logo URL above and shows in the sidebar.</div>
+            </div>
+        </div>
+        @if ($organization->logo_url)
+            <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" name="remove_logo" id="remove_logo" value="1">
+                <label class="form-check-label small text-danger" for="remove_logo">
+                    Remove the current logo (revert to the initials mark)
+                </label>
+            </div>
+        @endif
+    </div>
+@endif
+
 <hr class="my-4">
 <h2 class="h6 text-muted mb-3"><i class="bi bi-geo me-1"></i>Region &amp; map</h2>
 
@@ -109,6 +136,8 @@
     <i class="bi bi-info-circle me-1"></i>The region bounding box is set with the map editor and isn't edited here.
     Center coordinates come as a pair — set both or neither.
 </p>
+
+@include('partials.region-map-picker')
 
 <hr class="my-4">
 <h2 class="h6 text-muted mb-3"><i class="bi bi-envelope me-1"></i>Contact</h2>

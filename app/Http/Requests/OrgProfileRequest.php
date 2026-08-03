@@ -39,6 +39,10 @@ class OrgProfileRequest extends FormRequest
             'contact_email' => ['nullable', 'email', 'max:200'],
             'contact_phone' => ['nullable', 'string', 'max:40'],
             'location_retention_days' => ['nullable', 'integer', 'between:1,3650'],
+            // Optional logo upload → org-logos bucket. `image` rejects SVG (not a
+            // raster type), closing the SVG-script XSS vector; 1 MB cap matches
+            // the bucket's file_size_limit.
+            'logo_file' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:1024'],
         ];
     }
 

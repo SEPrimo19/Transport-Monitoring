@@ -12,7 +12,7 @@
         </p>
     </div>
 
-    <form method="POST" action="{{ route('organization.update') }}" class="col-12 col-xl-9">
+    <form method="POST" action="{{ route('organization.update') }}" enctype="multipart/form-data" class="col-12 col-xl-9">
         @csrf
         @method('PUT')
 
@@ -81,6 +81,31 @@
                     Leave a colour blank to use the app default. Hex format <code>#rrggbb</code>.
                     Your primary colour is applied after you save.
                 </p>
+
+                <div class="mt-3">
+                    <label for="logo_file" class="form-label">Upload logo</label>
+                    <div class="d-flex align-items-center gap-3">
+                        @if ($organization->logo_url)
+                            <img src="{{ $organization->logo_url }}" alt="Current logo"
+                                 style="width:48px;height:48px;object-fit:contain;background:#fff;border:1px solid #e5e7eb;border-radius:.5rem;">
+                        @endif
+                        <div class="flex-grow-1">
+                            <input type="file" name="logo_file" id="logo_file"
+                                   accept="image/png,image/jpeg,image/webp"
+                                   class="form-control @error('logo_file') is-invalid @enderror">
+                            @error('logo_file') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <div class="form-text">PNG, JPG or WebP up to 1 MB. A file replaces the Logo URL above and shows in the sidebar.</div>
+                        </div>
+                    </div>
+                    @if ($organization->logo_url)
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" name="remove_logo" id="remove_logo" value="1">
+                            <label class="form-check-label small text-danger" for="remove_logo">
+                                Remove the current logo (revert to the initials mark)
+                            </label>
+                        </div>
+                    @endif
+                </div>
             </div>
         </div>
 
@@ -115,6 +140,8 @@
                     <i class="bi bi-info-circle me-1"></i>The region bounding box is set with the route map editor.
                     Center coordinates come as a pair — set both or neither.
                 </p>
+
+                @include('partials.region-map-picker')
             </div>
         </div>
 

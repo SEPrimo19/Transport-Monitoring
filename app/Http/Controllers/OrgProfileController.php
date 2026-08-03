@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Requests\OrgProfileRequest;
 use App\Models\Organization;
 use App\Support\AdminContext;
+use App\Support\OrgLogoUploader;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\View\View;
 
 /**
@@ -36,7 +38,7 @@ class OrgProfileController extends Controller
         ]);
     }
 
-    public function update(OrgProfileRequest $request, AdminContext $ctx): RedirectResponse
+    public function update(OrgProfileRequest $request, AdminContext $ctx, OrgLogoUploader $logos): RedirectResponse
     {
         if ($ctx->organizationId === null) {
             return redirect()->route('organizations.index');
@@ -46,7 +48,27 @@ class OrgProfileController extends Controller
         // the self-service fields OrgProfileRequest allows — slug and status are
         // never in validated(), so they can't be changed here.
         $organization = Organization::findOrFail($ctx->organizationId);
-        $organization->update($request->validated());
+        $data = Arr::except($request->validated(), ['logo_file']);
+
+        // A chosen file overrides the Logo URL text field. Upload first so a
+        // failure aborts the save and keeps the admin's other edits intact.
+        // "Remove logo" (when no new file is chosen) clears it back to the mark.
+        if ($request->hasFile('logo_file')) {
+            try {
+                $data['logo_url'] = $logos->upload(
+                    $organization->id,
+                    $request->file('logo_file'),
+                    (string) $request->session()->get('supabase_token')
+                );
+            } catch (\RuntimeException $e) {
+                return back()->withInput()->with('error', $e->getMessage());
+            }
+        } elseif ($request->boolean('remove_logo')) {
+            $logos->deleteIfOwned($organization->logo_url, (string) $request->session()->get('supabase_token'));
+            $data['logo_url'] = null;
+        }
+
+        $organization->update($data);
 
         return redirect()->route('organization.edit')
             ->with('status', 'Your organization profile was saved.');
