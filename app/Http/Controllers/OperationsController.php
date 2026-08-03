@@ -45,6 +45,12 @@ class OperationsController extends Controller
             ->leftJoin('routes as r', 'r.id', '=', 'vll.route_id')
             ->leftJoin('trips as t', 't.id', '=', 'vll.trip_id')
             ->leftJoin('profiles as p', 'p.id', '=', 't.driver_profile_id')
+            // Live Ops = vehicles on an ACTIVE trip only. vehicle_live_location keeps
+            // a vehicle's LAST position after its trip ends, so without this filter
+            // long-ended trips linger forever as grey "Offline" markers. An active
+            // trip that's gone quiet still shows (classified Stale/Offline) — that's
+            // the dead-zone signal we want; a cleanly ended trip correctly drops off.
+            ->where('t.status', 'active')
             ->when(! $ctx->isSuperAdmin(), fn ($q) => $q->where('vll.organization_id', $ctx->organizationId))
             ->orderByDesc('vll.recorded_at')
             ->get([
