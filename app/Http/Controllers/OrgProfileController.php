@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\OrgProfileRequest;
 use App\Models\Organization;
+use App\Providers\AppServiceProvider;
 use App\Support\AdminContext;
 use App\Support\OrgLogoUploader;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 /**
@@ -69,6 +71,9 @@ class OrgProfileController extends Controller
         }
 
         $organization->update($data);
+
+        // Sidebar name/colour/logo are served from a cached copy of this row.
+        Cache::forget(AppServiceProvider::orgChromeCacheKey((string) $organization->getKey()));
 
         return redirect()->route('organization.edit')
             ->with('status', 'Your organization profile was saved.');

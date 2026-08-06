@@ -74,7 +74,12 @@ class Report extends Model
             return 'Anonymous';
         }
 
-        return $this->reporter?->full_name;
+        // `reporter_name` is present when the row came from a query that JOINED
+        // profiles instead of eager-loading the relation (the dashboard does this to
+        // save a round trip). Falling back to the relation keeps every other caller
+        // working unchanged — and keeps this the single place a reporter's identity
+        // is resolved, whichever way the row was fetched.
+        return $this->reporter_name ?? $this->reporter?->full_name;
     }
 
     public function resolvedBy(): BelongsTo

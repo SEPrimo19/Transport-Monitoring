@@ -95,6 +95,26 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+
+            /*
+             * Reuse the Postgres socket across requests instead of re-handshaking.
+             *
+             * The database is a hosted Supabase instance in AWS ap-northeast-1, so
+             * opening a connection (TCP + TLS + auth) costs 0.7–1.6 s measured from
+             * here — paid on EVERY request, because PHP tears the process state down
+             * between them. Persisting the handle removes that from every page load
+             * but the first.
+             *
+             * Set DB_PERSISTENT=false to turn this off. Worth doing if you ever see
+             * "server closed the connection unexpectedly" after the database
+             * restarts (a persisted handle can outlive the server that owns it), or
+             * if you move off the session-mode pooler — transaction-mode pooling
+             * (port 6543) hands out a different backend per transaction, so a
+             * persistent client handle buys nothing there.
+             */
+            'options' => env('DB_PERSISTENT', true) ? [
+                PDO::ATTR_PERSISTENT => true,
+            ] : [],
         ],
 
         'sqlsrv' => [

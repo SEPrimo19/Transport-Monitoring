@@ -35,6 +35,20 @@ class AuthenticateSupabaseAdmin
 {
     private const JWKS_CACHE_KEY = 'supabase_jwks';
 
+    /** Seconds an admin's role/is_active may be stale. See the note at the lookup. */
+    private const PROFILE_CACHE_TTL = 30;
+
+    public static function profileCacheKey(string $userId): string
+    {
+        return 'admin_profile:'.$userId;
+    }
+
+    /** Call after any write that changes a profile's role, is_active or full_name. */
+    public static function forgetProfile(string $userId): void
+    {
+        Cache::forget(self::profileCacheKey($userId));
+    }
+
     public function handle(Request $request, Closure $next): Response
     {
         $token = $this->extractToken($request);
@@ -68,9 +82,25 @@ class AuthenticateSupabaseAdmin
         }
 
         // Source of truth = public.profiles (NOT the JWT).
-        $profile = DB::table('profiles')
-            ->where('id', $sub)
-            ->first(['id', 'full_name', 'role', 'is_active', 'organization_id']);
+        //
+        // Cached for a short window because this runs on EVERY request — including
+        // static-ish ones and the notification poll — and the database is a hosted
+        // Supabase instance ~400 ms away, so it was a visible tax on every page load.
+        //
+        // The TTL is deliberately short: this row carries `role` and `is_active`, so a
+        // stale entry means a demoted or deactivated admin keeps console access until it
+        // lapses. PROFILE_CACHE_TTL seconds is the maximum exposure. The write paths that
+        // change those fields call forgetProfile() so the common cases are immediate;
+        // this window only covers changes made OUTSIDE this app (e.g. straight from the
+        // Supabase SQL editor). If you need revocation to be instant, drop the cache
+        // rather than lengthening the TTL.
+        $profile = Cache::remember(
+            self::profileCacheKey($sub),
+            now()->addSeconds(self::PROFILE_CACHE_TTL),
+            fn () => DB::table('profiles')
+                ->where('id', $sub)
+                ->first(['id', 'full_name', 'role', 'is_active', 'organization_id'])
+        );
 
         if ($profile === null || ! $profile->is_active) {
             return $this->deny($request, 'No active profile for this account.');

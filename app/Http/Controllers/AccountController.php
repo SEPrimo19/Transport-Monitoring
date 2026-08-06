@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Middleware\AuthenticateSupabaseAdmin;
 use App\Support\AdminContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -47,6 +48,10 @@ class AccountController extends Controller
         DB::table('profiles')->where('id', $ctx->userId)->update([
             'full_name' => trim($data['full_name']),
         ]);
+
+        // The header shows this name from the middleware's cached profile row; without
+        // the eviction the admin would rename themselves and appear not to have.
+        AuthenticateSupabaseAdmin::forgetProfile((string) $ctx->userId);
 
         // Password change is optional — only when a new password was supplied.
         if (! empty($data['new_password'])) {

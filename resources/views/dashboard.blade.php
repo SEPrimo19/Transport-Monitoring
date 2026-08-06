@@ -93,9 +93,16 @@
                                 <span class="badge {{ $r->statusBadge() }}">{{ $r->statusLabel() }}</span>
                             </div>
                             <div class="small text-muted text-truncate">
-                                {{ $r->reporter?->full_name ?? 'Passenger' }}
-                                @if ($r->route) · {{ $r->route->code }} @endif
-                                @if ($r->vehicle) · {{ $r->vehicle->plate_number }} @endif
+                                {{-- reporterDisplayName(), never reporter->full_name: a report
+                                     filed anonymously must not name the passenger here either.
+                                     Matches reports/index and reports/show. --}}
+                                @if ($r->is_anonymous)
+                                    <span class="fst-italic"><i class="bi bi-incognito me-1"></i>Anonymous</span>
+                                @else
+                                    {{ $r->reporterDisplayName() ?? 'Passenger' }}
+                                @endif
+                                @if ($r->route_code) · {{ $r->route_code }} @endif
+                                @if ($r->vehicle_plate) · {{ $r->vehicle_plate }} @endif
                                 · {{ $r->created_at?->diffForHumans() }}
                             </div>
                         </a>

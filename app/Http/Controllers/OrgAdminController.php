@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Middleware\AuthenticateSupabaseAdmin;
 use App\Http\Requests\StoreOrgAdminRequest;
 use App\Models\Organization;
 use App\Models\Profile;
@@ -76,6 +77,10 @@ class OrgAdminController extends Controller
             'is_active' => true,
         ]);
 
+        // The auth middleware caches this row briefly; drop it so the promotion is
+        // effective on their very next request rather than up to 30 s later.
+        AuthenticateSupabaseAdmin::forgetProfile((string) $user->id);
+
         return redirect()->route('org-admins.index')
             ->with('status', "{$data['email']} is now an org admin.");
     }
@@ -88,6 +93,10 @@ class OrgAdminController extends Controller
 
         // Demote back to a plain passenger (org-less). Their account/login is kept.
         $profile->update(['role' => 'passenger', 'organization_id' => null]);
+
+        // Revocation must not wait on a cache TTL — evict immediately so their next
+        // request is rejected by the middleware.
+        AuthenticateSupabaseAdmin::forgetProfile((string) $profile->getKey());
 
         return redirect()->route('org-admins.index')
             ->with('status', ($profile->full_name ?: 'The account').' was removed as an org admin (now a passenger).');

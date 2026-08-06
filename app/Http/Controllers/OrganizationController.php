@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\OrganizationRequest;
 use App\Models\Organization;
+use App\Providers\AppServiceProvider;
 use App\Support\OrgLogoUploader;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -88,6 +90,9 @@ class OrganizationController extends Controller
         }
 
         $organization->update($data);
+
+        // Its org_admins render the sidebar from a cached copy of this row.
+        Cache::forget(AppServiceProvider::orgChromeCacheKey((string) $organization->getKey()));
 
         return redirect()->route('organizations.index')
             ->with('status', "Organization \u{201C}{$organization->name}\u{201D} was updated.");
