@@ -18,8 +18,10 @@ class TripController extends Controller
 {
     public function index(Request $request): View
     {
+        // Guard is_string: ?status[]=x arrives as an array and would make
+        // array_key_exists() throw a TypeError (uncaught 500).
         $status = $request->query('status');
-        if (! array_key_exists($status, Trip::STATUSES)) {
+        if (! is_string($status) || ! array_key_exists($status, Trip::STATUSES)) {
             $status = null;
         }
 

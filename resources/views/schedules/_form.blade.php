@@ -7,6 +7,11 @@
     $endVal = old('end_time', $schedule->end_time ? substr($schedule->end_time, 0, 5) : '');
     $depTimes = old('departure_times', $schedule->departure_times ?? []);
     $depTimesStr = is_array($depTimes) ? implode(', ', $depTimes) : $depTimes;
+    // Group routes by org so super_admin sees which org each route belongs to
+    // (org_admin sees a single flat list). Cross-org picks are still rejected server-side.
+    $superAdmin = $ctx->isSuperAdmin();
+    $orgNames = $superAdmin ? $organizations->pluck('name', 'id') : collect();
+    $routeGroups = $superAdmin ? $routes->groupBy('organization_id') : collect(['' => $routes]);
 @endphp
 
 <div class="row">
@@ -14,8 +19,12 @@
         <label for="route_id" class="form-label">Route <span class="text-danger">*</span></label>
         <select name="route_id" id="route_id" class="form-select @error('route_id') is-invalid @enderror" required>
             <option value="">— select a route —</option>
-            @foreach ($routes as $r)
-                <option value="{{ $r->id }}" @selected(old('route_id', $schedule->route_id) === $r->id)>{{ $r->code }} — {{ $r->name }}</option>
+            @foreach ($routeGroups as $orgId => $group)
+                @if ($superAdmin)<optgroup label="{{ $orgNames[$orgId] ?? 'Unknown org' }}">@endif
+                @foreach ($group as $r)
+                    <option value="{{ $r->id }}" @selected(old('route_id', $schedule->route_id) === $r->id)>{{ $r->code }} — {{ $r->name }}</option>
+                @endforeach
+                @if ($superAdmin)</optgroup>@endif
             @endforeach
         </select>
         @error('route_id') <div class="invalid-feedback">{{ $message }}</div> @enderror

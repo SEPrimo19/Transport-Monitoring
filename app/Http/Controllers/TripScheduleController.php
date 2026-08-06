@@ -77,7 +77,8 @@ class TripScheduleController extends Controller
     private function formOptions(AdminContext $ctx): array
     {
         return [
-            'routes' => Route::query()->orderBy('code')->get(['id', 'code', 'name']),
+            // organization_id is needed so the form can group routes by org for super_admin.
+            'routes' => Route::query()->orderBy('code')->get(['id', 'code', 'name', 'organization_id']),
             'organizations' => $ctx->isSuperAdmin()
                 ? Organization::orderBy('name')->get(['id', 'name'])
                 : collect(),

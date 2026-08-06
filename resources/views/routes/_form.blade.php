@@ -1,5 +1,12 @@
 {{-- Shared route fields. Expects $route (model, possibly new), $terminals, $organizations. --}}
-@php $active = (string) old('is_active', $route->is_active ? '1' : '0'); @endphp
+@php
+    $active = (string) old('is_active', $route->is_active ? '1' : '0');
+    $superAdmin = $ctx->isSuperAdmin();
+    $orgNames = $superAdmin ? $organizations->pluck('name', 'id') : collect();
+    // Group terminals by org so super_admin can tell which org each terminal belongs to
+    // (org_admin sees a single flat list). Cross-org picks are still rejected server-side.
+    $terminalGroups = $superAdmin ? $terminals->groupBy('organization_id') : collect(['' => $terminals]);
+@endphp
 
 <div class="row">
     <div class="col-md-4 mb-3">
@@ -25,8 +32,12 @@
         <select name="origin_terminal_id" id="origin_terminal_id"
                 class="form-select @error('origin_terminal_id') is-invalid @enderror" required>
             <option value="">— select —</option>
-            @foreach ($terminals as $t)
-                <option value="{{ $t->id }}" @selected(old('origin_terminal_id', $route->origin_terminal_id) === $t->id)>{{ $t->code }} — {{ $t->name }}</option>
+            @foreach ($terminalGroups as $orgId => $group)
+                @if ($superAdmin)<optgroup label="{{ $orgNames[$orgId] ?? 'Unknown org' }}">@endif
+                @foreach ($group as $t)
+                    <option value="{{ $t->id }}" @selected(old('origin_terminal_id', $route->origin_terminal_id) === $t->id)>{{ $t->code }} — {{ $t->name }}</option>
+                @endforeach
+                @if ($superAdmin)</optgroup>@endif
             @endforeach
         </select>
         @error('origin_terminal_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -36,8 +47,12 @@
         <select name="destination_terminal_id" id="destination_terminal_id"
                 class="form-select @error('destination_terminal_id') is-invalid @enderror" required>
             <option value="">— select —</option>
-            @foreach ($terminals as $t)
-                <option value="{{ $t->id }}" @selected(old('destination_terminal_id', $route->destination_terminal_id) === $t->id)>{{ $t->code }} — {{ $t->name }}</option>
+            @foreach ($terminalGroups as $orgId => $group)
+                @if ($superAdmin)<optgroup label="{{ $orgNames[$orgId] ?? 'Unknown org' }}">@endif
+                @foreach ($group as $t)
+                    <option value="{{ $t->id }}" @selected(old('destination_terminal_id', $route->destination_terminal_id) === $t->id)>{{ $t->code }} — {{ $t->name }}</option>
+                @endforeach
+                @if ($superAdmin)</optgroup>@endif
             @endforeach
         </select>
         @error('destination_terminal_id') <div class="invalid-feedback">{{ $message }}</div> @enderror

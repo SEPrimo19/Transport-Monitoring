@@ -3,6 +3,13 @@
     $active = (string) old('is_active', $assignment->is_active ? '1' : '0');
     $starts = old('starts_at', optional($assignment->starts_at)->format('Y-m-d\TH:i'));
     $ends = old('ends_at', optional($assignment->ends_at)->format('Y-m-d\TH:i'));
+    // Group each list by org so super_admin can pick matching entities per organization
+    // (org_admin sees a single flat list). Cross-org combos are still rejected server-side.
+    $superAdmin = $ctx->isSuperAdmin();
+    $orgNames = $superAdmin ? $organizations->pluck('name', 'id') : collect();
+    $driverGroups = $superAdmin ? $drivers->groupBy('organization_id') : collect(['' => $drivers]);
+    $vehicleGroups = $superAdmin ? $vehicles->groupBy('organization_id') : collect(['' => $vehicles]);
+    $routeGroups = $superAdmin ? $routes->groupBy('organization_id') : collect(['' => $routes]);
 @endphp
 
 <div class="mb-3">
@@ -10,10 +17,14 @@
     <select name="driver_profile_id" id="driver_profile_id"
             class="form-select @error('driver_profile_id') is-invalid @enderror" required>
         <option value="">— select a driver —</option>
-        @foreach ($drivers as $d)
-            <option value="{{ $d->profile_id }}" @selected(old('driver_profile_id', $assignment->driver_profile_id) === $d->profile_id)>
-                {{ $d->profile?->full_name ?? '(unnamed)' }}@if ($d->employee_code) — {{ $d->employee_code }}@endif
-            </option>
+        @foreach ($driverGroups as $orgId => $group)
+            @if ($superAdmin)<optgroup label="{{ $orgNames[$orgId] ?? 'Unknown org' }}">@endif
+            @foreach ($group as $d)
+                <option value="{{ $d->profile_id }}" @selected(old('driver_profile_id', $assignment->driver_profile_id) === $d->profile_id)>
+                    {{ $d->profile?->full_name ?? '(unnamed)' }}@if ($d->employee_code) — {{ $d->employee_code }}@endif
+                </option>
+            @endforeach
+            @if ($superAdmin)</optgroup>@endif
         @endforeach
     </select>
     @error('driver_profile_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -25,10 +36,14 @@
         <select name="vehicle_id" id="vehicle_id"
                 class="form-select @error('vehicle_id') is-invalid @enderror" required>
             <option value="">— select a vehicle —</option>
-            @foreach ($vehicles as $v)
-                <option value="{{ $v->id }}" @selected(old('vehicle_id', $assignment->vehicle_id) === $v->id)>
-                    {{ $v->plate_number }}@if ($v->fleet_code) ({{ $v->fleet_code }})@endif
-                </option>
+            @foreach ($vehicleGroups as $orgId => $group)
+                @if ($superAdmin)<optgroup label="{{ $orgNames[$orgId] ?? 'Unknown org' }}">@endif
+                @foreach ($group as $v)
+                    <option value="{{ $v->id }}" @selected(old('vehicle_id', $assignment->vehicle_id) === $v->id)>
+                        {{ $v->plate_number }}@if ($v->fleet_code) ({{ $v->fleet_code }})@endif
+                    </option>
+                @endforeach
+                @if ($superAdmin)</optgroup>@endif
             @endforeach
         </select>
         @error('vehicle_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -38,10 +53,14 @@
         <select name="route_id" id="route_id"
                 class="form-select @error('route_id') is-invalid @enderror" required>
             <option value="">— select a route —</option>
-            @foreach ($routes as $r)
-                <option value="{{ $r->id }}" @selected(old('route_id', $assignment->route_id) === $r->id)>
-                    {{ $r->code }} — {{ $r->name }}
-                </option>
+            @foreach ($routeGroups as $orgId => $group)
+                @if ($superAdmin)<optgroup label="{{ $orgNames[$orgId] ?? 'Unknown org' }}">@endif
+                @foreach ($group as $r)
+                    <option value="{{ $r->id }}" @selected(old('route_id', $assignment->route_id) === $r->id)>
+                        {{ $r->code }} — {{ $r->name }}
+                    </option>
+                @endforeach
+                @if ($superAdmin)</optgroup>@endif
             @endforeach
         </select>
         @error('route_id') <div class="invalid-feedback">{{ $message }}</div> @enderror

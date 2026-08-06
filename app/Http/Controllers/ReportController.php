@@ -22,8 +22,10 @@ class ReportController extends Controller
     public function index(Request $request, AdminContext $ctx): View
     {
         // Optional status filter, whitelisted against the enum.
+        // Guard is_string: ?status[]=x arrives as an array and would make
+        // array_key_exists() throw a TypeError (uncaught 500).
         $status = $request->query('status');
-        if (! array_key_exists($status, Report::STATUSES)) {
+        if (! is_string($status) || ! array_key_exists($status, Report::STATUSES)) {
             $status = null;
         }
 
