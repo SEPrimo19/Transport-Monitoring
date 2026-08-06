@@ -236,6 +236,27 @@
         .empty-state { padding: 2.25rem 1rem; }
         .empty-state i { font-size: 1.75rem; color: #adb5bd; display: block; margin-bottom: .5rem; }
         .empty-state .empty-state-title { font-weight: 600; color: #495057; }
+
+        /* ---- Notification bell ------------------------------------------- */
+        /* Cap the list so a backlog scrolls inside the dropdown instead of running
+           off the bottom of the viewport. */
+        .notif-items { max-height: 22rem; overflow-y: auto; }
+
+        /* A number quietly changing is easy to miss, so the bell gives one nudge
+           when the poll finds MORE pending than last time. Animation only — never
+           the sole signal, since the badge and its aria-label carry the count. */
+        .notif-bump { animation: notif-bump .6s ease; transform-origin: 50% 0; }
+        @keyframes notif-bump {
+            0%, 100% { transform: rotate(0); }
+            15% { transform: rotate(-12deg); }
+            30% { transform: rotate(10deg); }
+            45% { transform: rotate(-7deg); }
+            60% { transform: rotate(5deg); }
+            75% { transform: rotate(-2deg); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .notif-bump { animation: none; }
+        }
     </style>
     @stack('head')
 </head>
@@ -341,6 +362,72 @@
                     <h1 class="h4 mb-0">@yield('heading', 'Dashboard')</h1>
                     <small class="text-muted"><i class="bi bi-building me-1"></i>{{ $orgName ?? 'All organizations' }}</small>
                 </div>
+                <div class="d-flex align-items-center gap-2">
+                {{-- Notification bell: passenger reports awaiting triage. Clears itself
+                     as reports move out of "Pending", so there is no read-state to manage.
+
+                     Rendered here for first paint, then kept current by the poller at the
+                     bottom of this file — an admin parked on Live Ops must not have to
+                     refresh to learn a report came in. Both this markup and the poller's
+                     DOM building read the same shape (App\Support\PendingReportFeed);
+                     change one and you must change the other. --}}
+                @php $notifCount = $notifications['count'] ?? 0; @endphp
+                <div class="dropdown" id="notif-bell" data-endpoint="{{ route('notifications.pending') }}">
+                    <button class="btn btn-light border position-relative d-inline-flex align-items-center"
+                            type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"
+                            id="notif-toggle"
+                            aria-label="Notifications{{ $notifCount > 0 ? ' (' . $notifCount . ' pending reports)' : '' }}">
+                        <i class="bi {{ $notifCount > 0 ? 'bi-bell-fill' : 'bi-bell' }}" id="notif-icon"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger{{ $notifCount > 0 ? '' : ' d-none' }}"
+                              id="notif-badge">
+                            <span id="notif-badge-count">{{ $notifCount > 99 ? '99+' : $notifCount }}</span>
+                            <span class="visually-hidden">pending reports</span>
+                        </span>
+                    </button>
+                    {{-- Screen readers get told when the count GOES UP; the badge alone is a
+                         silent visual change. polite, so it never interrupts. --}}
+                    <span class="visually-hidden" role="status" aria-live="polite" id="notif-live"></span>
+                    {{-- A <div> menu rather than <ul>/<li>: Bootstrap 5 supports both, and it
+                         lets the item region be one addressable container for the poller. --}}
+                    <div class="dropdown-menu dropdown-menu-end shadow p-0" style="min-width: 22rem; max-width: 95vw;">
+                        <div class="d-flex justify-content-between align-items-center px-3 py-2">
+                            <strong class="small">Notifications</strong>
+                            <span class="badge text-bg-warning{{ $notifCount > 0 ? '' : ' d-none' }}" id="notif-pill">
+                                {{ $notifCount }} pending
+                            </span>
+                        </div>
+                        <hr class="dropdown-divider my-0">
+
+                        <div class="notif-items" id="notif-items">
+                            @forelse ($notifications['items'] ?? [] as $item)
+                                <a class="dropdown-item py-2" href="{{ $item['url'] }}">
+                                    <div class="d-flex gap-2">
+                                        <i class="bi bi-flag-fill text-warning mt-1"></i>
+                                        {{-- min-width:0 is what lets .text-truncate actually clamp inside a flex child. --}}
+                                        <div class="flex-grow-1" style="min-width: 0;">
+                                            <div class="d-flex justify-content-between gap-2">
+                                                <span class="fw-semibold text-truncate">{{ $item['title'] }}</span>
+                                                <small class="text-muted flex-shrink-0">{{ $item['age'] }}</small>
+                                            </div>
+                                            <div class="small text-muted text-truncate">{{ $item['subtitle'] }}</div>
+                                        </div>
+                                    </div>
+                                </a>
+                            @empty
+                                <div class="px-3 py-4 text-center text-muted small">
+                                    <i class="bi bi-check2-circle d-block fs-4 mb-1"></i>
+                                    You're all caught up
+                                </div>
+                            @endforelse
+                        </div>
+
+                        <hr class="dropdown-divider my-0">
+                        <a class="dropdown-item text-center small py-2" href="{{ route('reports.index') }}">
+                            View all reports
+                        </a>
+                    </div>
+                </div>
+
                 <div class="dropdown">
                     <button class="btn btn-light border dropdown-toggle d-inline-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <span class="user-avatar">{{ strtoupper(substr($ctx->fullName ?? $ctx->email ?? '?', 0, 1)) }}</span>
@@ -365,6 +452,7 @@
                             </form>
                         </li>
                     </ul>
+                </div>
                 </div>
             </div>
 
@@ -437,6 +525,168 @@
         });
 
         modalEl.addEventListener('hidden.bs.modal', function () { pending = null; });
+    })();
+</script>
+
+{{-- Keeps the notification bell current without a page refresh.
+
+     Polling, not Realtime: the shared Supabase `supabase_realtime` publication carries
+     only `vehicle_live_location` (Android migration 20260430_008), so a browser
+     subscription on `reports` would connect to nothing. Reports also arrive on human
+     timescales — a 20s poll is indistinguishable from live for this, and costs one
+     small JSON request per idle tab. --}}
+<script>
+    (function () {
+        var bell = document.getElementById('notif-bell');
+        if (!bell || !window.fetch) return;
+
+        var endpoint = bell.dataset.endpoint;
+        var toggleEl = document.getElementById('notif-toggle');
+        var iconEl = document.getElementById('notif-icon');
+        var badgeEl = document.getElementById('notif-badge');
+        var badgeCountEl = document.getElementById('notif-badge-count');
+        var pillEl = document.getElementById('notif-pill');
+        var itemsEl = document.getElementById('notif-items');
+        var liveEl = document.getElementById('notif-live');
+
+        // 60s, not 20s: `php artisan serve` serves ONE request at a time, so every poll
+        // occupies the worker the admin's next page load needs. Reports are triaged on
+        // human timescales — a minute of latency here is invisible, a blocked navigation
+        // is not.
+        var POLL_MS = 60000;
+        var lastCount = parseInt(badgeCountEl.textContent, 10) || 0;
+        var timer = null;
+        var inFlight = false;
+        var menuOpen = false;
+        var deferred = null; // payload that arrived while the menu was open
+
+        function render(data) {
+            var count = data.count || 0;
+
+            badgeCountEl.textContent = count > 99 ? '99+' : String(count);
+            badgeEl.classList.toggle('d-none', count === 0);
+            pillEl.classList.toggle('d-none', count === 0);
+            pillEl.textContent = count + ' pending';
+            iconEl.className = 'bi ' + (count > 0 ? 'bi-bell-fill' : 'bi-bell');
+            toggleEl.setAttribute(
+                'aria-label',
+                count > 0 ? 'Notifications (' + count + ' pending reports)' : 'Notifications'
+            );
+
+            // Only announce/animate on an INCREASE. Triaging reports away is the admin's
+            // own doing and needs no nudge.
+            if (count > lastCount) {
+                liveEl.textContent = count + ' passenger ' + (count === 1 ? 'report' : 'reports') + ' awaiting triage';
+                iconEl.classList.remove('notif-bump');
+                void iconEl.offsetWidth; // restart the animation
+                iconEl.classList.add('notif-bump');
+            }
+            lastCount = count;
+
+            // Rebuilding the list under an open menu moves rows beneath the cursor, so
+            // the caller defers that; here we only ever redraw a closed menu.
+            itemsEl.textContent = '';
+            if (!data.items || data.items.length === 0) {
+                itemsEl.appendChild(emptyState());
+                return;
+            }
+            data.items.forEach(function (item) {
+                itemsEl.appendChild(itemRow(item));
+            });
+        }
+
+        function emptyState() {
+            var wrap = el('div', 'px-3 py-4 text-center text-muted small');
+            wrap.appendChild(el('i', 'bi bi-check2-circle d-block fs-4 mb-1'));
+            wrap.appendChild(document.createTextNode("You're all caught up"));
+            return wrap;
+        }
+
+        // Mirrors the Blade markup above. Built with textContent, never innerHTML —
+        // plate numbers and route names are admin-entered strings.
+        function itemRow(item) {
+            var link = el('a', 'dropdown-item py-2');
+            link.href = item.url;
+
+            var row = el('div', 'd-flex gap-2');
+            row.appendChild(el('i', 'bi bi-flag-fill text-warning mt-1'));
+
+            var body = el('div', 'flex-grow-1');
+            body.style.minWidth = '0';
+
+            var head = el('div', 'd-flex justify-content-between gap-2');
+            var title = el('span', 'fw-semibold text-truncate');
+            title.textContent = item.title || 'Report';
+            var age = el('small', 'text-muted flex-shrink-0');
+            age.textContent = item.age || '';
+            head.appendChild(title);
+            head.appendChild(age);
+
+            var sub = el('div', 'small text-muted text-truncate');
+            sub.textContent = item.subtitle || 'Unassigned';
+
+            body.appendChild(head);
+            body.appendChild(sub);
+            row.appendChild(body);
+            link.appendChild(row);
+            return link;
+        }
+
+        function el(tag, className) {
+            var node = document.createElement(tag);
+            node.className = className;
+            return node;
+        }
+
+        function poll() {
+            if (inFlight || document.hidden) return;
+            inFlight = true;
+
+            fetch(endpoint, {
+                credentials: 'same-origin',
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(function (res) {
+                // The session lapsed (supabase.admin denies JSON requests with a 401).
+                // Stop polling rather than hammering the endpoint until the tab is
+                // reloaded — the next navigation bounces to the login screen anyway.
+                if (res.status === 401) { stop(); return null; }
+                if (!res.ok) return null;
+                return res.json();
+            }).then(function (data) {
+                if (!data) return;
+                if (menuOpen) { deferred = data; return; }
+                render(data);
+            }).catch(function () {
+                // Offline or a dropped request: keep the last known state and try again
+                // on the next tick. A transient failure must not blank the bell.
+            }).then(function () {
+                inFlight = false;
+            });
+        }
+
+        function start() {
+            if (timer === null) timer = setInterval(poll, POLL_MS);
+        }
+
+        function stop() {
+            if (timer !== null) { clearInterval(timer); timer = null; }
+        }
+
+        bell.addEventListener('show.bs.dropdown', function () { menuOpen = true; });
+        bell.addEventListener('hidden.bs.dropdown', function () {
+            menuOpen = false;
+            if (deferred) { render(deferred); deferred = null; }
+        });
+
+        // A background tab neither polls nor accrues ticks; coming back to the tab
+        // refreshes immediately, which is when staleness is actually visible.
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden) { stop(); return; }
+            start();
+            poll();
+        });
+
+        start();
     })();
 </script>
 @stack('scripts')

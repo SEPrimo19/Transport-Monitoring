@@ -5,6 +5,7 @@ use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DriverController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\OperationsController;
 use App\Http\Controllers\OrganizationController;
@@ -19,7 +20,10 @@ use App\Http\Controllers\TripScheduleController;
 use App\Http\Controllers\VehicleController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => redirect()->route('dashboard'));
+// Route::redirect, not a closure: `php artisan route:cache` serializes the route
+// table and cannot serialize a Closure action — one closure here disables route
+// caching for the entire application.
+Route::redirect('/', '/dashboard');
 
 // Guest auth — Supabase GoTrue password grant → access token in the session.
 Route::get('/login', [AuthController::class, 'show'])->name('login');
@@ -46,6 +50,10 @@ Route::middleware('supabase.admin')->group(function () {
     Route::resource('assignments', AssignmentController::class)->except(['show']);
     Route::resource('trips', TripController::class)->only(['index', 'show']);
     Route::resource('reports', ReportController::class)->only(['index', 'show', 'update']);
+
+    // Polled by the header bell so a new passenger report shows up without a refresh.
+    Route::get('notifications/pending', [NotificationController::class, 'pending'])
+        ->name('notifications.pending');
 
     // Self-service for the signed-in admin (both tiers): change display name / password.
     Route::get('account', [AccountController::class, 'edit'])->name('account.edit');

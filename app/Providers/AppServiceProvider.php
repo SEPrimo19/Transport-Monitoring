@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Models\Organization;
 use App\Support\AdminContext;
+use App\Support\PendingReportFeed;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -34,7 +36,18 @@ class AppServiceProvider extends ServiceProvider
         // per-controller wiring.
         View::composer('layouts.app', function ($view): void {
             $ctx = $this->app->make(AdminContext::class);
-            $org = $ctx->organizationId ? Organization::find($ctx->organizationId) : null;
+
+            // Cached: this is chrome (name, colour, logo) on every single page, and the
+            // database is ~400 ms away. An org profile changes about never, and
+            // OrgProfileController::update() forgets this key the moment it does, so a
+            // rebrand still lands on the next request rather than 60 s later.
+            $org = $ctx->organizationId
+                ? Cache::remember(
+                    self::orgChromeCacheKey($ctx->organizationId),
+                    now()->addMinutes(10),
+                    fn () => Organization::find($ctx->organizationId)
+                )
+                : null;
 
             // Sidebar identity is per-TENANT: an org_admin sees its own org name +
             // logo; a super_admin has no single org, so it reads "Super Admin" with
@@ -54,6 +67,31 @@ class AppServiceProvider extends ServiceProvider
             $view->with('brandLabel', $label);
             $view->with('brandMark', mb_strtoupper($initials ?: 'A'));
             $view->with('orgLogoUrl', $isSuper ? null : ($org?->logo_url ?: null));
+
+            // Notification bell: passenger reports still awaiting triage. Reports are
+            // the only event admins must ACT on that arrives from outside the console,
+            // so an unattended one is the thing worth surfacing on every screen.
+            //
+            // This is FIRST PAINT only. The layout then polls
+            // NotificationController@pending — which reads the same PendingReportFeed —
+            // so the bell stays current without a page refresh. Both paths must keep
+            // sharing that class or the two can drift apart.
+            //
+            // Guarded on isAdmin() so this never queries for an unauthenticated render.
+            $view->with('notifications', $ctx->isAdmin()
+                ? $this->app->make(PendingReportFeed::class)->payload()
+                : ['count' => 0, 'items' => []]);
         });
+    }
+
+    /**
+     * Cache key for a tenant's shell chrome. Call
+     * `Cache::forget(AppServiceProvider::orgChromeCacheKey($id))` after any write that
+     * changes an org's name, colour or logo, or the sidebar will show the old branding
+     * until the entry lapses.
+     */
+    public static function orgChromeCacheKey(string $organizationId): string
+    {
+        return 'org_chrome:'.$organizationId;
     }
 }
