@@ -233,13 +233,34 @@
         .auth-card .form-label { color: var(--auth-ink-soft); }
         .auth-card .auth-footnote { color: var(--auth-ink-muted); }
 
-        .brand-badge {
-            width: 3rem; height: 3rem; border-radius: .9rem;
-            background: var(--amoec-brand); color: #fff;
-            display: inline-flex; align-items: center; justify-content: center;
-            font-size: 1.4rem;
-            box-shadow: 0 6px 16px rgba(var(--amoec-brand-rgb), .35);
+        /*
+         * The app's own mark, so the console and the phone read as one product.
+         *
+         * Source is the Android launcher icon's ADAPTIVE FOREGROUND layer
+         * (mipmap-xxxhdpi/ic_launcher_foreground.png) — 432px, the largest available,
+         * and the logo alone on transparency. The composed ic_launcher.png would have
+         * dragged its own rounded-square plate in with it, which would sit as a pale
+         * box on an already pale panel.
+         *
+         * The box is much larger than the mark looks, and that is the safe zone, not a
+         * mistake: an adaptive foreground reserves transparent margin on all sides for
+         * the launcher to mask, so the pin renders at only ~55-60% of whatever box it
+         * is given. 8rem of box therefore reads as roughly a 4.5rem mark. Judge this by
+         * the rendered pin, not the number here — and if it needs to grow again, the
+         * box has to grow by ~1.7x the amount you want the pin to gain.
+         *
+         * The same padding supplies most of the gap to the heading below, which is why
+         * the markup uses a small bottom margin rather than the usual mb-4.
+         */
+        .brand-logo {
+            display: block;
+            width: 8rem;
+            height: 8rem;
+            object-fit: contain;
+            /* Follows the artwork's silhouette; box-shadow would trace the square. */
+            filter: drop-shadow(0 6px 14px rgba(15, 23, 42, .18));
         }
+        .auth-card .brand-logo { width: 5.5rem; height: 5.5rem; }
 
         /* ── Fields ───────────────────────────────────────────────────────── */
         .auth-card .form-control {
@@ -343,7 +364,10 @@
              .auth-hero::before (image) and .auth-hero::after (light veil). --}}
         <div class="col-lg-6 auth-hero d-none d-lg-flex align-items-center">
             <div class="hero-copy">
-                <span class="brand-badge mb-4"><i class="bi bi-bus-front-fill" aria-hidden="true"></i></span>
+                {{-- alt="" — decorative here: the h1 directly below already names the
+                     product, so announcing the mark too would just repeat it. --}}
+                <img src="{{ asset('images/amoec-logo.png') }}" alt="" class="brand-logo mb-1"
+                     width="128" height="128" decoding="async">
                 <h1 class="display-6 fw-bold mb-3">Transport Monitoring</h1>
                 {{-- No .opacity-75: it is an !important rule that would win over the
                      ink token and grey the copy back out against the light artwork. --}}
@@ -373,7 +397,10 @@
             <div class="auth-card p-4 p-sm-5">
                 <div class="mb-4">
                     {{-- Mirrors the hero badge for small screens, where the hero is hidden. --}}
-                    <span class="brand-badge mb-3 d-lg-none"><i class="bi bi-bus-front-fill" aria-hidden="true"></i></span>
+                    {{-- Named here, unlike the hero copy: below `lg` the hero is hidden,
+                         so this mark is the only branding on screen. --}}
+                    <img src="{{ asset('images/amoec-logo.png') }}" alt="AMOEC Track"
+                         class="brand-logo mb-1 d-lg-none" width="88" height="88" decoding="async">
                     <h2 class="h3 fw-bold mb-1">Welcome back</h2>
                     <p class="mb-0">Sign in to continue to your console.</p>
                 </div>
