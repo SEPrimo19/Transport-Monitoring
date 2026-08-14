@@ -23,9 +23,26 @@ class TripScheduleRequest extends FormRequest
     {
         $ctx = app(AdminContext::class);
         $org = $ctx->isSuperAdmin() ? $this->input('organization_id') : $ctx->organizationId;
+        $currentRouteId = $this->route('schedule')?->route_id;
 
         $rules = [
-            'route_id' => ['required', 'string', Rule::exists('routes', 'id')->where('organization_id', $org)],
+            // A timetable on a retired route publishes departures to passengers that no
+            // driver can legally run (migration 20260814_027 blocks trip start on an
+            // inactive route). The schedule's own current route stays acceptable so an
+            // admin can still edit a schedule whose route was retired under it. The
+            // active predicate is nested so the `or` cannot escape the org filter.
+            'route_id' => ['required', 'string',
+                Rule::exists('routes', 'id')
+                    ->where('organization_id', $org)
+                    ->where(function ($query) use ($currentRouteId) {
+                        $query->where(function ($group) use ($currentRouteId) {
+                            $group->where('is_active', true);
+                            if ($currentRouteId !== null) {
+                                $group->orWhere('id', $currentRouteId);
+                            }
+                        });
+                    }),
+            ],
             'label' => ['nullable', 'string', 'max:80'],
             'mode' => ['required', Rule::in(['interval', 'fixed'])],
             'days_of_week' => ['required', 'array', 'min:1'],

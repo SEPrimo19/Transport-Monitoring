@@ -68,7 +68,7 @@ class AssignmentController extends Controller
 
     public function edit(Assignment $assignment, AdminContext $ctx): View
     {
-        return view('assignments.edit', ['assignment' => $assignment] + $this->formOptions($ctx));
+        return view('assignments.edit', ['assignment' => $assignment] + $this->formOptions($ctx, $assignment));
     }
 
     public function update(AssignmentRequest $request, Assignment $assignment): RedirectResponse
@@ -106,14 +106,47 @@ class AssignmentController extends Controller
         return redirect()->route('assignments.index')->with('status', 'Assignment deleted.');
     }
 
-    /** Drivers/vehicles/routes/orgs the admin may pair: org-scoped by OrganizationScope. */
-    private function formOptions(AdminContext $ctx): array
+    /**
+     * Drivers/vehicles/routes/orgs the admin may pair: org-scoped by OrganizationScope.
+     *
+     * Only ACTIVE entities are offered. A suspended driver, a vehicle in maintenance
+     * or a retired route must not be pairable into a new assignment: as of migration
+     * 20260814_027 the database refuses to start a trip from one, so listing them here
+     * would only manufacture an assignment that fails at the terminal — the worst place
+     * to discover it.
+     *
+     * The assignment being EDITED keeps its own driver/vehicle/route in the list even
+     * if one has since been deactivated. Dropping it would silently re-point the
+     * assignment at whatever option happened to sort first on the next save.
+     */
+    private function formOptions(AdminContext $ctx, ?Assignment $assignment = null): array
     {
         return [
-            'drivers' => Driver::query()->with('profile')->get()
+            'drivers' => Driver::query()->with('profile')
+                ->where(function ($q) use ($assignment) {
+                    $q->where('is_active', true);
+                    if ($assignment?->driver_profile_id) {
+                        $q->orWhere('profile_id', $assignment->driver_profile_id);
+                    }
+                })
+                ->get()
                 ->sortBy(fn ($d) => $d->profile?->full_name ?? '')->values(),
-            'vehicles' => Vehicle::query()->orderBy('plate_number')->get(),
-            'routes' => Route::query()->orderBy('code')->get(),
+            'vehicles' => Vehicle::query()
+                ->where(function ($q) use ($assignment) {
+                    $q->where('status', 'active');
+                    if ($assignment?->vehicle_id) {
+                        $q->orWhere('id', $assignment->vehicle_id);
+                    }
+                })
+                ->orderBy('plate_number')->get(),
+            'routes' => Route::query()
+                ->where(function ($q) use ($assignment) {
+                    $q->where('is_active', true);
+                    if ($assignment?->route_id) {
+                        $q->orWhere('id', $assignment->route_id);
+                    }
+                })
+                ->orderBy('code')->get(),
             'organizations' => $ctx->isSuperAdmin()
                 ? Organization::orderBy('name')->get(['id', 'name'])
                 : collect(),

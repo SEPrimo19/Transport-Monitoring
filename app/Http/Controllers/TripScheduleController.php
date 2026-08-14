@@ -52,7 +52,7 @@ class TripScheduleController extends Controller
 
     public function edit(TripSchedule $schedule, AdminContext $ctx): View
     {
-        return view('schedules.edit', ['schedule' => $schedule] + $this->formOptions($ctx));
+        return view('schedules.edit', ['schedule' => $schedule] + $this->formOptions($ctx, $schedule));
     }
 
     public function update(TripScheduleRequest $request, TripSchedule $schedule): RedirectResponse
@@ -74,11 +74,23 @@ class TripScheduleController extends Controller
     }
 
     /** @return array{routes: Collection, organizations: Collection} */
-    private function formOptions(AdminContext $ctx): array
+    private function formOptions(AdminContext $ctx, ?TripSchedule $schedule = null): array
     {
         return [
             // organization_id is needed so the form can group routes by org for super_admin.
-            'routes' => Route::query()->orderBy('code')->get(['id', 'code', 'name', 'organization_id']),
+            //
+            // Only ACTIVE routes are offered: a timetable on a retired route publishes
+            // departures to passengers that no driver can legally run (migration
+            // 20260814_027 blocks trip start on an inactive route). The schedule being
+            // edited keeps its own route so saving cannot silently re-point it.
+            'routes' => Route::query()
+                ->where(function ($q) use ($schedule) {
+                    $q->where('is_active', true);
+                    if ($schedule?->route_id) {
+                        $q->orWhere('id', $schedule->route_id);
+                    }
+                })
+                ->orderBy('code')->get(['id', 'code', 'name', 'organization_id']),
             'organizations' => $ctx->isSuperAdmin()
                 ? Organization::orderBy('name')->get(['id', 'name'])
                 : collect(),
