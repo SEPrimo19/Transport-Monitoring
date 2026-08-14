@@ -39,6 +39,13 @@ class OrgProfileRequest extends FormRequest
             'contact_email' => ['nullable', 'email', 'max:200'],
             'contact_phone' => ['nullable', 'string', 'max:40'],
             'location_retention_days' => ['nullable', 'integer', 'between:1,3650'],
+            // trip_schedules stores LOCAL clock times, and start_trip_for_current_driver
+            // resolves them through this zone to decide whether a driver may depart
+            // (migration 20260814_029). The 'timezone' rule checks the value against
+            // PHP's IANA database -- the database cannot, because a CHECK constraint
+            // cannot query pg_timezone_names immutably.
+            'timezone' => ['required', 'timezone'],
+            'departure_grace_minutes' => ['required', 'integer', 'between:0,240'],
             // Optional logo upload → org-logos bucket. `image` rejects SVG (not a
             // raster type), closing the SVG-script XSS vector; 1 MB cap matches
             // the bucket's file_size_limit.
@@ -60,6 +67,13 @@ class OrgProfileRequest extends FormRequest
             'contact_email' => $this->filled('contact_email') ? trim($this->contact_email) : null,
             'contact_phone' => $this->filled('contact_phone') ? trim($this->contact_phone) : null,
             'location_retention_days' => $this->filled('location_retention_days') ? $this->location_retention_days : null,
+            // Both fall back to the column defaults rather than null: they are NOT NULL
+            // server-side, and a co-op that never opens this form must still resolve its
+            // timetable against something sane.
+            'timezone' => $this->filled('timezone') ? trim($this->timezone) : 'Asia/Manila',
+            'departure_grace_minutes' => $this->filled('departure_grace_minutes')
+                ? $this->departure_grace_minutes
+                : 20,
         ]);
     }
 
@@ -71,6 +85,7 @@ class OrgProfileRequest extends FormRequest
             'map_style_url' => 'map style URL',
             'logo_url' => 'logo URL',
             'location_retention_days' => 'retention period',
+            'departure_grace_minutes' => 'departure grace period',
         ];
     }
 
@@ -82,6 +97,8 @@ class OrgProfileRequest extends FormRequest
             'region_center_lat.required_with' => 'Enter a latitude too (the region center is a pair).',
             'region_center_lng.required_with' => 'Enter a longitude too (the region center is a pair).',
             'location_retention_days.between' => 'Choose between 1 and 3650 days, or leave blank to keep data indefinitely.',
+            'timezone.timezone' => 'Choose a valid IANA timezone, such as Asia/Manila.',
+            'departure_grace_minutes.between' => 'Choose between 0 and 240 minutes.',
         ];
     }
 }

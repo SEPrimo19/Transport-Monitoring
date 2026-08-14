@@ -32,6 +32,11 @@ class Organization extends Model
         'contact_phone',
         'status',
         'location_retention_days',
+        // Migration 20260814_029: the tenant's IANA zone (trip_schedules stores local
+        // clock times) and how far either side of a published departure a driver may
+        // start the trip.
+        'timezone',
+        'departure_grace_minutes',
     ];
 
     protected $casts = [

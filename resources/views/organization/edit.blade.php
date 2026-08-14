@@ -192,6 +192,43 @@
             </div>
         </div>
 
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h2 class="h6 text-muted mb-3"><i class="bi bi-clock me-1"></i>Operations</h2>
+                <div class="row align-items-start">
+                    <div class="col-md-4 mb-3">
+                        <label for="timezone" class="form-label">Timezone <span class="text-danger">*</span></label>
+                        <select name="timezone" id="timezone"
+                                class="form-select @error('timezone') is-invalid @enderror" required>
+                            @foreach (DateTimeZone::listIdentifiers() as $tz)
+                                <option value="{{ $tz }}"
+                                    @selected(old('timezone', $organization->timezone ?? 'Asia/Manila') === $tz)>{{ $tz }}</option>
+                            @endforeach
+                        </select>
+                        @error('timezone') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="departure_grace_minutes" class="form-label">Departure grace (minutes)</label>
+                        <input type="number" min="0" max="240" step="1"
+                               name="departure_grace_minutes" id="departure_grace_minutes"
+                               value="{{ old('departure_grace_minutes', $organization->departure_grace_minutes ?? 20) }}"
+                               class="form-control @error('departure_grace_minutes') is-invalid @enderror">
+                        @error('departure_grace_minutes') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="col-md-5 mb-3">
+                        <div class="alert alert-light border small mb-0">
+                            <i class="bi bi-signpost-split me-1"></i>
+                            Schedule times are <strong>local clock times</strong> in this timezone.
+                            Drivers may start a trip within the grace period either side of a
+                            published departure — set it to how early or late your buses
+                            realistically leave.
+                            <strong>Routes with no schedule are not restricted.</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="d-flex gap-2">
             <button type="submit" class="btn btn-primary">
                 <i class="bi bi-check-lg me-1"></i>Save changes
