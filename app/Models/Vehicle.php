@@ -26,6 +26,7 @@ class Vehicle extends Model
 
     // Supabase uses UUID primary keys, not auto-increment integers.
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [

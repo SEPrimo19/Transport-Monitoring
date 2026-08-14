@@ -1,8 +1,12 @@
 <?php
 
+use App\Http\Middleware\AuthenticateSupabaseAdmin;
+use App\Http\Middleware\RequireSuperAdmin;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -12,13 +16,13 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
-            'supabase.admin' => \App\Http\Middleware\AuthenticateSupabaseAdmin::class,
-            'super.admin' => \App\Http\Middleware\RequireSuperAdmin::class,
+            'supabase.admin' => AuthenticateSupabaseAdmin::class,
+            'super.admin' => RequireSuperAdmin::class,
         ]);
 
         // Baseline security response headers on every web response (audit L-3).
         $middleware->web(append: [
-            \App\Http\Middleware\SecurityHeaders::class,
+            SecurityHeaders::class,
         ]);
 
         // AuthenticateSupabaseAdmin fills AdminContext, which the tenant
@@ -26,8 +30,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // route-model binding for {vehicle} etc. resolves with an empty context —
         // the scope then fails closed (WHERE 1=0) and every bound route 404s.
         $middleware->prependToPriorityList(
-            \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            \App\Http\Middleware\AuthenticateSupabaseAdmin::class,
+            SubstituteBindings::class,
+            AuthenticateSupabaseAdmin::class,
         );
     })
     ->withExceptions(function (Exceptions $exceptions) {

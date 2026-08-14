@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Middleware\AuthenticateSupabaseAdmin;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -11,7 +12,7 @@ use Illuminate\View\View;
  * Browser login for the admin console. There is NO local users table — we
  * authenticate against Supabase GoTrue (the same identity provider the mobile
  * app uses) and stash the returned access token in the session. Every protected
- * route then runs through {@see \App\Http\Middleware\AuthenticateSupabaseAdmin},
+ * route then runs through {@see AuthenticateSupabaseAdmin},
  * which re-verifies that token and loads role + organization from public.profiles.
  *
  * We deliberately do NOT decide "is this an admin?" here. That check lives in one

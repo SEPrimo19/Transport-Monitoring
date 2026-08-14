@@ -16,7 +16,9 @@ class Trip extends Model
     use BelongsToOrganization;
 
     protected $table = 'trips';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $casts = [

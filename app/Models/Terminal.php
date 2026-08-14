@@ -14,7 +14,9 @@ class Terminal extends Model
     use BelongsToOrganization;
 
     protected $table = 'terminals';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [

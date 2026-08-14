@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 /**
  * Maps the existing Supabase `organizations` table (the TENANT ROOT).
@@ -15,6 +16,7 @@ class Organization extends Model
     protected $table = 'organizations';
 
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [
@@ -71,7 +73,7 @@ class Organization extends Model
     public function retentionLabel(): string
     {
         return $this->location_retention_days
-            ? $this->location_retention_days.' '.\Illuminate\Support\Str::plural('day', $this->location_retention_days)
+            ? $this->location_retention_days.' '.Str::plural('day', $this->location_retention_days)
             : 'Kept indefinitely';
     }
 }

@@ -19,7 +19,9 @@ class Report extends Model
     use BelongsToOrganization;
 
     protected $table = 'reports';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [

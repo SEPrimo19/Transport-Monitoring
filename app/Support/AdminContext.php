@@ -2,11 +2,15 @@
 
 namespace App\Support;
 
+use App\Http\Middleware\AuthenticateSupabaseAdmin;
+use App\Models\Concerns\BelongsToOrganization;
+use App\Models\Scopes\OrganizationScope;
+
 /**
  * Per-request identity of the signed-in admin, populated by
- * {@see \App\Http\Middleware\AuthenticateSupabaseAdmin}. The global
- * {@see \App\Models\Scopes\OrganizationScope} and the
- * {@see \App\Models\Concerns\BelongsToOrganization} trait read this to enforce
+ * {@see AuthenticateSupabaseAdmin}. The global
+ * {@see OrganizationScope} and the
+ * {@see BelongsToOrganization} trait read this to enforce
  * tenant isolation IN CODE (data-access option A bypasses Postgres RLS), mirroring
  * migration 016's `is_super_admin() OR organization_id = current_org_id()`.
  *
@@ -15,9 +19,13 @@ namespace App\Support;
 class AdminContext
 {
     public ?string $userId = null;
+
     public ?string $role = null;
+
     public ?string $organizationId = null;
+
     public ?string $email = null;
+
     public ?string $fullName = null;
 
     public function isAuthenticated(): bool

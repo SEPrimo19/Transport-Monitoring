@@ -18,8 +18,11 @@ use Illuminate\Database\Eloquent\Model;
 class RouteGeometry extends Model
 {
     protected $table = 'route_geometry';
+
     protected $primaryKey = 'route_id';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     public $timestamps = false; // only updated_at exists (DB trigger-managed)

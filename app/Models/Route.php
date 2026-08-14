@@ -20,7 +20,9 @@ class Route extends Model
     use BelongsToOrganization;
 
     protected $table = 'routes';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [

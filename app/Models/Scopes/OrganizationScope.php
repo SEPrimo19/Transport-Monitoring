@@ -2,6 +2,7 @@
 
 namespace App\Models\Scopes;
 
+use App\Models\Concerns\BelongsToOrganization;
 use App\Support\AdminContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\Scope;
  *   org_admin    → organization_id = their org.
  *   no context   → FAIL CLOSED (return nothing), never everything.
  *
- * Apply via the {@see \App\Models\Concerns\BelongsToOrganization} trait on every
+ * Apply via the {@see BelongsToOrganization} trait on every
  * tenant-scoped model. Do NOT apply to the Organization model (it is the tenant root).
  */
 class OrganizationScope implements Scope
@@ -30,6 +31,7 @@ class OrganizationScope implements Scope
 
         if ($ctx->organizationId !== null) {
             $builder->where($model->getTable().'.organization_id', $ctx->organizationId);
+
             return;
         }
 

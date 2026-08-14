@@ -24,8 +24,11 @@ class Driver extends Model
     use BelongsToOrganization;
 
     protected $table = 'drivers';
+
     protected $primaryKey = 'profile_id';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [

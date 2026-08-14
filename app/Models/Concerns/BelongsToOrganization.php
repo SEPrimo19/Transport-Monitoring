@@ -25,7 +25,7 @@ trait BelongsToOrganization
 {
     public static function bootBelongsToOrganization(): void
     {
-        static::addGlobalScope(new OrganizationScope());
+        static::addGlobalScope(new OrganizationScope);
 
         static::creating(function ($model): void {
             $ctx = app(AdminContext::class);

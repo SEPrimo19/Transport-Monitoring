@@ -20,7 +20,9 @@ class Assignment extends Model
     use BelongsToOrganization;
 
     protected $table = 'assignments';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [

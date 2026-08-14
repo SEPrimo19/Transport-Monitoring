@@ -109,7 +109,7 @@ class RouteController extends Controller
         // Guard 1: never remove a route that is in use by a scheduled/active trip
         // (or a live vehicle currently on it).
         $inUse = DB::table('trips')->where('route_id', $route->id)
-                ->whereIn('status', ['pending', 'active'])->exists()
+            ->whereIn('status', ['pending', 'active'])->exists()
             || DB::table('vehicle_live_location')->where('route_id', $route->id)->exists();
 
         if ($inUse) {

@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Models\Profile;
 use App\Models\Report;
 use PHPUnit\Framework\TestCase;
 
@@ -91,7 +92,7 @@ class ReportAnonymityTest extends TestCase
     {
         // The path every caller except the dashboard takes: no joined `reporter_name`,
         // so the eager-loaded profile supplies it.
-        $profile = new \App\Models\Profile;
+        $profile = new Profile;
         $profile->setAttribute('full_name', 'Ana Reyes');
 
         $report = $this->report([

@@ -17,7 +17,9 @@ class TripSchedule extends Model
     use BelongsToOrganization;
 
     protected $table = 'trip_schedules';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [

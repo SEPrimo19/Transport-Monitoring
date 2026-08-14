@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Http\Controllers\NotificationController;
 use App\Models\Report;
 use Illuminate\Support\Collection;
 
@@ -9,7 +10,7 @@ use Illuminate\Support\Collection;
  * The passenger reports still awaiting triage — the notification bell's only source.
  *
  * Shared deliberately by the layout's view composer (first paint) and
- * {@see \App\Http\Controllers\NotificationController} (the poll that keeps it
+ * {@see NotificationController} (the poll that keeps it
  * current). Both render from {@see payload()}, so the two can't drift: a bell whose
  * count depends on how the page was filled is worse than no bell.
  *

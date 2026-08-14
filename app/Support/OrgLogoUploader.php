@@ -24,8 +24,8 @@ class OrgLogoUploader
 {
     /**
      * @throws RuntimeException with a user-safe message on any failure; the
-     *         caller should catch it and redirect back with the message so the
-     *         admin's other edits aren't lost.
+     *                          caller should catch it and redirect back with the message so the
+     *                          admin's other edits aren't lost.
      */
     public function upload(string $organizationId, UploadedFile $file, string $sessionToken): string
     {

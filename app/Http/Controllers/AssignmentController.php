@@ -11,7 +11,6 @@ use App\Models\Vehicle;
 use App\Support\AdminContext;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 

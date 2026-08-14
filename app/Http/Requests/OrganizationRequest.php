@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Organization;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -27,7 +28,7 @@ class OrganizationRequest extends FormRequest
         $rules = [
             'name' => ['required', 'string', 'min:2', 'max:120'],
             'legal_name' => ['nullable', 'string', 'max:200'],
-            'status' => ['required', Rule::in(array_keys(\App\Models\Organization::STATUSES))],
+            'status' => ['required', Rule::in(array_keys(Organization::STATUSES))],
             'logo_url' => ['nullable', 'url', 'max:500'],
             'primary_color' => $hex,
             'secondary_color' => $hex,

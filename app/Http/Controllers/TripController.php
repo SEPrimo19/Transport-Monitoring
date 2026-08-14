@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Route;
 use App\Models\Trip;
-use App\Support\AdminContext;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;

@@ -17,7 +17,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         // One AdminContext per request; filled by AuthenticateSupabaseAdmin.
-        $this->app->scoped(AdminContext::class, fn () => new AdminContext());
+        $this->app->scoped(AdminContext::class, fn () => new AdminContext);
     }
 
     /**
