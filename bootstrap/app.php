@@ -16,6 +16,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'super.admin' => \App\Http\Middleware\RequireSuperAdmin::class,
         ]);
 
+        // Baseline security response headers on every web response (audit L-3).
+        $middleware->web(append: [
+            \App\Http\Middleware\SecurityHeaders::class,
+        ]);
+
         // AuthenticateSupabaseAdmin fills AdminContext, which the tenant
         // OrganizationScope reads. It MUST run before SubstituteBindings, or
         // route-model binding for {vehicle} etc. resolves with an empty context —

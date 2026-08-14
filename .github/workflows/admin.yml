@@ -1,0 +1,61 @@
+name: Web Admin CI
+
+# Style, static checks, dependency advisories and the test suite.
+#
+# `composer audit` runs as its own step and is allowed to fail the build. The
+# 2026-08-14 security audit found 12 known advisories sitting in composer.lock that
+# nobody had looked for; a check that only runs when someone remembers is not a check.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: admin-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo, pdo_pgsql, gd, bcmath
+          coverage: none
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      # The app reads config from .env; CI has no real project and needs none, since
+      # nothing below opens a database connection or calls Supabase.
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Code style (Pint)
+        run: ./vendor/bin/pint --test
+
+      - name: Dependency advisories
+        run: composer audit
+
+      - name: Blade templates compile
+        run: php artisan view:cache
+
+      - name: Tests
+        run: php artisan test

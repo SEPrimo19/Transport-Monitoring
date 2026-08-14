@@ -94,7 +94,11 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
-            'sslmode' => env('DB_SSLMODE', 'prefer'),
+            // 'require', not 'prefer'. 'prefer' silently falls back to PLAINTEXT when the TLS
+            // handshake fails, which would send this connection's credentials -- the Supabase
+            // postgres role, which bypasses RLS -- and every tenant's data across the public
+            // internet unencrypted. An omitted DB_SSLMODE must fail closed, not quietly downgrade.
+            'sslmode' => env('DB_SSLMODE', 'require'),
 
             /*
              * Reuse the Postgres socket across requests instead of re-handshaking.

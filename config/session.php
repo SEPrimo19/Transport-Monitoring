@@ -47,7 +47,7 @@ return [
     |
     */
 
-    'encrypt' => env('SESSION_ENCRYPT', false),
+    'encrypt' => env('SESSION_ENCRYPT', true),
 
     /*
     |--------------------------------------------------------------------------
@@ -169,7 +169,12 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    // Secure by default in production, off locally. A hard `true` would be correct for a
+    // deployed site and would silently break `php artisan serve`, because a Secure cookie
+    // is never sent over plain HTTP -- login would fail with no error to explain it.
+    // Tying it to APP_ENV means the safe value is the default where it matters without
+    // making local development impossible.
+    'secure' => env('SESSION_SECURE_COOKIE', env('APP_ENV') === 'production'),
 
     /*
     |--------------------------------------------------------------------------

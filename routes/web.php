@@ -57,7 +57,12 @@ Route::middleware('supabase.admin')->group(function () {
 
     // Self-service for the signed-in admin (both tiers): change display name / password.
     Route::get('account', [AccountController::class, 'edit'])->name('account.edit');
-    Route::put('account', [AccountController::class, 'update'])->name('account.update');
+    // Throttled: this re-authenticates against GoTrue with a password grant, so an
+    // unmetered endpoint is a credential-verification oracle for anyone who already
+    // holds a session (audit L-9). POST /login is already throttled at 8,1.
+    Route::put('account', [AccountController::class, 'update'])
+        ->middleware('throttle:6,1')
+        ->name('account.update');
 
     // A cooperative's own profile, branding and data-retention setting. org_admin
     // edits ITS OWN org (id comes from AdminContext, never the request); a
