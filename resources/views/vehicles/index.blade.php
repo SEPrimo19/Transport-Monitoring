@@ -21,7 +21,7 @@
                 <thead class="table-light">
                     <tr>
                         <th>Plate</th>
-                        <th>Fleet code</th>
+                        <th>Body number</th>
                         <th class="text-end">Capacity</th>
                         <th>Status</th>
                         @if ($ctx->isSuperAdmin())

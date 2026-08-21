@@ -9,6 +9,11 @@ use Illuminate\Validation\Rule;
 
 /**
  * Validation for creating/updating a vehicle. Rules mirror the Postgres CHECK
+ * The `fleet_code` COLUMN is shown to operators as "Body number", the term Philippine
+ * transport actually uses for the number painted on the vehicle. The column keeps its
+ * original name: renaming it would mean a migration against the live shared database
+ * plus matching changes in the Android app's DTO, for no behavioural gain.
+ *
  * constraints (plate 4–32, fleet_code 2–40, capacity > 0) and the GLOBAL unique
  * constraints on plate_number / fleet_code (migration 009 did NOT scope them
  * per-org, so uniqueness is checked table-wide — matching the DB).
@@ -63,7 +68,7 @@ class VehicleRequest extends FormRequest
     {
         return [
             'plate_number' => 'plate number',
-            'fleet_code' => 'fleet code',
+            'fleet_code' => 'body number',
             'capacity_total' => 'capacity',
             'organization_id' => 'organization',
         ];

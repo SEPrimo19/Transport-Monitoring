@@ -10,13 +10,13 @@
 </div>
 
 <div class="mb-3">
-    <label for="fleet_code" class="form-label">Fleet code</label>
+    <label for="fleet_code" class="form-label">Body number</label>
     <input type="text" name="fleet_code" id="fleet_code"
            value="{{ old('fleet_code', $vehicle->fleet_code) }}"
            class="form-control @error('fleet_code') is-invalid @enderror"
            minlength="2" maxlength="40">
     @error('fleet_code') <div class="invalid-feedback">{{ $message }}</div> @enderror
-    <div class="form-text">Optional internal code. 2–40 characters if set.</div>
+    <div class="form-text">The number painted on the vehicle body. Optional, 2–40 characters if set.</div>
 </div>
 
 <div class="mb-3">
