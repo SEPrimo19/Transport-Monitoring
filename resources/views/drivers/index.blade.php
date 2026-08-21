@@ -21,7 +21,7 @@
                 <thead class="table-light">
                     <tr>
                         <th>Name</th>
-                        <th>Email</th>
+                        <th>Signs in with</th>
                         <th>Employee code</th>
                         <th>License no.</th>
                         <th>Phone</th>
@@ -36,7 +36,19 @@
                     @forelse ($drivers as $driver)
                         <tr>
                             <td class="fw-semibold">{{ $driver->profile?->full_name ?? '—' }}</td>
-                            <td>{{ $emails[$driver->profile_id] ?? '—' }}</td>
+                            {{-- An admin-created login's address is a synthetic one we derive from the
+                                 username; showing it here is an implementation detail the operator can do
+                                 nothing with. Show what they actually tell the driver to type. A promoted
+                                 driver's address IS their real email, so that still shows. --}}
+                            @php $rowEmail = $emails[$driver->profile_id] ?? null; @endphp
+                            <td>
+                                @if (\App\Support\DriverAccountEmail::isUsernameLogin($rowEmail))
+                                    <span class="fw-semibold">{{ $driver->employee_code }}</span>
+                                    <span class="badge text-bg-light border ms-1">username</span>
+                                @else
+                                    {{ $rowEmail ?? '—' }}
+                                @endif
+                            </td>
                             <td>{{ $driver->employee_code }}</td>
                             <td>{{ $driver->license_number }}</td>
                             <td>{{ $driver->phone ?? '—' }}</td>
@@ -49,9 +61,18 @@
                                    class="btn btn-sm btn-outline-secondary" title="Edit">
                                     <i class="bi bi-pencil"></i>
                                 </a>
+                                <a href="{{ route('drivers.edit', $driver) }}#reset-password"
+                                   class="btn btn-sm btn-outline-secondary" title="Reset password">
+                                    <i class="bi bi-key"></i>
+                                </a>
+                                @php
+                                    $removeConfirm = \App\Support\DriverAccountEmail::isUsernameLogin($emails[$driver->profile_id] ?? null)
+                                        ? "Remove {$driver->profile?->full_name} from the fleet? Their sign-in will be deleted and the username released — this can't be undone."
+                                        : "Remove {$driver->profile?->full_name} from the fleet? They will revert to a passenger account.";
+                                @endphp
                                 <form method="POST" action="{{ route('drivers.destroy', $driver) }}"
                                       class="d-inline"
-                                      data-confirm="Remove {{ $driver->profile?->full_name }} from the fleet? They will revert to a passenger account." data-confirm-action="Remove">
+                                      data-confirm="{{ $removeConfirm }}" data-confirm-action="Remove">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove from fleet">

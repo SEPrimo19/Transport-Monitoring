@@ -43,7 +43,10 @@ class StoreDriverRequest extends FormRequest
         $this->merge([
             'email' => is_string($this->email) ? trim(strtolower($this->email)) : $this->email,
             'full_name' => is_string($this->full_name) ? trim($this->full_name) : $this->full_name,
-            'employee_code' => is_string($this->employee_code) ? trim($this->employee_code) : $this->employee_code,
+            // Lowercased like CreateDriverLoginRequest does — otherwise "JSantos" (promoted
+            // here) and "jsantos" (created as a login) can coexist as visually-duplicate
+            // usernames in the same roster.
+            'employee_code' => is_string($this->employee_code) ? strtolower(trim($this->employee_code)) : $this->employee_code,
             'license_number' => is_string($this->license_number) ? trim($this->license_number) : $this->license_number,
             'phone' => $this->filled('phone') && is_string($this->phone) ? trim($this->phone) : null,
         ]);
