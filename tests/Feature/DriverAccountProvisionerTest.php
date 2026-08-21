@@ -88,4 +88,50 @@ class DriverAccountProvisionerTest extends TestCase
         $this->assertTrue($result->unreachable);
         $this->assertStringContainsString('Check the driver list before trying again', $result->message);
     }
+
+    /**
+     * Regression coverage added alongside the org-admin sibling: DriverAccountProvisioner
+     * was refactored onto the shared SupabaseAccountCall trait for this feature. Only the
+     * unreachable/409 paths were pinned before; the SUCCESS shape for reset_password was
+     * never asserted at all (before or after the refactor), so this closes that gap rather
+     * than trusting "the suite is still green" alone.
+     */
+    public function test_reset_password_sends_the_reset_password_action_on_success(): void
+    {
+        Http::fake([
+            '*/functions/v1/driver-account' => Http::response(['ok' => true], 200),
+        ]);
+
+        $result = app(DriverAccountProvisioner::class)->resetPassword('test-session-token', 'profile-1', 'a-strong-password');
+
+        $this->assertTrue($result->success);
+
+        Http::assertSent(function ($request) {
+            $body = $request->data();
+
+            return ($body['action'] ?? null) === 'reset_password'
+                && ($body['profile_id'] ?? null) === 'profile-1'
+                && ($body['password'] ?? null) === 'a-strong-password';
+        });
+    }
+
+    /** Sibling of the reset_password success test above, for delete_account. */
+    public function test_delete_account_sends_the_delete_account_action_on_success(): void
+    {
+        Http::fake([
+            '*/functions/v1/driver-account' => Http::response(['ok' => true, 'deleted' => true], 200),
+        ]);
+
+        $result = app(DriverAccountProvisioner::class)->deleteAccount('test-session-token', 'profile-1');
+
+        $this->assertTrue($result->success);
+        $this->assertTrue($result->accountDeleted);
+
+        Http::assertSent(function ($request) {
+            $body = $request->data();
+
+            return ($body['action'] ?? null) === 'delete_account'
+                && ($body['profile_id'] ?? null) === 'profile-1';
+        });
+    }
 }

@@ -85,6 +85,12 @@ class RouteTenantGateCoverageTest extends TestCase
             ['organizations.update'], ['organizations.edit'],
             ['onboarding.create'], ['onboarding.store'],
             ['org-admins.index'], ['org-admins.store'], ['org-admins.create'], ['org-admins.destroy'],
+            // Sub-resource routes declared apart from the org-admins resource, mirroring
+            // drivers.login.store / drivers.reset-password above — the review flagged
+            // these by name as the likeliest place to miss the gate (create_org_admin /
+            // reset_org_admin_password are SUPER_ADMIN ONLY, unlike the driver
+            // equivalents, which both tiers may reach).
+            ['org-admins.login.store'], ['org-admins.reset-password'],
         ];
     }
 

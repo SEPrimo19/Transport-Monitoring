@@ -56,6 +56,19 @@ class TenantGatePrecedesRouteBindingTest extends TestCase
         $this->assertGateBeforeBinding('org-admins.destroy', 'App\Http\Middleware\RequireSuperAdmin');
     }
 
+    /**
+     * org-admins.reset-password is a bound sub-resource route ({profile}) declared
+     * apart from Route::resource('org-admins', ...), added alongside
+     * create_org_admin/reset_org_admin_password. The same hole this file exists to
+     * pin — a foreign/irrelevant row resolved before the tier gate refuses the
+     * request — applies here too: without this, an org_admin's crafted request could
+     * cause {profile} to be SELECTed before RequireSuperAdmin ever runs.
+     */
+    public function test_super_admin_gate_runs_before_route_model_binding_for_org_admin_password_reset(): void
+    {
+        $this->assertGateBeforeBinding('org-admins.reset-password', 'App\Http\Middleware\RequireSuperAdmin');
+    }
+
     private function assertGateBeforeBinding(string $routeName, string $gate): void
     {
         $route = Route::getRoutes()->getByName($routeName);
