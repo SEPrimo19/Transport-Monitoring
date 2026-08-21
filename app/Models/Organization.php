@@ -39,6 +39,7 @@ class Organization extends Model
         // start the trip.
         'timezone',
         'departure_grace_minutes',
+        'enforce_departure_window',
     ];
 
     protected $casts = [
@@ -46,6 +47,7 @@ class Organization extends Model
         'region_center_lat' => 'float',
         'region_center_lng' => 'float',
         'location_retention_days' => 'integer',
+        'enforce_departure_window' => 'boolean',
     ];
 
     /** Matches the organizations_status_chk CHECK constraint. */

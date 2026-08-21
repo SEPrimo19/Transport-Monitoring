@@ -216,11 +216,28 @@
                         @error('departure_grace_minutes') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-5 mb-3">
+                        <div class="form-check form-switch mt-4">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                   name="enforce_departure_window" id="enforce_departure_window" value="1"
+                                   {{ old('enforce_departure_window', $organization->enforce_departure_window ?? false) ? 'checked' : '' }}>
+                            <label class="form-check-label" for="enforce_departure_window">
+                                <strong>Enforce departure times</strong>
+                            </label>
+                        </div>
+                        <div class="form-text">
+                            Off: drivers are told when they are outside the published window but can
+                            still depart. On: the trip is refused. Leave this off unless you need it.
+                            A blocked departure means a vehicle your passengers cannot see on the map.
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 mb-3">
                         <div class="alert alert-light border small mb-0">
                             <i class="bi bi-signpost-split me-1"></i>
                             Schedule times are <strong>local clock times</strong> in this timezone.
-                            Drivers may start a trip within the grace period either side of a
-                            published departure — set it to how early or late your buses
+                            The grace period is how far either side of a published departure still
+                            counts as on time. Set it to how early or late your buses
                             realistically leave.
                             <strong>Routes with no schedule are not restricted.</strong>
                         </div>

@@ -46,6 +46,9 @@ class OrgProfileRequest extends FormRequest
             // cannot query pg_timezone_names immutably.
             'timezone' => ['required', 'timezone'],
             'departure_grace_minutes' => ['required', 'integer', 'between:0,240'],
+            // Unchecked checkboxes are simply absent from the payload, so this must be
+            // nullable and normalised in prepareForValidation() rather than 'required'.
+            'enforce_departure_window' => ['nullable', 'boolean'],
             // Optional logo upload → org-logos bucket. `image` rejects SVG (not a
             // raster type), closing the SVG-script XSS vector; 1 MB cap matches
             // the bucket's file_size_limit.
@@ -74,6 +77,10 @@ class OrgProfileRequest extends FormRequest
             'departure_grace_minutes' => $this->filled('departure_grace_minutes')
                 ? $this->departure_grace_minutes
                 : 20,
+            // Absent means the admin cleared the box. Defaulting to false here is what
+            // makes "off" the safe resting state: a blocked departure is a vehicle
+            // passengers cannot see, which is worse than a trip recorded off schedule.
+            'enforce_departure_window' => $this->boolean('enforce_departure_window'),
         ]);
     }
 
@@ -86,6 +93,7 @@ class OrgProfileRequest extends FormRequest
             'logo_url' => 'logo URL',
             'location_retention_days' => 'retention period',
             'departure_grace_minutes' => 'departure grace period',
+            'enforce_departure_window' => 'departure time enforcement',
         ];
     }
 
