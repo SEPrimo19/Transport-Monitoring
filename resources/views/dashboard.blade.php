@@ -17,9 +17,13 @@
         </p>
     </div>
 
-    {{-- Actionable status band --}}
+    {{-- Actionable status band. Both counts are platform health and fine for either
+         tier, but Live Ops and Reports are tenant data behind the tenant.admin gate —
+         a super_admin's link here would always 403. So the count stays for both
+         tiers; only org_admin gets the link and the call-to-action wording. --}}
     <div class="row g-3 mb-1">
         <div class="col-12 col-md-6">
+            @if ($ctx->isOrgAdmin())
             <a href="{{ route('operations.index') }}" class="text-decoration-none text-reset">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body d-flex align-items-center">
@@ -34,8 +38,22 @@
                     </div>
                 </div>
             </a>
+            @else
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                    <span class="stat-icon stat-icon--brand me-3">
+                        <i class="bi bi-broadcast fs-4"></i>
+                    </span>
+                    <div>
+                        <div class="h3 mb-0 fw-semibold">{{ number_format($liveNow) }}</div>
+                        <div class="text-muted small">{{ Str::plural('vehicle', $liveNow) }} transmitting now</div>
+                    </div>
+                </div>
+            </div>
+            @endif
         </div>
         <div class="col-12 col-md-6">
+            @if ($ctx->isOrgAdmin())
             <a href="{{ route('reports.index', ['status' => 'submitted']) }}" class="text-decoration-none text-reset">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body d-flex align-items-center">
@@ -50,6 +68,19 @@
                     </div>
                 </div>
             </a>
+            @else
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                    <span class="stat-icon {{ $reportsPending > 0 ? 'stat-icon--warning' : 'stat-icon--muted' }} me-3">
+                        <i class="bi bi-flag fs-4"></i>
+                    </span>
+                    <div>
+                        <div class="h3 mb-0 fw-semibold">{{ number_format($reportsPending) }}</div>
+                        <div class="text-muted small">{{ Str::plural('report', $reportsPending) }} awaiting review</div>
+                    </div>
+                </div>
+            </div>
+            @endif
         </div>
     </div>
 
@@ -57,6 +88,10 @@
     <div class="row g-3 mt-0 mb-3">
         @foreach ($tiles as $t)
             <div class="col-6 col-md-4 col-xl-3">
+                {{-- The count is platform health for either tier; the href (and thus the
+                     click-through) is tenant data behind tenant.admin, so it is only
+                     present at all for org_admin — see DashboardController::index(). --}}
+                @if (! empty($t['href']))
                 <a href="{{ $t['href'] }}" class="text-decoration-none text-reset">
                     <div class="card border-0 shadow-sm h-100">
                         <div class="card-body">
@@ -73,12 +108,30 @@
                         </div>
                     </div>
                 </a>
+                @else
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="text-muted small text-uppercase">{{ $t['label'] }}</div>
+                                <div class="display-6 fw-semibold">{{ number_format($t['value']) }}</div>
+                            </div>
+                            <span class="stat-icon stat-icon--muted stat-icon--sm">
+                                <i class="bi bi-{{ $t['icon'] }} fs-5"></i>
+                            </span>
+                        </div>
+                        <div class="small text-muted mt-1">{{ $t['sub'] }}</div>
+                    </div>
+                </div>
+                @endif
             </div>
         @endforeach
     </div>
 
     <div class="row g-3">
-        {{-- Recent reports --}}
+        {{-- Recent reports. Tenant data, so a platform admin does not see this card at
+             all: the controller sends an empty collection and the link would 403 anyway. --}}
+        @if ($ctx->isOrgAdmin())
         <div class="col-12 col-lg-7">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body pb-0 d-flex justify-content-between align-items-center">
@@ -112,6 +165,7 @@
                 </div>
             </div>
         </div>
+        @endif
 
         {{-- Fleet status --}}
         <div class="col-12 col-lg-5">
@@ -139,7 +193,10 @@
                             </div>
                         @endforeach
                     </div>
+                    {{-- Tenant data behind tenant.admin — same reasoning as the KPI tiles above. --}}
+                    @if ($ctx->isOrgAdmin())
                     <a href="{{ route('vehicles.index') }}" class="small d-inline-block mt-3">Manage vehicles</a>
+                    @endif
                 </div>
             </div>
         </div>

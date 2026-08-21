@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AuthenticateSupabaseAdmin;
 use App\Http\Middleware\RequireSuperAdmin;
+use App\Http\Middleware\RequireTenantAdmin;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -18,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'supabase.admin' => AuthenticateSupabaseAdmin::class,
             'super.admin' => RequireSuperAdmin::class,
+            'tenant.admin' => RequireTenantAdmin::class,
         ]);
 
         // Baseline security response headers on every web response (audit L-3).
@@ -32,6 +34,21 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prependToPriorityList(
             SubstituteBindings::class,
             AuthenticateSupabaseAdmin::class,
+        );
+
+        // RequireTenantAdmin/RequireSuperAdmin MUST also run before SubstituteBindings.
+        // Otherwise a bound route like reports.show resolves {report} first: for a
+        // super_admin, OrganizationScope applies no filter (by design, mirroring
+        // migration 016), so a foreign cooperative's row is SELECTed and hydrated
+        // before the gate ever runs — only to be refused after the read already
+        // happened. The tier gate must precede the model lookup it is meant to guard.
+        $middleware->prependToPriorityList(
+            SubstituteBindings::class,
+            RequireTenantAdmin::class,
+        );
+        $middleware->prependToPriorityList(
+            SubstituteBindings::class,
+            RequireSuperAdmin::class,
         );
     })
     ->withExceptions(function (Exceptions $exceptions) {

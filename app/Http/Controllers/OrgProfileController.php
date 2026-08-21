@@ -30,6 +30,9 @@ class OrgProfileController extends Controller
 {
     public function edit(AdminContext $ctx): View|RedirectResponse
     {
+        // Defence-in-depth, not reachable in practice: this route sits behind
+        // tenant.admin, which refuses a super_admin outright and refuses an org_admin
+        // with no organizationId before the request ever reaches here.
         if ($ctx->organizationId === null) {
             return redirect()->route('organizations.index')
                 ->with('status', 'Pick a cooperative to edit from the Organizations list.');
@@ -42,6 +45,7 @@ class OrgProfileController extends Controller
 
     public function update(OrgProfileRequest $request, AdminContext $ctx, OrgLogoUploader $logos): RedirectResponse
     {
+        // Defence-in-depth, not reachable in practice — see edit() above.
         if ($ctx->organizationId === null) {
             return redirect()->route('organizations.index');
         }

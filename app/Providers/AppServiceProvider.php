@@ -77,8 +77,14 @@ class AppServiceProvider extends ServiceProvider
             // so the bell stays current without a page refresh. Both paths must keep
             // sharing that class or the two can drift apart.
             //
-            // Guarded on isAdmin() so this never queries for an unauthenticated render.
-            $view->with('notifications', $ctx->isAdmin()
+            // Guarded on isOrgAdmin(), NOT isAdmin(). PendingReportFeed::fetch() relies on
+            // OrganizationScope to narrow it to one tenant; for a super_admin that scope
+            // applies no filter at all, so isAdmin() (true for both tiers) would run a
+            // needless cross-org reports query on every page a platform admin loads, and
+            // leave every cooperative's report ids/categories/plates/route names sitting in
+            // a shared view variable one Blade edit away from being rendered. A super_admin
+            // gets the empty feed instead — don't widen this back for symmetry.
+            $view->with('notifications', $ctx->isOrgAdmin()
                 ? $this->app->make(PendingReportFeed::class)->payload()
                 : ['count' => 0, 'items' => []]);
         });

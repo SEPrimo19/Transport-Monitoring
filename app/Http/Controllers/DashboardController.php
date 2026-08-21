@@ -30,12 +30,17 @@ class DashboardController extends Controller
         $vehicleStatus = collect(Vehicle::STATUSES)
             ->mapWithKeys(fn (string $status) => [$status => (int) $m->{'vehicles_'.$status}]);
 
+        // The count is legitimate platform health for either tier (see the class
+        // docblock), but the href is a call to action into tenant data — every one of
+        // these routes is behind tenant.admin, which always refuses a super_admin. So
+        // the href is omitted for that tier rather than pointing at a guaranteed 403;
+        // the Blade view renders the tile as plain (unlinked) when 'href' is absent.
         $tiles = [
-            ['label' => 'Vehicles', 'value' => (int) $m->vehicles, 'sub' => $vehicleStatus['active'].' active', 'icon' => 'bus-front', 'href' => route('vehicles.index')],
-            ['label' => 'Drivers', 'value' => (int) $m->drivers, 'sub' => 'in your fleet', 'icon' => 'person-badge', 'href' => route('drivers.index')],
-            ['label' => 'Terminals', 'value' => (int) $m->terminals, 'sub' => 'stops', 'icon' => 'pin-map', 'href' => route('terminals.index')],
-            ['label' => 'Routes', 'value' => (int) $m->routes, 'sub' => (int) $m->routes_active.' active', 'icon' => 'signpost-2', 'href' => route('routes.index')],
-            ['label' => 'Active assignments', 'value' => (int) $m->assignments_active, 'sub' => 'driver · vehicle · route', 'icon' => 'clipboard-check', 'href' => route('assignments.index')],
+            ['label' => 'Vehicles', 'value' => (int) $m->vehicles, 'sub' => $vehicleStatus['active'].' active', 'icon' => 'bus-front', 'href' => $ctx->isOrgAdmin() ? route('vehicles.index') : null],
+            ['label' => 'Drivers', 'value' => (int) $m->drivers, 'sub' => 'in your fleet', 'icon' => 'person-badge', 'href' => $ctx->isOrgAdmin() ? route('drivers.index') : null],
+            ['label' => 'Terminals', 'value' => (int) $m->terminals, 'sub' => 'stops', 'icon' => 'pin-map', 'href' => $ctx->isOrgAdmin() ? route('terminals.index') : null],
+            ['label' => 'Routes', 'value' => (int) $m->routes, 'sub' => (int) $m->routes_active.' active', 'icon' => 'signpost-2', 'href' => $ctx->isOrgAdmin() ? route('routes.index') : null],
+            ['label' => 'Active assignments', 'value' => (int) $m->assignments_active, 'sub' => 'driver · vehicle · route', 'icon' => 'clipboard-check', 'href' => $ctx->isOrgAdmin() ? route('assignments.index') : null],
         ];
 
         if ($ctx->isSuperAdmin()) {
@@ -48,7 +53,10 @@ class DashboardController extends Controller
             'liveNow' => (int) $m->live_now,
             'reportsPending' => (int) $m->reports_pending,
             'vehicleStatus' => $vehicleStatus,
-            'recentReports' => $this->recentReports(),
+            // Aggregate counts are platform health and are fine for either tier. The
+            // recent-report LIST is not: it carries a passenger's words about a named
+            // driver, and a platform admin has no business reading it. Empty for them.
+            'recentReports' => $ctx->isSuperAdmin() ? collect() : $this->recentReports(),
         ]);
     }
 

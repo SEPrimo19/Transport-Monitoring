@@ -279,11 +279,13 @@
                         <i class="bi bi-speedometer2 me-2"></i>Dashboard
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link @yield('nav_operations')" href="{{ route('operations.index') }}">
-                        <i class="bi bi-broadcast me-2"></i>Live Ops
-                    </a>
-                </li>
+                @if ($ctx->isOrgAdmin())
+                    <li class="nav-item">
+                        <a class="nav-link @yield('nav_operations')" href="{{ route('operations.index') }}">
+                            <i class="bi bi-broadcast me-2"></i>Live Ops
+                        </a>
+                    </li>
+                @endif
                 @if ($ctx->isSuperAdmin())
                     <li class="nav-section-label">Platform</li>
                     <li class="nav-item">
@@ -302,6 +304,10 @@
                         </a>
                     </li>
                 @endif
+                {{-- Tenant data. Hidden from a platform admin, and refused by the
+                     tenant.admin middleware on the routes themselves, so a stale
+                     bookmark does not become a back door. --}}
+                @if ($ctx->isOrgAdmin())
                 <li class="nav-section-label">Fleet</li>
                 <li class="nav-item">
                     <a class="nav-link @yield('nav_vehicles')" href="{{ route('vehicles.index') }}">
@@ -345,7 +351,6 @@
                         <i class="bi bi-flag me-2"></i>Reports
                     </a>
                 </li>
-                @if ($ctx->isOrgAdmin())
                     <li class="nav-section-label">Settings</li>
                     <li class="nav-item">
                         <a class="nav-link @yield('nav_organization')" href="{{ route('organization.edit') }}">
@@ -372,6 +377,7 @@
                      DOM building read the same shape (App\Support\PendingReportFeed);
                      change one and you must change the other. --}}
                 @php $notifCount = $notifications['count'] ?? 0; @endphp
+                @if ($ctx->isOrgAdmin())
                 <div class="dropdown" id="notif-bell" data-endpoint="{{ route('notifications.pending') }}">
                     <button class="btn btn-light border position-relative d-inline-flex align-items-center"
                             type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"
@@ -427,6 +433,7 @@
                         </a>
                     </div>
                 </div>
+                @endif
 
                 <div class="dropdown">
                     <button class="btn btn-light border dropdown-toggle d-inline-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">

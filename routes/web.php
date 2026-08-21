@@ -36,24 +36,47 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // The middleware verifies the session/bearer token and fills AdminContext.
 Route::middleware('supabase.admin')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/operations', [OperationsController::class, 'index'])->name('operations.index');
-    Route::get('/operations/data', [OperationsController::class, 'data'])->name('operations.data');
-    Route::resource('vehicles', VehicleController::class)->except(['show']);
-    Route::resource('drivers', DriverController::class)->except(['show']);
-    Route::resource('terminals', TerminalController::class)->except(['show']);
-    Route::resource('routes', RouteController::class)->except(['show']);
-    // Polyline map editor for a route (org-scoped via the {route} binding).
-    Route::get('routes/{route}/geometry', [RouteGeometryController::class, 'edit'])->name('routes.geometry.edit');
-    Route::put('routes/{route}/geometry', [RouteGeometryController::class, 'update'])->name('routes.geometry.update');
-    Route::delete('routes/{route}/geometry', [RouteGeometryController::class, 'destroy'])->name('routes.geometry.destroy');
-    Route::resource('schedules', TripScheduleController::class)->except(['show']);
-    Route::resource('assignments', AssignmentController::class)->except(['show']);
-    Route::resource('trips', TripController::class)->only(['index', 'show']);
-    Route::resource('reports', ReportController::class)->only(['index', 'show', 'update']);
 
-    // Polled by the header bell so a new passenger report shows up without a refresh.
-    Route::get('notifications/pending', [NotificationController::class, 'pending'])
-        ->name('notifications.pending');
+    // ── Tenant data: org_admin ONLY, super_admin deliberately excluded ──────────
+    // A platform admin manages cooperatives, not what happens inside them. Passenger
+    // reports name drivers and carry photo or video evidence; driver records hold licence
+    // and phone numbers; trips are location history about identifiable people. None of
+    // that was collected so a platform operator could read it.
+    //
+    // The gate is on the ROUTES, not just the sidebar. Hiding a link while the URL still
+    // answers is decoration, not access control.
+    Route::middleware('tenant.admin')->group(function () {
+        Route::get('/operations', [OperationsController::class, 'index'])->name('operations.index');
+        Route::get('/operations/data', [OperationsController::class, 'data'])->name('operations.data');
+        Route::resource('vehicles', VehicleController::class)->except(['show']);
+        Route::resource('drivers', DriverController::class)->except(['show']);
+        // Create a driver login outright (no self-registration) and reset a
+        // driver's password — both proxy the driver-account Supabase Edge
+        // Function. Kept off the drivers resource's own verbs/URIs. Throttled like
+        // account.update below: each is a privileged write against GoTrue, and
+        // unmetered would let a session holder hammer the Edge Function.
+        Route::post('drivers/login', [DriverController::class, 'storeLogin'])
+            ->middleware('throttle:6,1')
+            ->name('drivers.login.store');
+        Route::put('drivers/{driver}/reset-password', [DriverController::class, 'resetPassword'])
+            ->middleware('throttle:6,1')
+            ->name('drivers.reset-password');
+        Route::resource('terminals', TerminalController::class)->except(['show']);
+        Route::resource('routes', RouteController::class)->except(['show']);
+        // Polyline map editor for a route (org-scoped via the {route} binding).
+        Route::get('routes/{route}/geometry', [RouteGeometryController::class, 'edit'])->name('routes.geometry.edit');
+        Route::put('routes/{route}/geometry', [RouteGeometryController::class, 'update'])->name('routes.geometry.update');
+        Route::delete('routes/{route}/geometry', [RouteGeometryController::class, 'destroy'])->name('routes.geometry.destroy');
+        Route::resource('schedules', TripScheduleController::class)->except(['show']);
+        Route::resource('assignments', AssignmentController::class)->except(['show']);
+        Route::resource('trips', TripController::class)->only(['index', 'show']);
+        Route::resource('reports', ReportController::class)->only(['index', 'show', 'update']);
+
+        // Polled by the header bell so a new passenger report shows up without a refresh.
+        // Inside the tenant gate: the count itself is about one cooperative's reports.
+        Route::get('notifications/pending', [NotificationController::class, 'pending'])
+            ->name('notifications.pending');
+    }); // end tenant.admin
 
     // Self-service for the signed-in admin (both tiers): change display name / password.
     Route::get('account', [AccountController::class, 'edit'])->name('account.edit');
@@ -67,8 +90,10 @@ Route::middleware('supabase.admin')->group(function () {
     // A cooperative's own profile, branding and data-retention setting. org_admin
     // edits ITS OWN org (id comes from AdminContext, never the request); a
     // super_admin manages every org through the Organizations screens instead.
-    Route::get('organization', [OrgProfileController::class, 'edit'])->name('organization.edit');
-    Route::put('organization', [OrgProfileController::class, 'update'])->name('organization.update');
+    Route::middleware('tenant.admin')->group(function () {
+        Route::get('organization', [OrgProfileController::class, 'edit'])->name('organization.edit');
+        Route::put('organization', [OrgProfileController::class, 'update'])->name('organization.update');
+    });
 
     // Platform tier — super_admin ONLY. Tenants are never deleted (suspend instead).
     Route::middleware('super.admin')->group(function () {
