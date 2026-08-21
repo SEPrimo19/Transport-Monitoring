@@ -36,9 +36,10 @@ class UpdateDriverRequest extends FormRequest
             'string',
             'min:2',
             'max:40',
-            // Mirrors CreateDriverLoginRequest's charset (see its docblock) and the
-            // `driver-account` Edge Function's — kept in lockstep because this value
-            // doubles as an email local-part for admin-created logins.
+            // Mirrors CreateDriverLoginRequest's charset (see its docblock), the
+            // `driver-account` Edge Function's EMPLOYEE_CODE_PATTERN, and
+            // CreateOrgAdminLoginRequest's `username` rule — kept in lockstep because
+            // this value doubles as an email local-part for admin-created logins.
             'regex:/^[a-z0-9]([a-z0-9._-]*[a-z0-9])?$/',
             'regex:/^(?!.*\.\.).*$/', // no consecutive dots — not a valid dot-atom
             Rule::unique('drivers', 'employee_code')->ignore($id, 'profile_id'),

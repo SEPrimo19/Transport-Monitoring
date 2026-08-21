@@ -40,8 +40,9 @@ class CreateDriverLoginRequest extends FormRequest
                 'max:40',
                 // Must survive being placed in an email local-part: no leading/trailing
                 // dot and no "..", neither of which is a valid dot-atom. Mirrored in the
-                // `driver-account` Edge Function (index.ts) and in UpdateDriverRequest —
-                // keep all three in lockstep.
+                // `driver-account` Edge Function (index.ts, EMPLOYEE_CODE_PATTERN — also
+                // reused there for the org-admin `username` field) and in
+                // UpdateDriverRequest and CreateOrgAdminLoginRequest — keep all in lockstep.
                 'regex:/^[a-z0-9]([a-z0-9._-]*[a-z0-9])?$/',
                 'regex:/^(?!.*\.\.).*$/',
                 Rule::unique('drivers', 'employee_code'),

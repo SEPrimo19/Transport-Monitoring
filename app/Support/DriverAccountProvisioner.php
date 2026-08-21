@@ -3,8 +3,6 @@
 namespace App\Support;
 
 use App\Http\Controllers\AccountController;
-use Illuminate\Http\Client\Response;
-use Illuminate\Support\Facades\Http;
 
 /**
  * Calls the `driver-account` Supabase Edge Function
@@ -19,22 +17,29 @@ use Illuminate\Support\Facades\Http;
  * {@see OrgLogoUploader}) — the Edge Function itself re-derives the caller's
  * identity and role from that token before doing anything privileged.
  *
+ * The actual HTTP request/response handling is {@see SupabaseAccountCall},
+ * shared with the org-admin sibling {@see OrgAdminAccountProvisioner} so that
+ * plumbing exists in exactly one place.
+ *
  * Never returns the raw HTTP/JSON response to a caller — see
  * {@see DriverAccountResult}.
  */
 class DriverAccountProvisioner
 {
+    use SupabaseAccountCall;
+
     /**
      * @param  array{organization_id: ?string, full_name: string, employee_code: string, license_number: string, password: string}  $payload
      */
     public function create(string $sessionToken, array $payload): DriverAccountResult
     {
-        $response = $this->call($sessionToken, ['action' => 'create', ...$payload]);
+        $response = $this->callAccountFunction($sessionToken, ['action' => 'create', ...$payload]);
         if ($response === null) {
-            // The 20s timeout in call() means the likeliest cause on a provincial link
-            // is the Edge Function having SUCCEEDED and the response being lost — not a
-            // rejection. Telling the admin to just "try again" invites a second driver
-            // row for the same person with a login nobody knows the password to.
+            // The 20s timeout in callAccountFunction() means the likeliest cause on a
+            // provincial link is the Edge Function having SUCCEEDED and the response
+            // being lost — not a rejection. Telling the admin to just "try again" invites
+            // a second driver row for the same person with a login nobody knows the
+            // password to.
             return DriverAccountResult::unreachable(
                 'The connection dropped before we could confirm. Check the driver list before '.
                 'trying again — the account may already have been created.'
@@ -42,7 +47,7 @@ class DriverAccountProvisioner
         }
 
         if (! $response->successful()) {
-            $message = $this->errorMessage($response);
+            $message = $this->accountErrorMessage($response);
             if ($response->status() === 409) {
                 // The common case (see storeLogin()'s caller-facing note): a 409 here
                 // reads as "pick a different username", but it's also exactly what a
@@ -61,7 +66,7 @@ class DriverAccountProvisioner
 
     public function resetPassword(string $sessionToken, string $profileId, string $password): DriverAccountResult
     {
-        $response = $this->call($sessionToken, [
+        $response = $this->callAccountFunction($sessionToken, [
             'action' => 'reset_password',
             'profile_id' => $profileId,
             'password' => $password,
@@ -79,7 +84,7 @@ class DriverAccountProvisioner
         }
 
         if (! $response->successful()) {
-            return DriverAccountResult::failed($this->errorMessage($response));
+            return DriverAccountResult::failed($this->accountErrorMessage($response));
         }
 
         return DriverAccountResult::ok();
@@ -92,7 +97,7 @@ class DriverAccountProvisioner
      */
     public function deleteAccount(string $sessionToken, string $profileId): DriverAccountResult
     {
-        $response = $this->call($sessionToken, [
+        $response = $this->callAccountFunction($sessionToken, [
             'action' => 'delete_account',
             'profile_id' => $profileId,
         ]);
@@ -108,37 +113,9 @@ class DriverAccountProvisioner
         }
 
         if (! $response->successful()) {
-            return DriverAccountResult::failed($this->errorMessage($response));
+            return DriverAccountResult::failed($this->accountErrorMessage($response));
         }
 
         return DriverAccountResult::ok(accountDeleted: (bool) $response->json('deleted'));
-    }
-
-    private function call(string $sessionToken, array $body): ?Response
-    {
-        $base = rtrim((string) config('supabase.url'), '/');
-        $anon = (string) config('supabase.anon_key');
-
-        if ($base === '' || $anon === '' || $sessionToken === '') {
-            return null;
-        }
-
-        try {
-            return Http::withHeaders([
-                'apikey' => $anon,
-                'Authorization' => 'Bearer '.$sessionToken,
-            ])->acceptJson()->asJson()->timeout(20)
-                ->post($base.'/functions/v1/driver-account', $body);
-        } catch (\Throwable $e) {
-            return null;
-        }
-    }
-
-    /** The Edge Function always replies with {"error": "<plain language>"} on failure. */
-    private function errorMessage(Response $response): string
-    {
-        $msg = $response->json('error');
-
-        return is_string($msg) && $msg !== '' ? $msg : 'The account service rejected the request. Please try again.';
     }
 }

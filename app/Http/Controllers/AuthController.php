@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Middleware\AuthenticateSupabaseAdmin;
+use App\Support\LoginIdentifierPolicy;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -34,17 +35,30 @@ class AuthController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
+        // 'string', not 'email': a super_admin-created org admin without a real email
+        // signs in with a bare USERNAME (see CreateOrgAdminLoginRequest), which is not
+        // itself a valid email address — the 'email' rule would reject it before it
+        // ever reached LoginIdentifierPolicy below.
         $credentials = $request->validate([
-            'email' => ['required', 'email'],
+            // max:255 restores the only length bound the 'email' rule used to provide. Without
+            // it an arbitrary string up to post_max_size is serialised and POSTed to GoTrue,
+            // unauthenticated, where egulias previously rejected it in-process.
+            'email' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string'],
         ]);
+
+        // Bare username → the synthetic admin-created address
+        // (`<username>@admins.amoectrack.invalid`). See LoginIdentifierPolicy's
+        // docblock for why this console only ever needs to resolve THAT namespace,
+        // never the mobile app's driver one, despite both existing side by side.
+        $email = LoginIdentifierPolicy::resolveAuthEmail($credentials['email']);
 
         $response = Http::withHeaders(['apikey' => (string) config('supabase.anon_key')])
             ->acceptJson()
             ->asJson()
             ->timeout(15)
             ->post(rtrim((string) config('supabase.url'), '/').'/auth/v1/token?grant_type=password', [
-                'email' => $credentials['email'],
+                'email' => $email,
                 'password' => $credentials['password'],
             ]);
 
@@ -55,7 +69,7 @@ class AuthController extends Controller
             // GoTrue returns 400 for bad creds; never leak which field was wrong.
             return back()
                 ->withInput($request->only('email'))
-                ->with('error', 'Invalid email or password.');
+                ->with('error', 'Invalid email/username or password.');
         }
 
         // Rotate the session id on privilege change (fixation defence), THEN store

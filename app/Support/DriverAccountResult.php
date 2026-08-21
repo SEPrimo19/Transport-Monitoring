@@ -3,9 +3,12 @@
 namespace App\Support;
 
 /**
- * Outcome of a {@see DriverAccountProvisioner} call. Controllers get a success
- * flag, the fields they need, and a message that is already safe to show an
- * admin — never the raw HTTP/JSON response from the Edge Function.
+ * Outcome of a {@see DriverAccountProvisioner} or {@see OrgAdminAccountProvisioner}
+ * call — both callers share this shape rather than each inventing their own.
+ * Controllers get a success flag, the fields they need, and a message that is
+ * already safe to show an admin — never the raw HTTP/JSON response from the Edge
+ * Function. `$accountDeleted` is meaningful only for the driver `delete_account`
+ * action; org-admin callers simply never read it.
  */
 final class DriverAccountResult
 {

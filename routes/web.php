@@ -109,5 +109,17 @@ Route::middleware('supabase.admin')->group(function () {
         Route::get('org-admins/create', [OrgAdminController::class, 'create'])->name('org-admins.create');
         Route::post('org-admins', [OrgAdminController::class, 'store'])->name('org-admins.store');
         Route::delete('org-admins/{profile}', [OrgAdminController::class, 'destroy'])->name('org-admins.destroy');
+        // Create an org-admin login outright (no passenger self-registration required)
+        // and reset one's password — both proxy the driver-account Supabase Edge
+        // Function's create_org_admin / reset_org_admin_password actions, mirroring
+        // drivers.login.store / drivers.reset-password above. Kept off the org-admins
+        // resource's own verbs/URIs and throttled the same way: each is a privileged
+        // write against GoTrue.
+        Route::post('org-admins/login', [OrgAdminController::class, 'storeLogin'])
+            ->middleware('throttle:6,1')
+            ->name('org-admins.login.store');
+        Route::put('org-admins/{profile}/reset-password', [OrgAdminController::class, 'resetPassword'])
+            ->middleware('throttle:6,1')
+            ->name('org-admins.reset-password');
     });
 });

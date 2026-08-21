@@ -421,12 +421,17 @@
                 <form method="POST" action="{{ route('login.attempt') }}" novalidate id="login-form">
                     @csrf
                     <div class="mb-3">
-                        <label for="email" class="form-label fw-medium">Email</label>
+                        <label for="email" class="form-label fw-medium">Email or username</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-envelope" aria-hidden="true"></i></span>
-                            <input type="email" name="email" id="email" value="{{ old('email') }}"
+                            {{-- type="text", not "email": an admin-created org admin without a
+                                 real email signs in with a bare username (see
+                                 CreateOrgAdminLoginRequest / LoginIdentifierPolicy), which the
+                                 browser's own email-format check would otherwise block before
+                                 the form ever submits. --}}
+                            <input type="text" name="email" id="email" value="{{ old('email') }}"
                                    class="form-control border-start-0 ps-0 @error('email') is-invalid @enderror"
-                                   placeholder="you@example.com"
+                                   placeholder="you@example.com or username"
                                    autofocus required autocomplete="username"
                                    @error('email') aria-describedby="email-error" @enderror>
                         </div>

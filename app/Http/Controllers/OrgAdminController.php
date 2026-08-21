@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Middleware\AuthenticateSupabaseAdmin;
+use App\Http\Requests\CreateOrgAdminLoginRequest;
+use App\Http\Requests\ResetOrgAdminPasswordRequest;
 use App\Http\Requests\StoreOrgAdminRequest;
 use App\Models\Organization;
 use App\Models\Profile;
@@ -12,13 +14,22 @@ use Illuminate\View\View;
 
 /**
  * Platform-tier management of org_admins — SUPER_ADMIN ONLY (super.admin middleware
- * on the route group). A super_admin promotes an existing PASSENGER account (by
- * exact email) to org_admin of a chosen organization, and can demote one back to a
- * passenger. This is the multi-tenant onboarding step: hand a tenant to its admin.
+ * on the route group). This is the multi-tenant onboarding step: hand a tenant to
+ * its administrator, in one of two ways.
  *
- * Mirrors the driver promote-by-email flow: the only cross-scope read is the single
- * guarded email lookup + the (super-admin-only) list of org_admins. Creating
- * super_admins stays a manual DB step on purpose (bootstrap/safety).
+ *  1. CREATE A LOGIN OUTRIGHT ({@see storeLogin()}) — a super_admin mints a
+ *     brand-new account for a cooperative's office administrator: a full name, a
+ *     username, a password, and an OPTIONAL real email. There is no reason an office
+ *     administrator would already be a passenger, so requiring one to sign up in the
+ *     mobile app first — purely to bring an account into existence that will only
+ *     ever be used in this console — was a barrier this removes. Proxies the
+ *     `driver-account` Supabase Edge Function's `create_org_admin` action via
+ *     {@see OrgAdminAccountProvisioner}.
+ *  2. PROMOTE AN EXISTING APP ACCOUNT ({@see store()}, unchanged) — an existing
+ *     PASSENGER account is looked up by exact email and elevated. The only
+ *     cross-scope read here is that single guarded email lookup.
+ *
+ * Creating super_admins stays a manual DB step on purpose (bootstrap/safety).
  */
 class OrgAdminController extends Controller
 {
@@ -85,20 +96,98 @@ class OrgAdminController extends Controller
             ->with('status', "{$data['email']} is now an org admin.");
     }
 
+    /** Mint a brand-new org-admin login outright (no self-registration involved). */
+    public function storeLogin(CreateOrgAdminLoginRequest $request, OrgAdminAccountProvisioner $provisioner): RedirectResponse
+    {
+        $data = $request->validated();
+
+        $result = $provisioner->create((string) session('supabase_token'), [
+            'organization_id' => $data['organization_id'],
+            'full_name' => $data['full_name'],
+            'username' => $data['username'],
+            'password' => $data['password'],
+            'email' => $data['email'],
+        ]);
+
+        if (! $result->success) {
+            // NEVER a bare withInput() here — see DriverController::storeLogin()'s note.
+            // Laravel strips passwords only for VALIDATION exceptions
+            // (Handler::$dontFlash); a manual withInput() flashes every field, and
+            // sessions are driven to `database` (config/session.php), so that would
+            // write the admin-chosen password in plaintext into the sessions table in
+            // the shared Supabase Postgres. This path is the COMMON case: it fires
+            // whenever the username (or supplied email) is already taken.
+            return back()->withInput($request->except('password'))->with('error', $result->message);
+        }
+
+        return redirect()->route('org-admins.index')
+            ->with('status', "{$data['full_name']} can now sign in as an org admin (\"{$result->email}\").");
+    }
+
     public function destroy(Profile $profile): RedirectResponse
     {
         if ($profile->role !== 'org_admin') {
             return redirect()->route('org-admins.index')->with('error', 'That account is not an org admin.');
         }
 
-        // Demote back to a plain passenger (org-less). Their account/login is kept.
-        $profile->update(['role' => 'passenger', 'organization_id' => null]);
+        // Deactivate an ADMIN-CREATED login rather than merely demoting it.
+        //
+        // Demotion alone left the removed person with a working sign-in: the profile stayed
+        // active, the password was known only to them, and resetPassword() would no longer
+        // touch it because that requires role === 'org_admin'. Passenger-tier only, so
+        // nothing elevated survived, but the platform had minted an identity it had no
+        // console control to disable.
+        //
+        // is_active is the right lever because current_profile_id() and current_app_role()
+        // both filter on it, so an inactive profile cannot read even its own row and every
+        // RLS policy denies it. Deleting the auth user is NOT: reports.resolved_by_profile_id
+        // and assignments.created_by_profile_id reference profiles(id) with no ON DELETE
+        // clause, and profiles cascades from auth.users, so deleteUser() raises 23503 for
+        // any admin who has ever resolved a report or created an assignment. That is most
+        // of the people anyone would actually remove.
+        //
+        // Conditional on purpose. A PROMOTED admin signed up with their own email, and that
+        // passenger account is theirs; deactivating it would take away something the
+        // cooperative never gave them.
+        $email = DB::table('auth.users')->where('id', $profile->getKey())->value('email');
+        $isAdminCreated = OrgAdminAccountEmail::isUsernameLogin($email);
+
+        $profile->update([
+            'role' => 'passenger',
+            'organization_id' => null,
+            'is_active' => ! $isAdminCreated,
+        ]);
 
         // Revocation must not wait on a cache TTL — evict immediately so their next
         // request is rejected by the middleware.
         AuthenticateSupabaseAdmin::forgetProfile((string) $profile->getKey());
 
         return redirect()->route('org-admins.index')
-            ->with('status', ($profile->full_name ?: 'The account').' was removed as an org admin (now a passenger).');
+            ->with('status', ($profile->full_name ?: 'The account').($isAdminCreated
+                ? ' was removed, and its sign-in was disabled.'
+                : ' was removed as an org admin (their own passenger account is unaffected).'));
+    }
+
+    /**
+     * Reset an org admin's password. Only works for an admin-created login on the
+     * `admins.amoectrack.invalid` domain — the Edge Function re-derives the real
+     * email server-side and refuses otherwise, exactly like DriverController's.
+     */
+    public function resetPassword(ResetOrgAdminPasswordRequest $request, Profile $profile, OrgAdminAccountProvisioner $provisioner): RedirectResponse
+    {
+        if ($profile->role !== 'org_admin') {
+            return redirect()->route('org-admins.index')->with('error', 'That account is not an org admin.');
+        }
+
+        $data = $request->validated();
+
+        $result = $provisioner->resetPassword((string) session('supabase_token'), (string) $profile->getKey(), $data['password']);
+
+        if (! $result->success) {
+            return redirect()->route('org-admins.index')->with('error', $result->message);
+        }
+
+        return redirect()->route('org-admins.index')
+            ->with('status', ($profile->full_name ?: 'The account').'\'s password was reset.');
     }
 }
