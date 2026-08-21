@@ -88,7 +88,7 @@
             <option value="0" @selected($active === '0')>Inactive</option>
         </select>
         @error('is_active') <div class="invalid-feedback">{{ $message }}</div> @enderror
-        <div class="form-text">Only one active assignment per driver and per vehicle.</div>
+        <div class="form-text">One active assignment per driver and per vehicle on each route. The same driver and bus can hold both directions of a corridor.</div>
     </div>
 </div>
 

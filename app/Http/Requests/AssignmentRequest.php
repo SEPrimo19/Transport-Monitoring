@@ -96,20 +96,36 @@ class AssignmentRequest extends FormRequest
 
             $ignoreId = $this->route('assignment')?->getKey();
 
-            if ($this->filled('driver_profile_id') && $this->activeConflict('driver_profile_id', $this->input('driver_profile_id'), $ignoreId)) {
-                $v->errors()->add('driver_profile_id', 'This driver already has an active assignment. Deactivate it first, or set this one inactive.');
+            // Conflicts are per DRIVER+ROUTE and per VEHICLE+ROUTE, not per driver or per
+            // vehicle alone. A corridor is served in both directions and each direction is
+            // its own route row, so the same driver in the same bus needs Allen->Calbayog
+            // AND Calbayog->Allen active at once to run a round trip. Scoping on the driver
+            // alone made that impossible.
+            //
+            // This mirrors uq_assignments_active_driver_route and
+            // uq_assignments_active_vehicle_route, which migration 20260418_007 introduced
+            // for exactly this reason after dropping the original per-driver and
+            // per-vehicle indexes. This check had never been updated to match, so the form
+            // refused combinations the database would have accepted.
+            $routeId = $this->input('route_id');
+
+            if ($this->filled('driver_profile_id') && $this->filled('route_id')
+                && $this->activeConflict('driver_profile_id', $this->input('driver_profile_id'), $routeId, $ignoreId)) {
+                $v->errors()->add('driver_profile_id', 'This driver already has an active assignment on this route. Deactivate it first, or set this one inactive.');
             }
 
-            if ($this->filled('vehicle_id') && $this->activeConflict('vehicle_id', $this->input('vehicle_id'), $ignoreId)) {
-                $v->errors()->add('vehicle_id', 'This vehicle already has an active assignment. Deactivate it first, or set this one inactive.');
+            if ($this->filled('vehicle_id') && $this->filled('route_id')
+                && $this->activeConflict('vehicle_id', $this->input('vehicle_id'), $routeId, $ignoreId)) {
+                $v->errors()->add('vehicle_id', 'This vehicle already has an active assignment on this route. Deactivate it first, or set this one inactive.');
             }
         });
     }
 
-    private function activeConflict(string $column, string $value, ?string $ignoreId): bool
+    private function activeConflict(string $column, string $value, string $routeId, ?string $ignoreId): bool
     {
         return DB::table('assignments')
             ->where($column, $value)
+            ->where('route_id', $routeId)
             ->where('is_active', true)
             ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
             ->exists();
