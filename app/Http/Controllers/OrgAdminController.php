@@ -151,12 +151,43 @@ class OrgAdminController extends Controller
         // cooperative never gave them.
         $email = DB::table('auth.users')->where('id', $profile->getKey())->value('email');
         $isAdminCreated = OrgAdminAccountEmail::isUsernameLogin($email);
+        // Captured BEFORE the update below nulls it, or the audit event would have no
+        // cooperative and the cooperative could not read its own record of the removal.
+        $orgBefore = $profile->organization_id;
 
         $profile->update([
             'role' => 'passenger',
             'organization_id' => null,
             'is_active' => ! $isAdminCreated,
         ]);
+
+        // Removing an administrator is an accountability event, so it is recorded like the
+        // ones the Edge Function writes. This app connects as the database owner and so
+        // bypasses RLS, which is why the insert works despite the table having no INSERT
+        // policy; that is a property of this deployment, not a licence to write elsewhere.
+        //
+        // Wrapped so a logging fault can never fail the removal it is recording. An
+        // administrator left in place because an audit table was unreachable is worse than
+        // a missing row, and the removal has already happened by this point regardless.
+        try {
+            $actor = app(AdminContext::class);
+            DB::table('account_admin_events')->insert([
+                'actor_profile_id' => $actor->userId,
+                'actor_role' => $actor->role ?? 'unknown',
+                'target_profile_id' => $profile->getKey(),
+                'target_identifier' => $email,
+                'target_kind' => 'org_admin',
+                'action' => 'deactivate',
+                'organization_id' => $orgBefore,
+                'succeeded' => true,
+                'detail' => $isAdminCreated
+                    ? 'Removed as org admin; admin-created sign-in disabled.'
+                    : 'Removed as org admin; own passenger account left active.',
+                'occurred_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         // Revocation must not wait on a cache TTL — evict immediately so their next
         // request is rejected by the middleware.
