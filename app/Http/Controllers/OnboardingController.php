@@ -16,10 +16,21 @@ use Illuminate\View\View;
  * disconnected steps: it creates the tenant AND promotes its first org_admin
  * together, in a single transaction.
  *
- * The first admin must ALREADY have a passenger account in the app (we can't mint
- * auth users here — there is no service_role key on purpose). That mirrors the
- * existing promote-by-email model in OrgAdminController. The passenger checks run
- * BEFORE anything is written, so a bad email never leaves a half-created org.
+ * The first admin must ALREADY have a passenger account in the app, mirroring the
+ * promote-by-email model in OrgAdminController. The passenger checks run BEFORE anything
+ * is written, so a bad email never leaves a half-created org.
+ *
+ * That restriction is now a GAP rather than a constraint. It once read "we can't mint
+ * auth users here — there is no service_role key on purpose", which is no longer true:
+ * the driver-account Edge Function mints them via OrgAdminAccountProvisioner, and
+ * OrgAdminController already offers it. Onboarding simply was not extended, so a brand-new
+ * cooperative still needs its first admin to install the passenger app and sign up.
+ *
+ * The workaround is two screens instead of one (Organizations, then Org Admins → Create a
+ * new login). To close it, mirror the two-tab form here and call the provisioner OUTSIDE
+ * the transaction, after the org is committed: the org must exist before the function
+ * inserts profiles.organization_id, and a GoTrue call is a different system that Postgres
+ * cannot roll back. Same reasoning as DriverController::destroy().
  */
 class OnboardingController extends Controller
 {

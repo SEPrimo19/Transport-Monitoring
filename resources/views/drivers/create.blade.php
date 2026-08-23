@@ -65,7 +65,7 @@
                                                class="form-control @error('employee_code') is-invalid @enderror"
                                                required minlength="2" maxlength="40" pattern="[A-Za-z0-9._\-]+"
                                                placeholder="e.g. jsantos">
-                                        <span class="input-group-text">&#64;drivers.amoectrack.invalid</span>
+                                        <span class="input-group-text">&#64;{{ \App\Support\DriverAccountEmail::DOMAIN }}</span>
                                         @error('employee_code') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                     </div>
                                     <div class="form-text">

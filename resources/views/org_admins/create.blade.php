@@ -67,7 +67,7 @@
                                                class="form-control @error('username') is-invalid @enderror"
                                                required minlength="2" maxlength="40" pattern="[A-Za-z0-9._\-]+"
                                                placeholder="e.g. jsantos">
-                                        <span class="input-group-text">&#64;admins.amoectrack.invalid</span>
+                                        <span class="input-group-text">&#64;{{ \App\Support\OrgAdminAccountEmail::DOMAIN }}</span>
                                         @error('username') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                     </div>
                                     <div class="form-text">
@@ -84,9 +84,14 @@
                                            maxlength="255" placeholder="leave blank to sign in with the username above">
                                     @error('email') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                     <div class="form-text">
-                                        Give a real email if they should be able to recover their own password later
-                                        or sign in with it directly. Leave it blank and they sign in with the
-                                        username only — password resets are then done by a super admin here.
+                                        <strong>Leave this blank unless they need it.</strong> With no email they
+                                        sign in with the username above, and a super admin can reset their password
+                                        from this list at any time.
+                                        <br>
+                                        Give a real email and they can sign in with it — but a super admin then
+                                        <strong>cannot</strong> reset that login, because it belongs to them rather
+                                        than to the cooperative. Recovery is by email only, so check that mail from
+                                        Supabase actually reaches them before choosing this.
                                     </div>
                                 </div>
 
@@ -97,7 +102,8 @@
                                            required minlength="8" placeholder="At least 8 characters"
                                            autocomplete="new-password">
                                     @error('password') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                                    <div class="form-text">Share this with the admin directly. You can reset it any time from this list.</div>
+                                    <div class="form-text">Share this with the admin directly. You can reset it from this list at
+                                        any time — unless you give a real email above, which moves recovery to them.</div>
                                 </div>
 
                                 <div class="mb-3">
