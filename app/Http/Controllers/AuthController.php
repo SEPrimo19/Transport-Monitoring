@@ -6,6 +6,7 @@ use App\Http\Middleware\AuthenticateSupabaseAdmin;
 use App\Support\LoginIdentifierPolicy;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\View\View;
 
@@ -53,14 +54,27 @@ class AuthController extends Controller
         // never the mobile app's driver one, despite both existing side by side.
         $email = LoginIdentifierPolicy::resolveAuthEmail($credentials['email']);
 
-        $response = Http::withHeaders(['apikey' => (string) config('supabase.anon_key')])
-            ->acceptJson()
-            ->asJson()
-            ->timeout(15)
-            ->post(rtrim((string) config('supabase.url'), '/').'/auth/v1/token?grant_type=password', [
-                'email' => $email,
-                'password' => $credentials['password'],
-            ]);
+        // Guarded because this is the one unauthenticated endpoint that reaches the
+        // network, and Http:: throws rather than returning a response when the host is
+        // unreachable, DNS fails, or the 15s timeout expires. Unhandled, that surfaced
+        // as a framework error page on the sign-in screen — a stack trace shown to
+        // whoever is standing at the login form, which is the wrong audience for it.
+        try {
+            $response = Http::withHeaders(['apikey' => (string) config('supabase.anon_key')])
+                ->acceptJson()
+                ->asJson()
+                ->timeout(15)
+                ->post(rtrim((string) config('supabase.url'), '/').'/auth/v1/token?grant_type=password', [
+                    'email' => $email,
+                    'password' => $credentials['password'],
+                ]);
+        } catch (ConnectionException $e) {
+            report($e);
+
+            return back()
+                ->withInput($request->only('email'))
+                ->with('error', 'Could not reach the sign-in service. Check your connection and try again.');
+        }
 
         $token = $response->successful() ? $response->json('access_token') : null;
         $refreshToken = $response->successful() ? $response->json('refresh_token') : null;

@@ -6,6 +6,8 @@ use App\Http\Middleware\RequireTenantAdmin;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Http\Request;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 
@@ -52,5 +54,17 @@ return Application::configure(basePath: dirname(__DIR__))
         );
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // POST /login is throttled at 8/min per IP. Exceeding it threw a raw 429, which
+        // with APP_DEBUG on rendered a stack trace on the public sign-in page. Repeated
+        // attempts are exactly what someone who has forgotten their password makes, so
+        // hitting the limit is ordinary use, not abuse, and deserves a sentence.
+        $exceptions->render(function (ThrottleRequestsException $e, Request $request) {
+            if ($request->routeIs('login.attempt')) {
+                return back()
+                    ->withInput($request->only('email'))
+                    ->with('error', 'Too many sign-in attempts. Please wait a minute and try again.');
+            }
+
+            return null; // every other route keeps the framework's own 429
+        });
     })->create();
