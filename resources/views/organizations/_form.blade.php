@@ -10,7 +10,7 @@
         @else
             <input type="text" name="slug" id="slug" value="{{ old('slug', $organization->slug) }}"
                    class="form-control @error('slug') is-invalid @enderror"
-                   required minlength="2" maxlength="50" autofocus placeholder="amoec">
+                   required minlength="2" maxlength="50" autofocus placeholder="metro-transit">
             @error('slug') <div class="invalid-feedback">{{ $message }}</div> @enderror
             <div class="form-text">Lowercase letters, numbers, hyphens. Set once.</div>
         @endif
@@ -19,7 +19,7 @@
         <label for="name" class="form-label">Name <span class="text-danger">*</span></label>
         <input type="text" name="name" id="name" value="{{ old('name', $organization->name) }}"
                class="form-control @error('name') is-invalid @enderror"
-               required minlength="2" maxlength="120" placeholder="Allen Malajog Express Operators Cooperative">
+               required minlength="2" maxlength="120" placeholder="Metro Transit Cooperative">
         @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
     </div>
 </div>

@@ -12,7 +12,7 @@
                     <form method="POST" action="{{ route('organizations.store') }}" novalidate>
                         @csrf
                         @include('organizations._form')
-                        <div class="d-flex gap-2 mt-3">
+                        <div class="d-flex gap-2 mt-3 form-actions">
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-check-lg me-1"></i>Create organization
                             </button>

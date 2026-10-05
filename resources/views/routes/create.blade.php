@@ -12,7 +12,7 @@
                     <form method="POST" action="{{ route('routes.store') }}" novalidate>
                         @csrf
                         @include('routes._form')
-                        <div class="d-flex gap-2 mt-3">
+                        <div class="d-flex gap-2 mt-3 form-actions">
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-check-lg me-1"></i>Save route
                             </button>

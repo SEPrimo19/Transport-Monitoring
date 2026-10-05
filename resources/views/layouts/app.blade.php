@@ -257,6 +257,247 @@
         @media (prefers-reduced-motion: reduce) {
             .notif-bump { animation: none; }
         }
+
+        /* ==========================================================
+           Design refresh — depth, hierarchy, affordance
+           ----------------------------------------------------------
+           Additive only. Nothing above is overridden, semantic status
+           colours stay Bootstrap's (see the note at the top of this
+           block — status meaning must not read as branding), and every
+           transition here is already covered by the global
+           prefers-reduced-motion rule.
+
+           Applies to both tiers: these are layout-level rules, so the
+           org_admin screens and the super_admin platform screens get
+           the same treatment from one place.
+           ========================================================== */
+
+        /* Canvas. A very soft brand wash in the top corner instead of
+           flat grey, so white cards read as raised rather than pasted on. */
+        body {
+            background:
+                radial-gradient(1100px 380px at 100% -5%,
+                                rgba(var(--amoec-brand-rgb), .07), transparent 60%),
+                #f6f8fa;
+            background-attachment: fixed;
+        }
+
+        main h1.h4 { font-weight: 700; letter-spacing: -.02em; }
+
+        /* ---- Form sections ---------------------------------------
+           The views separate sections with <hr> plus a muted h6, which
+           put all the visual weight on the rule and none on the label —
+           so a long form read as one undifferentiated list of fields.
+           Flip it: quieten the rule, promote the label, give its icon a
+           tinted chip so sections are findable while scrolling. */
+        .card-body h2.h6.text-muted {
+            color: var(--amoec-brand) !important;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            font-size: .72rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+        .card-body h2.h6.text-muted i {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 1.6rem; height: 1.6rem; flex: none;
+            border-radius: .45rem;
+            background: rgba(var(--amoec-brand-rgb), .12);
+            font-size: .85rem;
+            margin: 0 !important;
+        }
+        .card-body hr.my-4 {
+            border-color: #e9ecef; opacity: 1;
+            margin-block: 1.75rem 1.25rem !important;
+        }
+
+        /* ---- Inputs ---------------------------------------------- */
+        .form-control:not(.form-control-sm),
+        .form-select:not(.form-select-sm) { padding-block: .5rem; }
+        .form-control, .form-select {
+            border-color: #dfe3e8;
+            transition: border-color .15s ease, box-shadow .15s ease;
+        }
+        .form-control:hover:not(:focus):not(:disabled):not([readonly]),
+        .form-select:hover:not(:focus):not(:disabled) { border-color: #c3c9d2; }
+        .form-label {
+            font-weight: 600; font-size: .85rem;
+            color: #374151; margin-bottom: .35rem;
+        }
+        .form-text { font-size: .8rem; }
+
+        /* ---- Sticky form actions ---------------------------------
+           The organization form runs well past one screen, so its Save
+           button sat below the fold for the whole time the form was
+           being filled in. Pinning the action row keeps the primary
+           action reachable without hunting for the bottom of the page. */
+        .form-actions {
+            /* Above Leaflet, below Bootstrap's modal. Leaflet stacks its panes
+               at 400-700 and its controls at 800, so the original z-index of 3
+               put the save bar UNDERNEATH the map on every form that embeds one
+               (add terminal, route geometry, the org region picker) — the
+               buttons were there, just painted over. 1020 clears Leaflet and
+               still sits below the modal backdrop at 1050. */
+            position: sticky; bottom: 0; z-index: 1020;
+            margin-top: 1.75rem !important;
+            padding: .85rem 0;
+            background: #fff;
+            border-top: 1px solid #eef1f4;
+            box-shadow: 0 -10px 16px -12px rgba(15, 23, 42, .18);
+        }
+
+        /* ---- Sidebar: accent bar on the active item --------------- */
+        .sidebar .nav-link { position: relative; }
+        .sidebar .nav-link.active::before {
+            content: ""; position: absolute; left: -.7rem; top: 50%;
+            transform: translateY(-50%);
+            width: .2rem; height: 1.15rem;
+            border-radius: 0 .2rem .2rem 0;
+            background: var(--amoec-brand); opacity: .55;
+        }
+
+        /* ---- Cards that are links behave like it ------------------ */
+        a.text-reset .card, a.text-decoration-none .card {
+            transition: transform .15s ease, box-shadow .15s ease;
+        }
+        a.text-reset:hover .card,
+        a.text-decoration-none:hover .card {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(15, 23, 42, .05),
+                        0 12px 24px rgba(15, 23, 42, .10) !important;
+        }
+
+        /* ---- Tables: breathe at the edges ------------------------- */
+        .card .table > :not(caption) > * > *:first-child { padding-left: 1.1rem; }
+        .card .table > :not(caption) > * > *:last-child { padding-right: 1.1rem; }
+
+        .badge { padding: .36em .6em; border-radius: .4rem; }
+
+        /* ==========================================================
+           Design refresh, pass 2 — emptiness, density, orientation
+           ----------------------------------------------------------
+           A newly onboarded cooperative has no vehicles, drivers,
+           routes, terminals, schedules, assignments or trips, so for
+           its whole first session EVERY list it owns renders its empty
+           state. That path had the least design attention and gets the
+           most use at exactly the moment a tenant is deciding whether
+           the product looks finished, so it is treated here as a
+           first-class screen rather than a fallback.
+           ========================================================== */
+
+        /* ---- Empty states ----------------------------------------
+           Was: a small grey glyph, a bold line, and a text link buried
+           in a muted sentence — the call to action was the least
+           visible thing in the cell. Now the icon is a brand-tinted
+           medallion and the action reads as the action. */
+        .empty-state { padding: 3rem 1rem; }
+        .empty-state i {
+            width: 3.25rem; height: 3.25rem;
+            display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 50%;
+            background: rgba(var(--amoec-brand-rgb), .1);
+            color: var(--amoec-brand);
+            font-size: 1.4rem;
+            margin: 0 0 .9rem;
+        }
+        .empty-state .empty-state-title {
+            font-size: 1.02rem; font-weight: 650; color: #1f2937;
+            margin-bottom: .35rem;
+        }
+        .empty-state a {
+            color: var(--amoec-brand);
+            font-weight: 650;
+            text-decoration: none;
+            border-bottom: 1px solid rgba(var(--amoec-brand-rgb), .35);
+        }
+        .empty-state a:hover { border-bottom-color: var(--amoec-brand); }
+
+        /* ---- Long lists: keep the column headings in view ---------
+           Several of these tables are unbounded (trips, location
+           history, reports), and once the header scrolls away every
+           row becomes a line of unlabelled values. */
+        .card .table > thead.table-light > tr > th {
+            position: sticky; top: 0; z-index: 2;
+            background: #fff;
+            box-shadow: inset 0 -2px 0 #e9ecef;
+        }
+        .card .table > thead.table-light > tr > th:first-child {
+            border-top-left-radius: var(--bs-border-radius);
+        }
+        .card .table > thead.table-light > tr > th:last-child {
+            border-top-right-radius: var(--bs-border-radius);
+        }
+
+        /* ---- Row actions -----------------------------------------
+           Action links sat at the same weight as the data, so a row
+           read as one undifferentiated run of text. Group them, quiet
+           them, and let them come forward on hover. */
+        .card .table td .btn-sm,
+        .card .table td .btn-group .btn { --bs-btn-padding-y: .2rem; --bs-btn-padding-x: .5rem; }
+        .card .table tbody tr > td:last-child { white-space: nowrap; }
+        .card .table tbody tr a.btn-outline-secondary { border-color: transparent; }
+        .card .table tbody tr:hover a.btn-outline-secondary { border-color: #dee2e6; }
+
+        /* Numeric columns line up only if the figures are tabular. */
+        .card .table .text-end { font-variant-numeric: tabular-nums; }
+
+        /* ---- Page toolbar: survive a narrow window ---------------- */
+        @media (max-width: 575.98px) {
+            .page-toolbar { flex-wrap: wrap; gap: .75rem; }
+            .page-toolbar > .btn, .page-toolbar > a.btn { width: 100%; }
+        }
+
+        /* ---- Alerts: calmer, and the icon carries the meaning ----- */
+        .alert { border: 1px solid; border-left-width: 4px; }
+        .alert-info { background: #f4f9ff; border-color: #cfe4fb; border-left-color: #6ea8fe; color: #1c3d5a; }
+
+        /* ---- Dropdowns & modals ---------------------------------- */
+        .dropdown-menu {
+            border: 1px solid #e9ecef;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, .06), 0 12px 32px rgba(15, 23, 42, .10);
+            padding-block: .35rem;
+        }
+        .dropdown-item { padding-block: .45rem; font-size: .925rem; }
+        .dropdown-item:active { background-color: var(--amoec-brand); color: var(--amoec-on-brand); }
+        .modal-content { border: 0; box-shadow: 0 24px 60px rgba(15, 23, 42, .22); }
+        .modal-header, .modal-footer { border-color: #eef1f4; }
+
+        /* ---- Scrollbars: present, not loud ----------------------- */
+        .sidebar, .table-responsive, .notif-items {
+            scrollbar-width: thin; scrollbar-color: #cbd2da transparent;
+        }
+        .sidebar::-webkit-scrollbar,
+        .table-responsive::-webkit-scrollbar,
+        .notif-items::-webkit-scrollbar { width: 8px; height: 8px; }
+        .sidebar::-webkit-scrollbar-thumb,
+        .table-responsive::-webkit-scrollbar-thumb,
+        .notif-items::-webkit-scrollbar-thumb {
+            background: #cbd2da; border-radius: 4px;
+        }
+        .sidebar::-webkit-scrollbar-track,
+        .table-responsive::-webkit-scrollbar-track,
+        .notif-items::-webkit-scrollbar-track { background: transparent; }
+
+        /* ---- Selection picks up the tenant's colour -------------- */
+        ::selection { background: rgba(var(--amoec-brand-rgb), .22); }
+
+        /* ---- Show/hide password ----------------------------------- */
+        .pw-wrap { position: relative; display: block; }
+        .pw-wrap > .form-control { padding-right: 2.75rem; }
+        /* Bootstrap paints the invalid glyph at the right edge, where the
+           eye now sits. Slide it inboard so the two don't stack. */
+        .pw-wrap > .form-control.is-invalid { background-position: right 2.5rem center; }
+        .pw-toggle {
+            position: absolute; top: 50%; right: .4rem; transform: translateY(-50%);
+            border: 0; background: transparent; color: #6c757d;
+            padding: .3rem .4rem; line-height: 1; cursor: pointer;
+            border-radius: .3rem;
+            transition: color .15s ease, background-color .15s ease;
+        }
+        .pw-toggle:hover { color: var(--amoec-brand); background: rgba(var(--amoec-brand-rgb), .1); }
+        .pw-toggle:focus-visible { outline: 2px solid var(--amoec-brand); outline-offset: 1px; }
     </style>
     @stack('head')
 </head>
@@ -463,8 +704,12 @@
                 </div>
             </div>
 
+            {{-- Success auto-dismisses; the error alert below deliberately does not.
+                 A confirmation has been read by the time it is understood, but an
+                 error usually needs acting on, and timing a user out of reading it
+                 is how a failure gets missed. --}}
             @if (session('status'))
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <div class="alert alert-success alert-dismissible fade show" role="alert" data-autodismiss="7000">
                     <i class="bi bi-check-circle me-1"></i>{{ session('status') }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
@@ -695,6 +940,87 @@
 
         start();
     })();
+</script>
+<script>
+    /* Show/hide for every password field in the console.
+       ----------------------------------------------------------------
+       A super admin types a password here that they must then pass on to
+       the person it belongs to, so "what did I just type?" is the normal
+       case, not an edge case. Done once at the layout level rather than
+       per form, so create-admin, create-driver, both reset dialogs and
+       the account page all get it from one place.
+
+       The input is wrapped rather than rebuilt as a Bootstrap
+       .input-group: the group markup would change validation styling and
+       these fields rely on .is-invalid / .invalid-feedback. Wrapping does
+       break the CSS sibling link those two need, so the feedback element
+       is carried into the wrapper alongside its input. */
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('input[type="password"]').forEach(function (input) {
+            if (input.dataset.pwToggle || input.closest('.input-group')) return;
+            input.dataset.pwToggle = '1';
+
+            var wrap = document.createElement('div');
+            wrap.className = 'pw-wrap';
+            input.parentNode.insertBefore(wrap, input);
+            wrap.appendChild(input);
+
+            // .invalid-feedback is shown by `.is-invalid ~ .invalid-feedback`,
+            // which stops matching the moment the input is nested. Move it in.
+            var next = wrap.nextElementSibling;
+            if (next && next.classList.contains('invalid-feedback')) wrap.appendChild(next);
+
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'pw-toggle';
+            btn.setAttribute('aria-label', 'Show password');
+            btn.setAttribute('aria-pressed', 'false');
+            btn.innerHTML = '<i class="bi bi-eye" aria-hidden="true"></i>';
+            wrap.appendChild(btn);
+
+            btn.addEventListener('click', function () {
+                var show = input.type === 'password';
+                input.type = show ? 'text' : 'password';
+                btn.setAttribute('aria-pressed', show ? 'true' : 'false');
+                btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+                btn.querySelector('i').className = show ? 'bi bi-eye-slash' : 'bi bi-eye';
+                input.focus();
+            });
+        });
+    });
+</script>
+<script>
+    /* Auto-dismiss for flash confirmations.
+       ----------------------------------------------------------------
+       Opt-in via data-autodismiss="<ms>", so only the success alert takes
+       it. The countdown PAUSES on hover and on keyboard focus: these
+       messages carry details worth reading and sometimes copying (the
+       username a new admin signs in with, for one), and snatching that
+       away mid-read is worse than leaving the close button to do the job.
+       The button stays, so dismissing early still works, and a reader who
+       never moves the mouse still gets the full seven seconds. */
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-autodismiss]').forEach(function (el) {
+            var ms = parseInt(el.dataset.autodismiss, 10) || 7000;
+            var timer = null;
+
+            function close() {
+                if (window.bootstrap && bootstrap.Alert) {
+                    bootstrap.Alert.getOrCreateInstance(el).close();
+                } else {
+                    el.remove();
+                }
+            }
+            function start() { timer = window.setTimeout(close, ms); }
+            function stop() { window.clearTimeout(timer); timer = null; }
+
+            el.addEventListener('mouseenter', stop);
+            el.addEventListener('mouseleave', start);
+            el.addEventListener('focusin', stop);
+            el.addEventListener('focusout', start);
+            start();
+        });
+    });
 </script>
 @stack('scripts')
 </body>

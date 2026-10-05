@@ -61,7 +61,7 @@
                                        class="form-control @error('new_password') is-invalid @enderror"
                                        autocomplete="new-password" minlength="8">
                                 @error('new_password') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                                <div class="form-text">At least 8 characters.</div>
+                                <div class="form-text">{{ \App\Support\AdminPasswordPolicy::hint() }}</div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="new_password_confirmation" class="form-label">Confirm new password</label>

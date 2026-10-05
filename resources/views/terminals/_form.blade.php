@@ -14,7 +14,7 @@
         <label for="name" class="form-label">Name <span class="text-danger">*</span></label>
         <input type="text" name="name" id="name" value="{{ old('name', $terminal->name) }}"
                class="form-control @error('name') is-invalid @enderror"
-               required minlength="2" maxlength="120" placeholder="Allen Terminal">
+               required minlength="2" maxlength="120" placeholder="Main Terminal">
         @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
     </div>
 </div>
@@ -61,7 +61,7 @@
 <div class="mb-3">
     <label class="form-label">Find location</label>
     <div class="input-group">
-        <input type="text" id="place-search" class="form-control" placeholder="Search a place or address (e.g. “Allen, Northern Samar”)…" autocomplete="off">
+        <input type="text" id="place-search" class="form-control" placeholder="Search a place or address…" autocomplete="off">
         <button type="button" id="place-search-btn" class="btn btn-outline-secondary">
             <i class="bi bi-search me-1"></i>Search
         </button>

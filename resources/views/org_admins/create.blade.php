@@ -67,13 +67,12 @@
                                                class="form-control @error('username') is-invalid @enderror"
                                                required minlength="2" maxlength="40" pattern="[A-Za-z0-9._\-]+"
                                                placeholder="e.g. jsantos">
-                                        <span class="input-group-text">&#64;{{ \App\Support\OrgAdminAccountEmail::DOMAIN }}</span>
                                         @error('username') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                     </div>
                                     <div class="form-text">
-                                        Letters, numbers, dots, hyphens and underscores only. This is what they type
-                                        to sign in when no email is given below — the address shown is never
-                                        emailed to anyone.
+                                        Letters, numbers, dots, hyphens and underscores only, and unique across
+                                        all cooperatives. This is exactly what they type to sign in when no email
+                                        is given below.
                                     </div>
                                 </div>
 
@@ -99,11 +98,12 @@
                                     <label for="login_password" class="form-label">Password <span class="text-danger">*</span></label>
                                     <input type="password" name="password" id="login_password"
                                            class="form-control @error('password') is-invalid @enderror"
-                                           required minlength="8" placeholder="At least 8 characters"
+                                           required minlength="{{ \App\Support\AdminPasswordPolicy::MIN_LENGTH }}" placeholder="{{ \App\Support\AdminPasswordPolicy::hint() }}"
                                            autocomplete="new-password">
                                     @error('password') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                     <div class="form-text">Share this with the admin directly. You can reset it from this list at
                                         any time — unless you give a real email above, which moves recovery to them.</div>
+                                    @include('partials.password-requirements', ['field' => 'login_password'])
                                 </div>
 
                                 <div class="mb-3">
@@ -178,7 +178,7 @@
                                     @error('full_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
 
-                                <div class="d-flex gap-2 mt-3">
+                                <div class="d-flex gap-2 mt-3 form-actions">
                                     <button type="submit" class="btn btn-primary">
                                         <i class="bi bi-person-check me-1"></i>Make org admin
                                     </button>

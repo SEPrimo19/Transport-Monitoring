@@ -65,7 +65,6 @@
                                                class="form-control @error('employee_code') is-invalid @enderror"
                                                required minlength="2" maxlength="40" pattern="[A-Za-z0-9._\-]+"
                                                placeholder="e.g. jsantos">
-                                        <span class="input-group-text">&#64;{{ \App\Support\DriverAccountEmail::DOMAIN }}</span>
                                         @error('employee_code') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                     </div>
                                     <div class="form-text">
@@ -88,9 +87,10 @@
                                     <label for="login_password" class="form-label">Password <span class="text-danger">*</span></label>
                                     <input type="password" name="password" id="login_password"
                                            class="form-control @error('password') is-invalid @enderror"
-                                           required minlength="8" placeholder="At least 8 characters"
+                                           required minlength="{{ \App\Support\AdminPasswordPolicy::MIN_LENGTH }}" placeholder="{{ \App\Support\AdminPasswordPolicy::hint() }}"
                                            autocomplete="new-password">
                                     @error('password') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                    @include('partials.password-requirements', ['field' => 'login_password'])
                                     <div class="form-text">Share this with the driver directly. You can reset it any time from their profile.</div>
                                 </div>
 

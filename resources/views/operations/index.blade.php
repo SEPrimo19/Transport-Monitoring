@@ -26,6 +26,20 @@
         </span>
     </div>
 
+    @if (count($corridors) > 1)
+        {{-- Corridor filter. Built from the org's active routes, so it fits any
+             cooperative rather than assuming AMOEC's two corridors. --}}
+        <div class="d-flex flex-wrap gap-2 mb-3" id="ops-filter">
+            <button type="button" class="btn btn-sm btn-brand ops-chip active" data-code="">All routes</button>
+            @foreach ($corridors as $c)
+                <button type="button" class="btn btn-sm btn-outline-secondary ops-chip"
+                        data-code="{{ $c['code'] }}"
+                        @if ($c['bounds']) data-bounds="{{ json_encode($c['bounds']) }}" @endif
+                        title="{{ $c['name'] }}">{{ $c['name'] }}</button>
+            @endforeach
+        </div>
+    @endif
+
     <div class="d-flex flex-wrap gap-3 small mb-3">
         <span><span class="ops-dot me-1" style="background:#198754"></span>Live (≤30s)</span>
         <span><span class="ops-dot me-1" style="background:#20c997"></span>Recent (≤2m)</span>
@@ -67,6 +81,8 @@
 
             const markers = {};
             let fittedOnce = false;
+            let activeRoute = '';   // '' = every route
+            let latest = INITIAL;   // last payload, so a chip can re-render without waiting for a poll
 
             function esc(s) {
                 return (s == null ? '' : String(s)).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -110,15 +126,23 @@
             }
 
             function render(vehicles) {
-                document.getElementById('ops-count').textContent = vehicles.length;
+                latest = vehicles;
+                // The filter narrows what is drawn and listed; polling still collects
+                // every vehicle, so clearing the filter needs no round trip.
+                const shown = activeRoute ? vehicles.filter(v => v.route === activeRoute) : vehicles;
+
+                document.getElementById('ops-count').textContent = shown.length;
 
                 const listBody = document.getElementById('ops-list-body');
-                listBody.innerHTML = vehicles.length ? '' :
-                    '<div class="text-muted text-center p-4">No vehicles are transmitting right now.</div>';
+                listBody.innerHTML = shown.length ? '' :
+                    '<div class="text-muted text-center p-4">' +
+                    (activeRoute ? 'No vehicles on this route right now.'
+                                 : 'No vehicles are transmitting right now.') +
+                    '</div>';
 
                 const seen = new Set();
                 const bounds = [];
-                vehicles.forEach(function (v) {
+                shown.forEach(function (v) {
                     seen.add(v.vehicle_id);
                     bounds.push([v.lat, v.lng]);
 
@@ -144,6 +168,34 @@
                     fittedOnce = true;
                 }
                 document.getElementById('ops-updated').textContent = new Date().toLocaleTimeString();
+            }
+
+            const filterBar = document.getElementById('ops-filter');
+            if (filterBar) {
+                filterBar.addEventListener('click', function (e) {
+                    const chip = e.target.closest('.ops-chip');
+                    if (!chip) return;
+
+                    activeRoute = chip.dataset.code || '';
+                    filterBar.querySelectorAll('.ops-chip').forEach(function (b) {
+                        const on = b === chip;
+                        b.classList.toggle('active', on);
+                        b.classList.toggle('btn-brand', on);
+                        b.classList.toggle('btn-outline-secondary', !on);
+                    });
+
+                    fittedOnce = false;          // let the new selection reframe the map
+                    render(latest);
+
+                    // Vehicles win the viewport. Only when the route has nothing running
+                    // does the map fall back to the corridor's own extent, so choosing a
+                    // quiet route still shows where it is instead of leaving the map put.
+                    const shown = activeRoute ? latest.filter(v => v.route === activeRoute) : latest;
+                    if (!shown.length && chip.dataset.bounds) {
+                        map.fitBounds(JSON.parse(chip.dataset.bounds), { padding: [40, 40], maxZoom: 14 });
+                        fittedOnce = true;
+                    }
+                });
             }
 
             render(INITIAL);

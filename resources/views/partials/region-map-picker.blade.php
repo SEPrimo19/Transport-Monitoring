@@ -7,7 +7,7 @@
     <label class="form-label">Pin the region center</label>
     <div class="input-group">
         <input type="text" id="region-place-search" class="form-control"
-               placeholder="Search a place (e.g. “Allen, Northern Samar”)…" autocomplete="off">
+               placeholder="Search a place…" autocomplete="off">
         <button type="button" id="region-place-search-btn" class="btn btn-outline-secondary">
             <i class="bi bi-search me-1"></i>Search
         </button>

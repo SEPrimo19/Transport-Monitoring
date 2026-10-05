@@ -114,14 +114,14 @@
                                     <label for="reset_password" class="form-label">New password <span class="text-danger">*</span></label>
                                     <input type="password" name="password" id="reset_password"
                                            class="form-control @error('password') is-invalid @enderror"
-                                           required minlength="8" placeholder="At least 8 characters"
+                                           required minlength="{{ \App\Support\AdminPasswordPolicy::MIN_LENGTH }}" placeholder="{{ \App\Support\AdminPasswordPolicy::hint() }}"
                                            autocomplete="new-password">
                                     @error('password') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
                                 <div class="col-12 col-md-6">
                                     <label for="reset_password_confirmation" class="form-label">Confirm new password <span class="text-danger">*</span></label>
                                     <input type="password" name="password_confirmation" id="reset_password_confirmation"
-                                           class="form-control" required minlength="8" autocomplete="new-password">
+                                           class="form-control" required minlength="{{ \App\Support\AdminPasswordPolicy::MIN_LENGTH }}" autocomplete="new-password">
                                 </div>
                             </div>
 
