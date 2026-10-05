@@ -122,12 +122,26 @@ class AuthenticateSupabaseAdmin
     }
 
     /**
-     * Verify the token, choosing the algorithm from its own header.
-     * ES256/RS256 → JWKS public keys; HS256 → shared secret.
+     * Verify the token against an ALLOWLISTED algorithm.
+     *
+     * The header still says which algorithm was used, but it no longer decides
+     * whether that algorithm is acceptable — config('supabase.jwt_algorithms')
+     * does. ES256/RS256 → JWKS public keys; HS256 → shared secret, and only when
+     * a legacy project has opted back into it.
      */
     private function decodeToken(string $token): object
     {
-        if ($this->tokenAlg($token) === 'HS256') {
+        // Refuse anything outside the configured allowlist BEFORE a key is chosen.
+        // Without this the token dictated which key verified it, so an HS256 token
+        // was accepted on a project that only ever issues ES256 — see
+        // config/supabase.php. An unparseable header yields null and is refused too.
+        $alg = $this->tokenAlg($token);
+        $allowed = (array) config('supabase.jwt_algorithms', ['ES256', 'RS256']);
+        if ($alg === null || ! in_array($alg, $allowed, true)) {
+            throw new \RuntimeException('Token signing algorithm is not accepted.');
+        }
+
+        if ($alg === 'HS256') {
             $secret = config('supabase.jwt_secret');
             if (empty($secret)) {
                 throw new \RuntimeException('HS256 token but SUPABASE_JWT_SECRET is not set.');

@@ -8,6 +8,7 @@ use App\Support\PendingReportFeed;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -25,6 +26,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Every generated URL is https in production. Without this the app will
+        // happily emit http:// links behind a TLS-terminating proxy, and the HSTS
+        // header in SecurityHeaders is only sent on an ALREADY-secure request — so
+        // the one request HSTS exists to protect, the first plaintext one, got
+        // neither a redirect nor the header. Scoped to production so local http
+        // development is unaffected.
+        if ($this->app->environment('production')) {
+            URL::forceScheme('https');
+        }
+
         // Share the signed-in admin with every view. We share the (empty) scoped
         // instance now; the auth middleware fills that SAME object before any view
         // renders, so `$ctx` is populated by render time — and it reaches nested

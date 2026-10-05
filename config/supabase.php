@@ -19,4 +19,22 @@ return [
     // (AMOECTrack repo: supabase/functions/driver-account), which calls GoTrue's supported
     // admin API and holds service_role only in its own Supabase secrets — never here.
     'jwt_secret' => env('SUPABASE_JWT_SECRET'),
+
+    // Signing algorithms this app will ACCEPT on a GoTrue access token.
+    //
+    // The verifier used to read the algorithm out of the token's own header and
+    // pick its key accordingly. That is not the classic confusion bug — the HS256
+    // branch uses this app's private SUPABASE_JWT_SECRET, never the published JWKS
+    // key — but it meant a project that had moved to asymmetric keys would still
+    // accept an HS256 token from anyone holding the legacy shared secret. That
+    // secret is long-lived, visible to anyone with dashboard access, and does not
+    // rotate when the signing keys do.
+    //
+    // This project's JWKS publishes a single ES256 key (verified 2026-10-05), so
+    // HS256 is never legitimately issued and is simply refused. A legacy project
+    // that still signs HS256 adds it back through SUPABASE_JWT_ALGS.
+    'jwt_algorithms' => array_values(array_filter(array_map(
+        'trim',
+        explode(',', (string) env('SUPABASE_JWT_ALGS', 'ES256,RS256'))
+    ))),
 ];

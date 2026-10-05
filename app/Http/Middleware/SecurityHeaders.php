@@ -62,7 +62,15 @@ class SecurityHeaders
             "form-action 'self'",
         ]));
 
-        $response->headers->set('Content-Security-Policy-Report-Only', $csp);
+        // ENFORCED, not report-only. It spent its life as Report-Only, which
+        // computed the whole policy and then blocked nothing.
+        //
+        // 'unsafe-inline' in script-src is still required: the Live Ops map, the
+        // password toggle, the flash auto-dismiss and the route distance estimator
+        // are all inline. So this stops an injected EXTERNAL script, not an inline
+        // one. Moving those blocks to nonces is the next step and is why the
+        // directive is called out here rather than left to look deliberate.
+        $response->headers->set('Content-Security-Policy', $csp);
 
         return $response;
     }
