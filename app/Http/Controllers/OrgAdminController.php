@@ -123,8 +123,16 @@ class OrgAdminController extends Controller
             return back()->withInput($request->except('password'))->with('error', $result->message);
         }
 
+        // Show what they actually TYPE to sign in, not the stored address. For a
+        // username-only account that address is the synthetic
+        // <username>@admins.<...>.invalid one, which is an implementation detail
+        // the console no longer puts on screen anywhere else — and quoting it
+        // here invited admins to try signing in with it. Mirrors the driver
+        // message, which has always shown the employee code alone.
+        $signsInWith = $data['email'] ?: $data['username'];
+
         return redirect()->route('org-admins.index')
-            ->with('status', "{$data['full_name']} can now sign in as an org admin (\"{$result->email}\").");
+            ->with('status', "{$data['full_name']} can now sign in as an org admin (\"{$signsInWith}\").");
     }
 
     public function destroy(Profile $profile): RedirectResponse

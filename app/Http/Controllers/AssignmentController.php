@@ -62,7 +62,7 @@ class AssignmentController extends Controller
                 'That driver or vehicle already has an active assignment. Deactivate it first.');
         }
 
-        return redirect()->route('assignments.index')->with('status', 'Assignment created.');
+        return redirect()->route('assignments.index')->with('status', 'Assignment was added.');
     }
 
     public function edit(Assignment $assignment, AdminContext $ctx): View
@@ -80,7 +80,7 @@ class AssignmentController extends Controller
                 'That driver or vehicle already has an active assignment. Deactivate it first.');
         }
 
-        return redirect()->route('assignments.index')->with('status', 'Assignment updated.');
+        return redirect()->route('assignments.index')->with('status', 'Assignment was updated.');
     }
 
     public function destroy(Assignment $assignment): RedirectResponse
@@ -102,7 +102,7 @@ class AssignmentController extends Controller
                 'This assignment has trip history and can\u{2019}t be deleted. Set it to Inactive instead.');
         }
 
-        return redirect()->route('assignments.index')->with('status', 'Assignment deleted.');
+        return redirect()->route('assignments.index')->with('status', 'Assignment was deleted.');
     }
 
     /**

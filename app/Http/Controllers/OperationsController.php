@@ -24,8 +24,45 @@ class OperationsController extends Controller
 
         return view('operations.index', [
             'vehicles' => $vehicles,
+            'corridors' => $this->corridors($ctx),
             'defaultCenter' => [12.4, 124.55], // central Samar fallback
         ]);
+    }
+
+    /**
+     * The org's active routes, for the corridor filter above the map.
+     *
+     * Read from the routes table rather than named in the view, so this holds for any
+     * cooperative: one corridor gives one chip, six give six. Each route carries the
+     * bounding box of its stored polyline, which lets the map frame a corridor that
+     * currently has no vehicle on it. Only the box is sent, not the polyline itself —
+     * a saved route can run to 2000 points and none of them are needed here.
+     *
+     * @return array<int, array{code:string, name:string, bounds:?array{0:array{0:float,1:float},1:array{0:float,1:float}}}>
+     */
+    private function corridors(AdminContext $ctx): array
+    {
+        $rows = DB::table('routes as r')
+            ->leftJoin('route_geometry as g', 'g.route_id', '=', 'r.id')
+            ->where('r.is_active', true)
+            ->when(! $ctx->isSuperAdmin(), fn ($q) => $q->where('r.organization_id', $ctx->organizationId))
+            ->orderBy('r.code')
+            ->get(['r.code', 'r.name', 'g.points']);
+
+        return $rows->map(function ($row) {
+            $points = is_string($row->points) ? json_decode($row->points, true) : $row->points;
+            $bounds = null;
+
+            if (is_array($points) && $points !== []) {
+                $lats = array_column($points, 0);
+                $lngs = array_column($points, 1);
+                if ($lats !== [] && $lngs !== []) {
+                    $bounds = [[min($lats), min($lngs)], [max($lats), max($lngs)]];
+                }
+            }
+
+            return ['code' => $row->code, 'name' => $row->name, 'bounds' => $bounds];
+        })->all();
     }
 
     public function data(AdminContext $ctx): JsonResponse

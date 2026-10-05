@@ -50,8 +50,17 @@ class RouteController extends Controller
         // validated selector for super_admin.
         $route = Route::create($request->validated());
 
-        return redirect()->route('routes.index')
-            ->with('status', "Route \u{201C}{$route->code}\u{201D} was added.");
+        // Straight on to the map rather than back to the list. A route without a
+        // polyline is only half configured: the passenger ETA, the route-snapping
+        // and the on-route/off-route thresholds all measure against that line, so
+        // a route saved without one looks created but behaves as though it is not
+        // there. The geometry row is keyed BY route_id, so it could not have been
+        // drawn before this point — but nothing used to point the admin at the
+        // step either, which left the gap easy to walk past.
+        return redirect()->route('routes.geometry.edit', $route)
+            ->with('status', "Route \u{201C}{$route->code}\u{201D} was added. "
+                ."Now draw its path — this sets the real road distance and duration, "
+                ."and the passenger ETA depends on it.");
     }
 
     public function edit(Route $route, AdminContext $ctx): View
@@ -133,7 +142,10 @@ class RouteController extends Controller
     /** Terminals the admin may attach: org-scoped (org_admin own, super_admin all). */
     private function terminalsFor(AdminContext $ctx): Collection
     {
-        return Terminal::query()->orderBy('code')->get(['id', 'code', 'name', 'organization_id']);
+        // latitude/longitude ride along so the form can offer a straight-line
+        // distance estimate once both terminals are chosen.
+        return Terminal::query()->orderBy('code')
+            ->get(['id', 'code', 'name', 'organization_id', 'latitude', 'longitude']);
     }
 
     private function organizationsFor(AdminContext $ctx): Collection

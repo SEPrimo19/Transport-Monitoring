@@ -59,7 +59,7 @@ class TripScheduleController extends Controller
     {
         $schedule->update($request->validated());
 
-        return redirect()->route('schedules.index')->with('status', 'Schedule updated.');
+        return redirect()->route('schedules.index')->with('status', 'Schedule was updated.');
     }
 
     public function destroy(TripSchedule $schedule): RedirectResponse
@@ -70,7 +70,7 @@ class TripScheduleController extends Controller
             return redirect()->route('schedules.index')->with('error', 'Could not delete that schedule.');
         }
 
-        return redirect()->route('schedules.index')->with('status', 'Schedule deleted.');
+        return redirect()->route('schedules.index')->with('status', 'Schedule was deleted.');
     }
 
     /** @return array{routes: Collection, organizations: Collection} */
