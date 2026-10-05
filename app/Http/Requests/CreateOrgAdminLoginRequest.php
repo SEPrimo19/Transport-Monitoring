@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Support\OrgAdminAccountProvisioner;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Support\AdminPasswordPolicy;
 
 /**
  * "Create a new login" for an org admin — the org-admin sibling of
@@ -54,7 +55,7 @@ class CreateOrgAdminLoginRequest extends FormRequest
                 'regex:/^[a-z0-9]([a-z0-9._-]*[a-z0-9])?$/',
                 'regex:/^(?!.*\.\.).*$/',
             ],
-            'password' => ['required', 'string', 'min:8'],
+            'password' => AdminPasswordPolicy::rules(),
             'email' => ['nullable', 'email'],
             'organization_id' => ['required', 'string', Rule::exists('organizations', 'id')],
         ];

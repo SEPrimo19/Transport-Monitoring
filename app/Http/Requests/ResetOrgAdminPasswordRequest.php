@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Support\AdminPasswordPolicy;
 
 /**
  * Reset an org admin's password via the `driver-account` Edge Function's
@@ -25,7 +26,7 @@ class ResetOrgAdminPasswordRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => AdminPasswordPolicy::rules(confirmed: true),
         ];
     }
 

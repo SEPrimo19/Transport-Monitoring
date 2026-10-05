@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\View\View;
+use App\Support\AdminPasswordPolicy;
 
 /**
  * Self-service account settings for the signed-in admin (org_admin or super_admin):
@@ -37,7 +38,13 @@ class AccountController extends Controller
         $data = $request->validate([
             'full_name' => ['required', 'string', 'min:2', 'max:120'],
             'current_password' => ['nullable', 'required_with:new_password', 'string'],
-            'new_password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'new_password' => array_merge(
+                ['nullable'],
+                array_values(array_filter(
+                    AdminPasswordPolicy::rules(confirmed: true),
+                    fn ($r) => $r !== 'required'
+                )),
+            ),
         ], [
             'current_password.required_with' => 'Enter your current password to set a new one.',
             'new_password.confirmed' => 'The new password and its confirmation do not match.',

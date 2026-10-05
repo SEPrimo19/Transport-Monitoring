@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Scopes\OrganizationScope;
 use Illuminate\Foundation\Http\FormRequest;
+use App\Support\AdminPasswordPolicy;
 
 /**
  * Reset a driver's password via the `driver-account` Edge Function
@@ -23,7 +24,7 @@ class ResetDriverPasswordRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => AdminPasswordPolicy::rules(confirmed: true),
         ];
     }
 

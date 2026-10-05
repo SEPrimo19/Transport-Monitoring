@@ -6,6 +6,7 @@ use App\Support\AdminContext;
 use App\Support\DriverAccountProvisioner;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Support\AdminPasswordPolicy;
 
 /**
  * "Create a driver login outright" — the admin mints a brand-new account for a
@@ -48,7 +49,7 @@ class CreateDriverLoginRequest extends FormRequest
                 Rule::unique('drivers', 'employee_code'),
             ],
             'license_number' => ['required', 'string', 'min:3', 'max:64', Rule::unique('drivers', 'license_number')],
-            'password' => ['required', 'string', 'min:8'],
+            'password' => AdminPasswordPolicy::rules(),
         ];
 
         if (app(AdminContext::class)->isSuperAdmin()) {
