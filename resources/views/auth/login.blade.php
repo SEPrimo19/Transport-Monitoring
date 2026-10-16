@@ -98,7 +98,7 @@
             position: absolute;
             inset: 0;
             z-index: -2;
-            background-image: url('{{ asset('images/authscreen_bg.png') }}');
+            background-image: url('{{ asset('images/authscreen_bg.jpeg') }}');
             background-repeat: no-repeat;
             background-size: cover;
             background-position: left center;
@@ -107,26 +107,28 @@
         /*
          * The veil — directional and LIGHT, not a uniform scrim.
          *
-         * The copy now sits over the busiest part of the illustration: the western
-         * half of the map, and the dashboard-monitor icon, which is a dark navy
-         * bezel — the one genuinely low-contrast pocket in an otherwise pale asset.
-         * A dark veil would fix that too, but a dark veil is what buried the map and
-         * the bus before: at the ~78% strength AA would need over near-white art, the
-         * artwork all but disappears. White lifts local luminance instead of crushing
-         * it toward black, so shapes underneath read as soft silhouettes rather than
-         * vanishing — and because the asset's own background is already light, a much
-         * lower peak (0.74) is enough to clear AA even over that dark bezel.
+         * The copy sits over the busiest part of the illustration: the western half of
+         * the map and the Samar callout. A dark veil would raise contrast too, but a
+         * dark veil is what buried the map and the bus before: at the ~78% strength AA
+         * would need over near-white art, the artwork all but disappears. White lifts
+         * local luminance instead of crushing it toward black, so shapes underneath
+         * read as soft silhouettes rather than vanishing — and because the asset's own
+         * background is already light, a much lower peak (0.74) clears AA comfortably.
          *
          * It fades to fully transparent by 56% of the panel width, well before the
-         * van, jeepney, shelter and sign — those render at full, unveiled strength.
-         * Measured contrast at the worst point (dark-navy monitor bezel, peak 0.74
-         * veil, the single lowest-contrast pocket in the panel):
-         *   --auth-ink (h1)              ~10.6 : 1
-         *   --auth-ink-soft (lead/list)   ~6.1 : 1  (clears the 4.5:1 floor; short of
-         *                                            the 7:1 aim only in this pocket)
-         * Everywhere else the copy sits — the map's pale-blue fields, the near-white
-         * background — the artwork already reads ~10–15:1 unveiled, so the veil only
-         * ever adds headroom there, it never has to fight the artwork for contrast.
+         * jeepney, shelter and sign — those render at full, unveiled strength.
+         *
+         * CONTRAST FIGURES REMOVED, DELIBERATELY. This block used to carry measured
+         * ratios (~10.6:1 for the heading, ~6.1:1 for the lead) taken at the single
+         * worst pocket in the previous asset: the dark navy bezel of the
+         * dashboard-monitor icon. That asset has been replaced, and in the new one the
+         * monitor is pale while the dark mass is the row of buses along the bottom
+         * edge — below the copy, not behind it. The old numbers therefore described a
+         * picture that is no longer here, and leaving them would have been worse than
+         * having none: they looked authoritative and measured.
+         *
+         * The approach is unchanged and still sound. The figures need re-measuring
+         * against the new artwork before anyone cites them again.
          */
         .auth-hero::after {
             content: "";
@@ -342,7 +344,7 @@
         @media (max-width: 991.98px) {
             body {
                 background-image: linear-gradient(rgba(238, 242, 249, .90), rgba(238, 242, 249, .94)),
-                                  url('{{ asset('images/authscreen_bg.png') }}');
+                                  url('{{ asset('images/authscreen_bg.jpeg') }}');
                 background-size: cover;
                 background-position: center;
                 background-attachment: fixed;
