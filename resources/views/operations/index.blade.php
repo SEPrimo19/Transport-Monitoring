@@ -24,6 +24,12 @@
         <span class="text-muted small">
             <i class="bi bi-arrow-repeat me-1"></i>Auto-refreshing · last update <span id="ops-updated">—</span>
         </span>
+        {{-- A map full of markers looks identical whether it is live or frozen, so a
+             failed poll has to say so. Without this the only clue was the timestamp
+             above quietly ceasing to advance. --}}
+        <div id="ops-stale" class="alert alert-warning py-2 px-3 mt-2 mb-0 d-none" role="status">
+            <i class="bi bi-exclamation-triangle me-1"></i><span id="ops-stale-text"></span>
+        </div>
     </div>
 
     @if (count($corridors) > 1)
@@ -200,16 +206,65 @@
 
             render(INITIAL);
 
+            var staleBox = document.getElementById('ops-stale');
+            var staleText = document.getElementById('ops-stale-text');
+            var failures = 0;
+            var timer = null;
+
+            // One transient failure on a provincial connection is normal and must not
+            // cry wolf; two in a row means twenty-four seconds of nothing, which is
+            // worth saying. A 401 is reported immediately -- waiting cannot fix an
+            // expired session, and the operator needs to know to sign in again rather
+            // than keep watching markers that will never move.
+            function reportFailure(message, immediate) {
+                failures += 1;
+                if (!immediate && failures < 2) return;
+                staleText.textContent = message;
+                staleBox.classList.remove('d-none');
+            }
+
+            function reportRecovered() {
+                failures = 0;
+                staleBox.classList.add('d-none');
+            }
+
             async function poll() {
                 try {
                     const r = await fetch(DATA_URL, { headers: { 'Accept': 'application/json' } });
-                    if (r.ok) {
-                        const d = await r.json();
-                        render(d.vehicles || []);
+                    if (r.status === 401 || r.status === 419) {
+                        reportFailure('Your session has expired. Sign in again to resume live tracking.', true);
+                        stop();
+                        return;
                     }
-                } catch (e) { /* keep the last good render */ }
+                    if (!r.ok) {
+                        reportFailure('Live data is not updating (server returned ' + r.status + '). Showing the last known positions.', false);
+                        return;
+                    }
+                    const d = await r.json();
+                    render(d.vehicles || []);
+                    reportRecovered();
+                } catch (e) {
+                    // Network down, or a response that was not the JSON we expected.
+                    reportFailure('Live data is not updating. Showing the last known positions.', false);
+                }
             }
-            setInterval(poll, 12000);
+
+            function start() {
+                if (timer === null) timer = setInterval(poll, 12000);
+            }
+
+            function stop() {
+                if (timer !== null) { clearInterval(timer); timer = null; }
+            }
+
+            // A hidden tab polls nobody. Left open overnight this ran five times a
+            // minute against a five-table join for no viewer. Same pattern the
+            // notification bell already uses.
+            document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState === 'visible') { poll(); start(); } else { stop(); }
+            });
+
+            if (document.visibilityState === 'visible') start();
             setTimeout(function () { map.invalidateSize(); }, 200);
         });
     </script>
