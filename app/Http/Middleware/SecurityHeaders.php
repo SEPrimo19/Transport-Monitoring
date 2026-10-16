@@ -30,6 +30,24 @@ class SecurityHeaders
     /** Kept in one place so the CSP and the layout cannot drift apart. */
     private const CDN = 'https://cdn.jsdelivr.net';
 
+    /**
+     * Road geometry for the route polyline editor (routes/geometry.blade.php).
+     *
+     * Reached by fetch from the browser, so it needs connect-src and not img-src. It was
+     * missing when this policy stopped being Report-Only, which left "Generate route
+     * along roads" failing with "Could not reach the routing service (OSRM)" on the
+     * deployed console while the map tiles around it still loaded — tiles are <img> and
+     * img-src already allows https:, so the failure read like a network fault rather
+     * than the policy decision it was.
+     */
+    private const OSRM = 'https://router.project-osrm.org';
+
+    /**
+     * Place lookup behind "Find location" in terminals/_form.blade.php and
+     * partials/region-map-picker.blade.php. Same story as OSRM: fetch, so connect-src.
+     */
+    private const NOMINATIM = 'https://nominatim.openstreetmap.org';
+
     public function handle(Request $request, Closure $next): Response
     {
         $response = $next($request);
@@ -56,7 +74,16 @@ class SecurityHeaders
             // Map tiles and org logos are remote images; evidence arrives as signed URLs.
             "img-src 'self' data: blob: https:",
             "media-src 'self' blob: https:",
-            "connect-src 'self' ".$supabase.' https://tiles.openfreemap.org',
+            // Every host the console calls from the browser must be listed here. A
+            // missing one does not warn: the request is simply refused, and the feature
+            // reports a connection problem it does not have.
+            'connect-src '.implode(' ', [
+                "'self'",
+                $supabase,
+                'https://tiles.openfreemap.org',
+                self::OSRM,
+                self::NOMINATIM,
+            ]),
             "frame-ancestors 'none'",
             "base-uri 'self'",
             "form-action 'self'",

@@ -34,26 +34,70 @@ class SecurityHeadersTest extends TestCase
             ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     }
 
-    public function test_content_security_policy_is_sent_in_report_only_mode(): void
+    public function test_content_security_policy_is_enforced_not_report_only(): void
     {
-        // Report-only on purpose. Enforcing a policy that has never been exercised
-        // against every page risks silently breaking the route map editor or Live Ops
-        // mid-demo. This test pins that the header exists; flipping it to enforcing is
-        // a deliberate later change that should also change this assertion.
+        // It spent its life as Report-Only, which computed the whole policy and then
+        // blocked nothing. This pins the flip, and would have caught the fact that the
+        // flip happened without this assertion being updated with it.
         $response = $this->get('/login');
 
-        $response->assertHeader('Content-Security-Policy-Report-Only');
+        $response->assertHeader('Content-Security-Policy');
+        $response->assertHeaderMissing('Content-Security-Policy-Report-Only');
         $this->assertStringContainsString(
             "frame-ancestors 'none'",
-            $response->headers->get('Content-Security-Policy-Report-Only')
+            $response->headers->get('Content-Security-Policy')
         );
     }
 
-    public function test_hsts_is_not_sent_over_plain_http(): void
+    public function test_connect_src_allows_every_host_the_browser_actually_calls(): void
+    {
+        // The regression this exists to prevent: enforcing the policy without listing
+        // OSRM left "Generate route along roads" dead on the deployed console, and
+        // omitting Nominatim killed "Find location" on both the terminal form and the
+        // region picker. Neither failed loudly -- the browser refuses the request and
+        // the feature reports a connection problem it does not have -- and the map
+        // tiles beside them kept loading, because tiles are <img> and img-src allows
+        // https:. So the symptom pointed at the network and not at this header.
+        //
+        // Any new host fetched from a Blade view has to be added to connect-src AND to
+        // this list.
+        $csp = $this->get('/login')->headers->get('Content-Security-Policy');
+
+        $this->assertNotNull($csp);
+        $connectSrc = collect(explode(';', $csp))
+            ->map(fn (string $directive): string => trim($directive))
+            ->first(fn (string $directive): bool => str_starts_with($directive, 'connect-src'));
+
+        $this->assertNotNull($connectSrc, 'connect-src directive is missing entirely');
+
+        foreach ([
+            "'self'",
+            'https://router.project-osrm.org',
+            'https://nominatim.openstreetmap.org',
+            'https://tiles.openfreemap.org',
+        ] as $host) {
+            $this->assertStringContainsString(
+                $host,
+                $connectSrc,
+                "connect-src must allow {$host} or the feature using it fails silently"
+            );
+        }
+    }
+
+    public function test_hsts_is_sent_only_over_https(): void
     {
         // Sending HSTS over HTTP is meaningless, and from a local `php artisan serve`
-        // session it can pin a developer's browser to https://localhost — an
-        // unpleasant thing to debug. It must appear only on secure requests.
-        $this->get('/login')->assertHeaderMissing('Strict-Transport-Security');
+        // session it can pin a developer's browser to https://localhost -- an
+        // unpleasant thing to debug.
+        //
+        // Both schemes are requested explicitly. This test used to call $this->get()
+        // with a bare path, which inherits APP_URL, so whether it passed depended on
+        // whoever's .env it ran against -- an https APP_URL made it fail while the
+        // middleware was behaving correctly.
+        $this->get('http://localhost/login')
+            ->assertHeaderMissing('Strict-Transport-Security');
+
+        $this->get('https://localhost/login')
+            ->assertHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     }
 }
