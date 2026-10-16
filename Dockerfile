@@ -12,11 +12,21 @@ FROM php:8.3-apache
 
 # pdo_pgsql is not optional: the console reads Supabase Postgres directly for
 # the auth.users lookups in DriverController, on top of the PostgREST calls.
+#
+# unzip and git are not optional either, and their absence is not obvious.
+# php:8.3-apache ships no `zip` PHP extension and no unzip binary, and copying
+# the composer binary out of the composer:2 image brings the binary alone, not
+# the tools it shells out to. Composer then downloads dist archives it cannot
+# extract, finds no git to fall back to, and exits 1 — which is exactly how the
+# first Render build failed.
 RUN set -eux; \
     apt-get update; \
-    apt-get install -y --no-install-recommends libpq-dev; \
+    apt-get install -y --no-install-recommends \
+        libpq-dev \
+        unzip \
+        git \
+        ca-certificates; \
     docker-php-ext-install -j"$(nproc)" pdo_pgsql pgsql; \
-    apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
     rm -rf /var/lib/apt/lists/*
 
 # Laravel's public/.htaccess does the front-controller rewrite.
