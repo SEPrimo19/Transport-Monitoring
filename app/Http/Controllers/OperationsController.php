@@ -128,15 +128,27 @@ class OperationsController extends Controller
         })->all();
     }
 
-    /** Freshness buckets mirroring PassengerMapViewModel.computeConfidenceLevel. */
+    /**
+     * Freshness buckets mirroring PassengerMapViewModel.computeConfidenceLevel.
+     *
+     * The thresholds always matched the mobile app; the COLOURS did not, and these are
+     * now the same five the passenger sees — see VehicleFreshnessPalette in the Android
+     * repo. The worst of the old divergence was Recent: teal reads as a different state
+     * rather than as a less immediate green, so a dispatcher and a passenger looking at
+     * the same bus could reasonably describe it differently.
+     *
+     * Keep this list and VehicleFreshnessPalette in step. Both are deliberately a
+     * brightness ramp as well as a hue ramp — vivid, soft, amber, red, grey drains
+     * steadily — so the series survives colour-blindness and a sunlit screen.
+     */
     private function classify(int $age): array
     {
         return match (true) {
-            $age <= 30 => ['Live', '#198754'],       // green
-            $age <= 120 => ['Recent', '#20c997'],    // teal
-            $age <= 300 => ['Delayed', '#ffc107'],   // amber
-            $age <= 900 => ['Stale', '#fd7e14'],     // orange
-            default => ['Offline', '#6c757d'],        // grey
+            $age <= 30 => ['Live', '#15A04A'],       // vivid green
+            $age <= 120 => ['Recent', '#6FBF5E'],    // soft green
+            $age <= 300 => ['Delayed', '#E89C12'],   // amber
+            $age <= 900 => ['Stale', '#E0512B'],     // red
+            default => ['Offline', '#7E8A97'],       // grey
         };
     }
 

@@ -47,11 +47,13 @@
     @endif
 
     <div class="d-flex flex-wrap gap-3 small mb-3">
-        <span><span class="ops-dot me-1" style="background:#198754"></span>Live (≤30s)</span>
-        <span><span class="ops-dot me-1" style="background:#20c997"></span>Recent (≤2m)</span>
-        <span><span class="ops-dot me-1" style="background:#ffc107"></span>Delayed (≤5m)</span>
-        <span><span class="ops-dot me-1" style="background:#fd7e14"></span>Stale (≤15m)</span>
-        <span><span class="ops-dot me-1" style="background:#6c757d"></span>Offline (&gt;15m)</span>
+        {{-- Same five the passenger sees; mirrors VehicleFreshnessPalette and
+             OperationsController::classify. Change all three together. --}}
+        <span><span class="ops-dot me-1" style="background:#15A04A"></span>Live (≤30s)</span>
+        <span><span class="ops-dot me-1" style="background:#6FBF5E"></span>Recent (≤2m)</span>
+        <span><span class="ops-dot me-1" style="background:#E89C12"></span>Delayed (≤5m)</span>
+        <span><span class="ops-dot me-1" style="background:#E0512B"></span>Stale (≤15m)</span>
+        <span><span class="ops-dot me-1" style="background:#7E8A97"></span>Offline (&gt;15m)</span>
     </div>
 
     <div class="row g-3">
@@ -94,19 +96,53 @@
                 return (s == null ? '' : String(s)).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
             }
 
-            // Directional arrow (rotated by heading) like the mobile app; a plain dot
-            // when there's no heading. Coloured by freshness.
+            // The same bus the passengers see.
+            //
+            // This drew a rotated arrow, which is what the mobile app drew until a
+            // tester asked for a bus. Geometry below mirrors VehicleMarkerFactory in
+            // the Android repo: a 54-unit square, a body 0.62 long by 0.30 wide, wing
+            // mirrors at 0.62 of the half-length, a pale roof panel and the operator's
+            // colour as a stripe across it. Keep the two in step -- a dispatcher and a
+            // passenger discussing one bus should be looking at the same object.
+            //
+            // The body carries freshness (v.color) and the stripe carries the brand,
+            // for the same reason as on mobile: freshness changes minute to minute and
+            // is what someone actually needs, a brand never changes.
+            function darken(hex, factor) {
+                const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
+                if (!m) return '#333';
+                const n = parseInt(m[1], 16);
+                const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+                    .map(x => Math.max(0, Math.min(255, Math.round(x * factor))));
+                return 'rgb(' + c.join(',') + ')';
+            }
+
             function vehicleIcon(v) {
-                const size = 40;
-                let html;
-                if (v.heading == null) {
-                    html = '<span style="display:block;width:18px;height:18px;margin:' + ((size - 18) / 2) + 'px;' +
-                        'border-radius:50%;background:' + v.color + ';border:2.5px solid #fff;box-shadow:0 0 3px rgba(0,0,0,.6)"></span>';
-                } else {
-                    html = '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" ' +
-                        'style="transform:rotate(' + v.heading + 'deg);transform-origin:50% 50%;filter:drop-shadow(0 1px 2px rgba(0,0,0,.55))">' +
-                        '<path d="M12 1.5 L19 21.5 L12 16.5 L5 21.5 Z" fill="' + v.color + '" stroke="#fff" stroke-width="1.6"/></svg>';
-                }
+                const size = 54;
+                const c = 27, hl = 16.74, hw = 8.1;      // centre, half-length, half-width
+                const edge = darken(v.color, 0.55);
+                // No heading means no bearing to show, so the silhouette simply points
+                // up rather than inventing a direction.
+                const rotate = v.heading == null ? 0 : v.heading;
+
+                const html =
+                    '<svg width="' + size + '" height="' + size + '" viewBox="0 0 54 54" ' +
+                      'style="transform:rotate(' + rotate + 'deg);transform-origin:50% 50%;' +
+                      'filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))">' +
+                      // mirrors, under the body so they read as attached to it
+                      '<rect x="15.93" y="15.81" width="2.97" height="1.62" rx=".81" fill="' + edge + '"/>' +
+                      '<rect x="35.1"  y="15.81" width="2.97" height="1.62" rx=".81" fill="' + edge + '"/>' +
+                      // body
+                      '<rect x="18.9" y="10.26" width="16.2" height="33.48" rx="4.46" ' +
+                        'fill="' + v.color + '" stroke="' + edge + '" stroke-width="1.1"/>' +
+                      // windscreen (wider) and rear window -- the asymmetry is the nose
+                      '<rect x="20.68" y="12.60" width="12.64" height="5.03" rx="1.2" fill="#1C2B33" opacity=".92"/>' +
+                      '<rect x="21.65" y="37.04" width="10.70" height="4.36" rx="1.2" fill="#1C2B33" opacity=".92"/>' +
+                      // roof panel, then the operator stripe across it
+                      '<rect x="21.01" y="20.30" width="11.98" height="14.07" rx="1.1" fill="#F2F4F5" opacity=".95"/>' +
+                      '<rect x="21.01" y="26.36" width="11.98" height="1.94" fill="var(--amoec-brand, #1B5E20)"/>' +
+                    '</svg>';
+
                 return L.divIcon({ className: 'ops-veh', iconSize: [size, size], iconAnchor: [size / 2, size / 2], html: html });
             }
 
