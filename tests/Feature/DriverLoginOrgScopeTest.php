@@ -24,11 +24,23 @@ use Tests\TestCase;
  */
 class DriverLoginOrgScopeTest extends TestCase
 {
+    /**
+     * Satisfies AdminPasswordPolicy: 12+ characters with upper and lower case, a
+     * number and a symbol. The literal it replaced was 'a-strong-password', which
+     * stopped being one the day that policy landed — it has no capital and no digit —
+     * and quietly turned every assertion below into a test of the validator instead.
+     */
+    private const VALID_PASSWORD = 'Rx7!ktQm93vBnd';
+
     public function test_an_org_admin_cannot_spoof_the_organization_id_on_a_created_login(): void
     {
         config(['supabase.url' => 'https://example.test', 'supabase.anon_key' => 'test-anon-key']);
 
         Http::fake([
+            // uncompromised() in AdminPasswordPolicy queries Have I Been Pwned. Stubbed
+            // so the suite neither depends on the network nor leaks a hash prefix from
+            // CI; an empty body means "this hash suffix was not found", i.e. not breached.
+            'api.pwnedpasswords.com/*' => Http::response('', 200),
             '*/functions/v1/driver-account' => Http::response([
                 'profile_id' => (string) Str::uuid(),
                 'email' => 'jsantos@drivers.amoectrack.invalid',
@@ -51,7 +63,7 @@ class DriverLoginOrgScopeTest extends TestCase
             'full_name' => 'Juan Dela Cruz',
             'employee_code' => 'e2e-'.Str::random(10),
             'license_number' => 'lic-'.Str::random(10),
-            'password' => 'a-strong-password',
+            'password' => self::VALID_PASSWORD,
             // Spoofed: an org_admin has no organization_id field to legitimately
             // submit at all — this simulates a crafted request trying anyway.
             'organization_id' => $someoneElsesOrgId,

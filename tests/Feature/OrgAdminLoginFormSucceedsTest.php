@@ -42,6 +42,14 @@ use Tests\TestCase;
  */
 class OrgAdminLoginFormSucceedsTest extends TestCase
 {
+    /**
+     * Satisfies AdminPasswordPolicy: 12+ characters with upper and lower case, a
+     * number and a symbol. The literal it replaced was 'a-strong-password', which
+     * stopped being one the day that policy landed — it has no capital and no digit —
+     * and quietly turned every assertion below into a test of the validator instead.
+     */
+    private const VALID_PASSWORD = 'Rx7!ktQm93vBnd';
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -53,6 +61,10 @@ class OrgAdminLoginFormSucceedsTest extends TestCase
         $organizationId = $this->anExistingOrganizationId();
 
         Http::fake([
+            // uncompromised() in AdminPasswordPolicy queries Have I Been Pwned. Stubbed
+            // so the suite neither depends on the network nor leaks a hash prefix from
+            // CI; an empty body means "this hash suffix was not found", i.e. not breached.
+            'api.pwnedpasswords.com/*' => Http::response('', 200),
             '*/functions/v1/driver-account' => Http::response([
                 'profile_id' => (string) Str::uuid(),
                 'email' => 'jsantos@admins.amoectrack.invalid',
@@ -66,7 +78,7 @@ class OrgAdminLoginFormSucceedsTest extends TestCase
                 'organization_id' => $organizationId,
                 'full_name' => 'Juan Dela Cruz',
                 'username' => 'jsantos',
-                'password' => 'a-strong-password',
+                'password' => self::VALID_PASSWORD,
             ]);
 
         // A ReflectionException from the container surfaces as a 500, which is exactly
@@ -77,7 +89,16 @@ class OrgAdminLoginFormSucceedsTest extends TestCase
 
         $status = (string) session('status');
         $this->assertStringContainsString('Juan Dela Cruz', $status);
-        $this->assertStringContainsString('jsantos@admins.amoectrack.invalid', $status);
+
+        // The username, NOT the synthetic address it is expanded into. An account made
+        // without a real email signs in as <username>@admins.<...>.invalid, which is an
+        // implementation detail of how GoTrue is addressed: showing it to an
+        // administrator invites them to hand it to the person as their login, and it is
+        // not one. This assertion used to require the opposite and was left behind when
+        // 0c705b7 stopped the messages leaking it.
+        $this->assertStringContainsString('jsantos', $status);
+        $this->assertStringNotContainsString('@admins.', $status);
+        $this->assertStringNotContainsString('.invalid', $status);
     }
 
     public function test_the_form_sends_the_super_admin_only_action_with_the_admins_own_token(): void
@@ -85,6 +106,10 @@ class OrgAdminLoginFormSucceedsTest extends TestCase
         $organizationId = $this->anExistingOrganizationId();
 
         Http::fake([
+            // uncompromised() in AdminPasswordPolicy queries Have I Been Pwned. Stubbed
+            // so the suite neither depends on the network nor leaks a hash prefix from
+            // CI; an empty body means "this hash suffix was not found", i.e. not breached.
+            'api.pwnedpasswords.com/*' => Http::response('', 200),
             '*/functions/v1/driver-account' => Http::response([
                 'profile_id' => (string) Str::uuid(),
                 'email' => 'jsantos@admins.amoectrack.invalid',
@@ -98,7 +123,7 @@ class OrgAdminLoginFormSucceedsTest extends TestCase
                 'organization_id' => $organizationId,
                 'full_name' => 'Juan Dela Cruz',
                 'username' => 'jsantos',
-                'password' => 'a-strong-password',
+                'password' => self::VALID_PASSWORD,
             ]);
 
         Http::assertSent(function ($request) use ($organizationId) {
@@ -124,6 +149,10 @@ class OrgAdminLoginFormSucceedsTest extends TestCase
         $organizationId = $this->anExistingOrganizationId();
 
         Http::fake([
+            // uncompromised() in AdminPasswordPolicy queries Have I Been Pwned. Stubbed
+            // so the suite neither depends on the network nor leaks a hash prefix from
+            // CI; an empty body means "this hash suffix was not found", i.e. not breached.
+            'api.pwnedpasswords.com/*' => Http::response('', 200),
             '*/functions/v1/driver-account' => Http::response(
                 ['error' => 'That username is already taken.'],
                 409
@@ -137,7 +166,7 @@ class OrgAdminLoginFormSucceedsTest extends TestCase
                 'organization_id' => $organizationId,
                 'full_name' => 'Juan Dela Cruz',
                 'username' => 'jsantos',
-                'password' => 'a-strong-password',
+                'password' => self::VALID_PASSWORD,
             ]);
 
         $response->assertRedirect();
