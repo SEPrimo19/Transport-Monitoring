@@ -1,0 +1,104 @@
+# Render blueprint for the admin console.
+#
+# Declares the service and every environment variable NAME, so the five secrets
+# are the only thing typed into a dashboard by hand. Values marked
+# `sync: false` are prompted for on first deploy and never stored in git.
+#
+# Two things are deliberately absent:
+#
+#   * a database. Supabase is the database. Adding a Render Postgres here would
+#     make Render inject its own DB_* variables, and the console would talk to
+#     an empty database instead of the live one.
+#
+#   * a deploy or pre-deploy command. There is nothing to run at deploy time,
+#     and the obvious candidate — `php artisan migrate --force` — would create
+#     eight unused tables in the Supabase public schema. See DEPLOYMENT.md.
+services:
+  - type: web
+    name: amoec-track-admin
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    # Closest Render region to Northern Samar; every request here crosses the
+    # Pacific otherwise, on top of the Supabase round trip.
+    region: singapore
+    branch: main
+    autoDeploy: true
+    # GET /login is the one unauthenticated page that returns 200. '/' redirects
+    # to /dashboard, which redirects again to /login, so it is not usable here.
+    healthCheckPath: /login
+
+    envVars:
+      # ── Application ──────────────────────────────────────────────────────
+      - key: APP_NAME
+        value: AMOEC Track Admin
+
+      # Load-bearing, not cosmetic: AppServiceProvider calls
+      # URL::forceScheme('https') only when the environment is production. On
+      # any other value the console emits http:// URLs behind Render's TLS and
+      # the enforced CSP blocks its own assets.
+      - key: APP_ENV
+        value: production
+
+      - key: APP_DEBUG
+        value: "false"
+
+      # php artisan key:generate --show
+      - key: APP_KEY
+        sync: false
+
+      # APP_URL is intentionally not set. The entrypoint falls back to
+      # RENDER_EXTERNAL_URL, which avoids deploying once just to learn the URL.
+      # Set it explicitly when a custom domain is attached.
+
+      # ── Logging: to the container stream, where Render collects it ───────
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: LOG_LEVEL
+        value: error
+
+      # ── No database of its own, so no database-backed drivers ───────────
+      # Laravel 12 defaults all three of these to `database`, which would want
+      # sessions/cache/jobs tables that this app does not use.
+      - key: SESSION_DRIVER
+        value: file
+      - key: SESSION_SECURE_COOKIE
+        value: "true"
+      - key: SESSION_LIFETIME
+        value: "120"
+      - key: CACHE_STORE
+        value: file
+      - key: QUEUE_CONNECTION
+        value: sync
+      - key: FILESYSTEM_DISK
+        value: local
+      - key: MAIL_MAILER
+        value: log
+
+      # ── Supabase Postgres, via the pooler ───────────────────────────────
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        sync: false
+      # Session mode. Transaction mode (6543) does not reliably support the
+      # prepared statements Laravel's pgsql driver issues.
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_DATABASE
+        value: postgres
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_SSLMODE
+        value: require
+
+      # ── Supabase REST + GoTrue ──────────────────────────────────────────
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      # SUPABASE_JWT_ALGS is omitted: it defaults to ES256,RS256, and this
+      # project's JWKS publishes a single ES256 key.

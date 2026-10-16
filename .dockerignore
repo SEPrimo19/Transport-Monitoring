@@ -1,0 +1,35 @@
+# Keep local state and secrets out of the image. .env is the important one: the
+# platform supplies the environment, and baking the local file in would ship the
+# Supabase credentials and the database-owner password inside the image layers.
+.env
+.env.*
+!.env.example
+
+.git
+.gitignore
+.github
+
+vendor
+node_modules
+
+storage/logs/*
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+bootstrap/cache/*
+
+tests
+phpunit.xml
+.phpunit.result.cache
+pint.json
+
+# No asset pipeline is used at runtime: @vite appears only in the unreachable
+# welcome view, so nothing here needs to be compiled or shipped.
+package.json
+package-lock.json
+vite.config.js
+resources/js
+resources/css
+
+*.md
+!DEPLOYMENT.md
