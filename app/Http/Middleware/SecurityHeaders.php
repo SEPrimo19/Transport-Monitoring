@@ -83,6 +83,15 @@ class SecurityHeaders
                 'https://tiles.openfreemap.org',
                 self::OSRM,
                 self::NOMINATIM,
+                // Bootstrap's minified CSS and JS each end with a sourceMappingURL
+                // comment, and the browser fetches those .map files — as a fetch, so
+                // under connect-src — whenever DevTools is open. Nothing visible broke
+                // without this, but the console reported two blocked resources to
+                // anyone who looked, which is a poor advertisement for a policy whose
+                // whole job is to be trusted. The CDN already appears in script-src,
+                // i.e. it is already allowed to run arbitrary code in this origin;
+                // letting it answer a fetch grants strictly less than that.
+                self::CDN,
             ]),
             "frame-ancestors 'none'",
             "base-uri 'self'",

@@ -53,7 +53,10 @@ class AuthenticateSupabaseAdmin
     {
         $token = $this->extractToken($request);
         if ($token === null) {
-            return $this->deny($request, 'Missing bearer token.');
+            // No alert for a person. Arriving without a token is not a failure —
+            // it is what every first visit, every bookmark and every return after
+            // the free instance slept and wiped its file sessions looks like.
+            return $this->deny($request, 'Missing bearer token.', null);
         }
 
         JWT::$leeway = 60; // tolerate minor clock skew
@@ -64,21 +67,21 @@ class AuthenticateSupabaseAdmin
             // refresh token instead of bouncing the admin to the login screen.
             $token = $this->attemptRefresh($request);
             if ($token === null) {
-                return $this->deny($request, 'Your session expired. Please sign in again.');
+                return $this->deny($request, 'Your session expired. Please sign in again.', 'Your session expired. Please sign in again.');
             }
 
             try {
                 $claims = $this->decodeToken($token);
             } catch (\Throwable $e2) {
-                return $this->deny($request, 'Your session expired. Please sign in again.');
+                return $this->deny($request, 'Your session expired. Please sign in again.', 'Your session expired. Please sign in again.');
             }
         } catch (\Throwable $e) {
-            return $this->deny($request, 'Invalid or expired token.');
+            return $this->deny($request, 'Invalid or expired token.', 'Your session is no longer valid. Please sign in again.');
         }
 
         $sub = $claims->sub ?? null;
         if (empty($sub)) {
-            return $this->deny($request, 'Token has no subject.');
+            return $this->deny($request, 'Token has no subject.', 'Your session is no longer valid. Please sign in again.');
         }
 
         // Source of truth = public.profiles (NOT the JWT).
@@ -103,11 +106,11 @@ class AuthenticateSupabaseAdmin
         );
 
         if ($profile === null || ! $profile->is_active) {
-            return $this->deny($request, 'No active profile for this account.');
+            return $this->deny($request, 'No active profile for this account.', 'This account is not active in the admin console. Contact your system administrator.');
         }
 
         if (! in_array($profile->role, ['org_admin', 'super_admin'], true)) {
-            return $this->deny($request, 'This account is not permitted in the admin console.');
+            return $this->deny($request, 'This account is not permitted in the admin console.', 'This account is not permitted in the admin console. Contact your system administrator.');
         }
 
         app(AdminContext::class)->fill([
@@ -253,19 +256,39 @@ class AuthenticateSupabaseAdmin
         return ! empty($sessionToken) ? $sessionToken : null;
     }
 
-    private function deny(Request $request, string $message): Response
+    /**
+     * Refuse the request, saying one thing to a program and another to a person.
+     *
+     * These two audiences want opposite things. An API caller wants the precise
+     * reason, because it decides what the client does next. A person wants to know
+     * what is being asked of them, and a protocol phrase tells them nothing: the
+     * deployed console greeted anyone who opened its root URL with a red
+     * "Missing bearer token." box, which describes an HTTP request accurately and
+     * the visitor's situation not at all. They had not lost a token. They had just
+     * arrived.
+     *
+     * @param  string  $apiMessage  the precise reason, for a JSON caller.
+     * @param  string|null  $humanMessage  what to tell a person on the sign-in page,
+     *                                     or null to send them there with no alert —
+     *                                     for the cases where nothing went wrong and
+     *                                     the page's own "Sign in to continue" says
+     *                                     everything that needs saying.
+     */
+    private function deny(Request $request, string $apiMessage, ?string $humanMessage): Response
     {
         if ($request->expectsJson()) {
-            return response()->json(['error' => $message], 401);
+            return response()->json(['error' => $apiMessage], 401);
         }
 
         // Browser flow: drop any stale/rejected tokens and send them to the login
-        // screen with the reason. guest() remembers where they were headed so
+        // screen. guest() remembers where they were headed so
         // AuthController::login() can `intended()` them back after signing in.
         if ($request->hasSession()) {
             $request->session()->forget(['supabase_token', 'supabase_refresh_token']);
         }
 
-        return redirect()->guest(route('login'))->with('error', $message);
+        $redirect = redirect()->guest(route('login'));
+
+        return $humanMessage === null ? $redirect : $redirect->with('error', $humanMessage);
     }
 }

@@ -24,6 +24,42 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant.admin' => RequireTenantAdmin::class,
         ]);
 
+        // Render terminates TLS at its edge and forwards plain HTTP to this
+        // container. Without this the framework believes every request arrived over
+        // http, from Render's own internal address. Three things followed, and the
+        // third one broke sign-in on the deployed console:
+        //
+        //  * Strict-Transport-Security was never sent. SecurityHeaders only emits it
+        //    on an already-secure request, and no request ever looked secure.
+        //
+        //  * `throttle:8,1` on POST /login keyed every attempt to the proxy's address
+        //    rather than the visitor's, so every admin in the world shared one bucket
+        //    of eight attempts a minute.
+        //
+        //  * AuthenticateSupabaseAdmin::deny() sends guests away with
+        //    redirect()->guest(), which stores $request->fullUrl() as the intended
+        //    destination. fullUrl() reads the REQUEST's scheme, so it is not covered
+        //    by the URL::forceScheme('https') in AppServiceProvider — it stored
+        //    http://…/dashboard. A successful sign-in then replayed that absolute
+        //    http:// URL verbatim through redirect()->intended(), and Chrome checks a
+        //    form submission's redirect target against `form-action 'self'`: a
+        //    different scheme is a different origin, so the navigation was refused.
+        //    The POST had already succeeded, so the button sat on "Signing in…" until
+        //    the admin reloaded by hand and arrived at a dashboard they were already
+        //    signed in to.
+        //
+        // '*' trusts the immediate peer only (see TrustProxies), which is the right
+        // reading here: the container is not reachable except through Render's edge,
+        // so the peer is always theirs. X-Forwarded-Host is deliberately left out —
+        // nothing needs it, and trusting it would let a spoofed Host header poison
+        // every generated URL.
+        $middleware->trustProxies(
+            at: '*',
+            headers: Request::HEADER_X_FORWARDED_FOR
+                | Request::HEADER_X_FORWARDED_PORT
+                | Request::HEADER_X_FORWARDED_PROTO,
+        );
+
         // Baseline security response headers on every web response (audit L-3).
         $middleware->web(append: [
             SecurityHeaders::class,
