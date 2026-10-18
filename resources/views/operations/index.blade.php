@@ -247,6 +247,20 @@
             var failures = 0;
             var timer = null;
 
+            // 6s in production, 20s under `php artisan serve` — the built-in dev server
+            // handles ONE request at a time, so a fast poll there occupies the worker
+            // the admin's next page load needs. Apache in the shipped container runs a
+            // pool and has no such problem. The notification bell splits for the same
+            // reason.
+            //
+            // 6s is not a guess. DriverLocationForegroundService publishes to
+            // vehicle_live_location every LIVE_SYNC_INTERVAL_MS = 5s, so at the previous
+            // 12s this map discarded better than half of the positions the buses had
+            // already spent battery and data to send. Matching the publish cadence shows
+            // what was actually reported; polling faster than 5s would return the same
+            // row twice and buy nothing.
+            var POLL_MS = {{ PHP_SAPI === 'cli-server' ? 20000 : 6000 }};
+
             // One transient failure on a provincial connection is normal and must not
             // cry wolf; two in a row means twenty-four seconds of nothing, which is
             // worth saying. A 401 is reported immediately -- waiting cannot fix an
@@ -286,7 +300,7 @@
             }
 
             function start() {
-                if (timer === null) timer = setInterval(poll, 12000);
+                if (timer === null) timer = setInterval(poll, POLL_MS);
             }
 
             function stop() {

@@ -811,11 +811,29 @@
         var itemsEl = document.getElementById('notif-items');
         var liveEl = document.getElementById('notif-live');
 
-        // 60s, not 20s: `php artisan serve` serves ONE request at a time, so every poll
-        // occupies the worker the admin's next page load needs. Reports are triaged on
-        // human timescales — a minute of latency here is invisible, a blocked navigation
-        // is not.
-        var POLL_MS = 60000;
+        // 3s in production, 30s under `php artisan serve`.
+        //
+        // This was one number, 60s, and the reason behind it was sound: the built-in
+        // server `artisan serve` uses handles ONE request at a time, so every poll
+        // occupies the worker the admin's next page load needs. But that is a property
+        // of the DEVELOPMENT server, not of this application — the container the console
+        // actually ships in runs Apache with a pool of workers and has no such problem.
+        // Paying a minute of latency in production to protect a local convenience was
+        // the wrong way round, so the two cases are now separated.
+        //
+        // 3s because the thing this bell reports — a passenger filing a misconduct
+        // report — has to appear while somebody is looking at the screen, not a minute
+        // later. It costs one indexed query per tick (see PendingReportFeed), and a
+        // hidden tab polls not at all, so the bill is bounded by the number of admins
+        // actively watching. That is the case worth spending on.
+        //
+        // This is a floor, not the destination. The honest answer is a push from the
+        // database, because the report is inserted into Supabase by the Android app and
+        // never passes through Laravel at all — so no amount of cleverness here learns
+        // about it any sooner than asking. See the realtime design discussion before
+        // lowering this number further; past about 3s the right move is a socket, not a
+        // faster poll.
+        var POLL_MS = {{ PHP_SAPI === 'cli-server' ? 30000 : 3000 }};
         var lastCount = parseInt(badgeCountEl.textContent, 10) || 0;
         var timer = null;
         var inFlight = false;
