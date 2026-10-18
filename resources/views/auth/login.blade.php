@@ -163,11 +163,20 @@
            hostage, so the copy column gets some of it back (was 20rem) while
            staying well inside the veil's 56%-of-panel safe zone at 1920 (~30rem
            of budget there). */
-        /* Centred, not left-anchored. The column centres the block (justify-content
-           on .auth-hero); this centres the mark, the heading and the lead inside it.
-           The max-width still does the real work — it is what keeps the measure
-           readable and the copy inside the veil's safe zone. */
-        .hero-copy { max-width: 22rem; text-align: center; }
+        /* The BLOCK is centred in the column (justify-content on .auth-hero); the copy
+           inside it is NOT, and that distinction is the whole design here.
+           Centre-aligning the text as well cost three things at this measure: the lead
+           wraps to four centred lines, so the reader loses the left edge on every
+           return sweep; the mark drifted off its own left edge onto the artwork's
+           circular inset; and with the feature rows still left-aligned the column ran
+           two alignment systems at once. One left edge down mark, heading, lead and
+           rows reads as placed — while the block as a whole still sits centred against
+           the card opposite. */
+        .hero-copy { max-width: 22rem; }
+        /* Left edge, not centred: this mark leads the column's single left edge. The
+           card's copy of it keeps the centring from the base rule — that header IS
+           centred. */
+        .hero-copy .brand-logo { margin-inline: 0; }
         /* This has to come AFTER the unconditional rule above, not before it: a
            plain selector beats a media-scoped one of equal specificity if it's
            later in source order, so putting the override first would make it a
@@ -196,11 +205,6 @@
             display: flex; gap: .75rem; align-items: flex-start;
             color: var(--auth-ink);
             font-weight: 500;
-            /* Opts back out of the centring above. The BLOCK is centred, but these
-               rows are not: they wrap to two lines at this measure, and centred
-               ragged text beside a left-hanging icon reads as a mistake. A straight
-               left edge down the three icons is what makes the group look placed. */
-            text-align: left;
         }
         .hero-feature i { font-size: 1.1rem; line-height: 1.45; color: var(--amoec-brand); }
 
