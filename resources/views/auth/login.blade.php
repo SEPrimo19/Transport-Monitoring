@@ -163,7 +163,11 @@
            hostage, so the copy column gets some of it back (was 20rem) while
            staying well inside the veil's 56%-of-panel safe zone at 1920 (~30rem
            of budget there). */
-        .hero-copy { max-width: 22rem; }
+        /* Centred, not left-anchored. The column centres the block (justify-content
+           on .auth-hero); this centres the mark, the heading and the lead inside it.
+           The max-width still does the real work — it is what keeps the measure
+           readable and the copy inside the veil's safe zone. */
+        .hero-copy { max-width: 22rem; text-align: center; }
         /* This has to come AFTER the unconditional rule above, not before it: a
            plain selector beats a media-scoped one of equal specificity if it's
            later in source order, so putting the override first would make it a
@@ -192,6 +196,11 @@
             display: flex; gap: .75rem; align-items: flex-start;
             color: var(--auth-ink);
             font-weight: 500;
+            /* Opts back out of the centring above. The BLOCK is centred, but these
+               rows are not: they wrap to two lines at this measure, and centred
+               ragged text beside a left-hanging icon reads as a mistake. A straight
+               left edge down the three icons is what makes the group look placed. */
+            text-align: left;
         }
         .hero-feature i { font-size: 1.1rem; line-height: 1.45; color: var(--amoec-brand); }
 
@@ -269,6 +278,11 @@
             width: 8rem;
             height: 8rem;
             object-fit: contain;
+            /* Block-level, so text-align on the parent does nothing to it — this is
+               what actually centres the mark under both the hero copy and the card
+               header, and leaving it out left the logo hanging at the left edge while
+               the heading beneath it sat centred. */
+            margin-inline: auto;
             /* Follows the artwork's silhouette; box-shadow would trace the square. */
             filter: drop-shadow(0 6px 14px rgba(15, 23, 42, .18));
         }
@@ -372,9 +386,9 @@
     <div class="row auth-shell g-0">
 
         {{-- ── Hero ─────────────────────────────────────────────────────── --}}
-        {{-- Full-bleed artwork behind a left-anchored copy column — see
+        {{-- Full-bleed artwork behind a centred copy column — see
              .auth-hero::before (image) and .auth-hero::after (light veil). --}}
-        <div class="col-lg-6 auth-hero d-none d-lg-flex align-items-center">
+        <div class="col-lg-6 auth-hero d-none d-lg-flex align-items-center justify-content-center">
             <div class="hero-copy">
                 {{-- alt="" — decorative here: the h1 directly below already names the
                      product, so announcing the mark too would just repeat it. --}}
@@ -407,13 +421,20 @@
         {{-- ── Form ─────────────────────────────────────────────────────── --}}
         <div class="col-lg-6 auth-panel-col d-flex align-items-center justify-content-center p-3 p-sm-4 p-lg-4">
             <div class="auth-card p-4 p-sm-5">
-                <div class="mb-4">
+                {{-- Centred over a left-aligned form: the title block is a header, not
+                     part of the field flow, so centring it reads as deliberate rather
+                     than as a stray indent. --}}
+                <div class="mb-4 text-center">
                     {{-- Mirrors the hero badge for small screens, where the hero is hidden. --}}
                     {{-- Named here, unlike the hero copy: below `lg` the hero is hidden,
                          so this mark is the only branding on screen. --}}
                     <img src="{{ asset('images/amoec-logo.png') }}" alt="AMOEC Track"
                          class="brand-logo mb-1 d-lg-none" width="88" height="88" decoding="async">
-                    <h2 class="h3 fw-bold mb-1">Welcome back</h2>
+                    {{-- "Welcome", not "Welcome back": this page greets first-time admins
+                         and anyone the free instance signed out while it slept, neither of
+                         whom is coming back from anywhere. The dashboard's own greeting
+                         keeps "back" — by then we know who they are. --}}
+                    <h2 class="h3 fw-bold mb-1">Welcome</h2>
                     <p class="mb-0">Sign in to continue to your console.</p>
                 </div>
 
