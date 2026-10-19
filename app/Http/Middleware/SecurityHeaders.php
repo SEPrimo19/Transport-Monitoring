@@ -48,6 +48,17 @@ class SecurityHeaders
      */
     private const NOMINATIM = 'https://nominatim.openstreetmap.org';
 
+    /**
+     * Have I Been Pwned's range API, queried by the live password checklist
+     * (partials/password-requirements.blade.php).
+     *
+     * Reached by fetch, so connect-src. Only the first five characters of the
+     * candidate's SHA-1 are sent — k-anonymity, the same method the server-side
+     * `uncompromised()` rule uses — so the password itself never leaves the browser
+     * and the prefix matches hundreds of unrelated hashes.
+     */
+    private const PWNED_PASSWORDS = 'https://api.pwnedpasswords.com';
+
     public function handle(Request $request, Closure $next): Response
     {
         $response = $next($request);
@@ -83,6 +94,7 @@ class SecurityHeaders
                 'https://tiles.openfreemap.org',
                 self::OSRM,
                 self::NOMINATIM,
+                self::PWNED_PASSWORDS,
                 // Bootstrap's minified CSS and JS each end with a sourceMappingURL
                 // comment, and the browser fetches those .map files — as a fetch, so
                 // under connect-src — whenever DevTools is open. Nothing visible broke

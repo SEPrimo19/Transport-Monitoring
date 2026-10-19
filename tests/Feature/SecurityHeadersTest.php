@@ -75,6 +75,10 @@ class SecurityHeadersTest extends TestCase
             'https://router.project-osrm.org',
             'https://nominatim.openstreetmap.org',
             'https://tiles.openfreemap.org',
+            // The live "not in a known data breach" tick on every password field.
+            // Blocked here, the line silently never turns green and the checklist
+            // looks broken — which is exactly how it was reported.
+            'https://api.pwnedpasswords.com',
         ] as $host) {
             $this->assertStringContainsString(
                 $host,
