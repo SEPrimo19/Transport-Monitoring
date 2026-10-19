@@ -499,6 +499,19 @@
         /* Bootstrap paints the invalid glyph at the right edge, where the
            eye now sits. Slide it inboard so the two don't stack. */
         .pw-wrap > .form-control.is-invalid { background-position: right 2.5rem center; }
+        /* The wrapper must stay EXACTLY as tall as the input it wraps.
+           .pw-toggle is centred on the wrapper (top:50% + translateY), so
+           anything else inside it moves the eye: the validation message used
+           to be carried in here, which made the wrapper field-plus-message
+           tall and pushed the eye down through the bottom border — visible
+           on the driver Create-login form the moment a password was
+           rejected. The message therefore stays OUTSIDE, as a sibling.
+
+           Bootstrap reveals it with `.is-invalid ~ .invalid-feedback`, and
+           that selector stops matching once the input is nested in the
+           wrapper, so the toggle script tags the message instead and this
+           rule does the revealing. */
+        .invalid-feedback.pw-feedback { display: block; }
         .pw-toggle {
             position: absolute; top: 50%; right: .4rem; transform: translateY(-50%);
             border: 0; background: transparent; color: #6c757d;
@@ -981,8 +994,10 @@
        The input is wrapped rather than rebuilt as a Bootstrap
        .input-group: the group markup would change validation styling and
        these fields rely on .is-invalid / .invalid-feedback. Wrapping does
-       break the CSS sibling link those two need, so the feedback element
-       is carried into the wrapper alongside its input. */
+       break the CSS sibling link those two need, so the message is tagged
+       for a rule of our own — see .invalid-feedback.pw-feedback in the
+       stylesheet, and the note there explaining why it must NOT simply be
+       moved inside the wrapper. */
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('input[type="password"]').forEach(function (input) {
             if (input.dataset.pwToggle || input.closest('.input-group')) return;
@@ -993,10 +1008,11 @@
             input.parentNode.insertBefore(wrap, input);
             wrap.appendChild(input);
 
-            // .invalid-feedback is shown by `.is-invalid ~ .invalid-feedback`,
-            // which stops matching the moment the input is nested. Move it in.
+            // Leave .invalid-feedback where it is and tag it, rather than moving it
+            // into the wrapper: the wrapper has to stay exactly as tall as the input
+            // or the absolutely-centred eye drifts below the field. See the CSS.
             var next = wrap.nextElementSibling;
-            if (next && next.classList.contains('invalid-feedback')) wrap.appendChild(next);
+            if (next && next.classList.contains('invalid-feedback')) next.classList.add('pw-feedback');
 
             var btn = document.createElement('button');
             btn.type = 'button';
