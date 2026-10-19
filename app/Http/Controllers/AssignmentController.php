@@ -149,6 +149,53 @@ class AssignmentController extends Controller
             'organizations' => $ctx->isSuperAdmin()
                 ? Organization::orderBy('name')->get(['id', 'name'])
                 : collect(),
+            'takenOnRoute' => $this->takenOnRoute($assignment),
         ];
+    }
+
+    /**
+     * Who already holds an active assignment, per route, so the form can grey out the
+     * combinations the database is going to refuse.
+     *
+     * KEYED BY ROUTE, and that is the whole point. The uniqueness rules are
+     * uq_assignments_active_driver_route and uq_assignments_active_vehicle_route — a
+     * bus on Allen→Calbayog is still free for Calbayog→Allen, which is not an edge case
+     * but the normal shape of this cooperative's day. Marking a vehicle "already used"
+     * outright would hide the second direction and make the form refuse work the system
+     * is built to do; the hint under Status says as much.
+     *
+     * The assignment being edited is excluded, or its own row would report it as a
+     * clash with itself.
+     *
+     * @return array<string, array{vehicles: array<string, string>, drivers: array<string, string>}>
+     */
+    private function takenOnRoute(?Assignment $assignment): array
+    {
+        $rows = Assignment::query()
+            ->with(['driver.profile', 'vehicle'])
+            ->where('is_active', true)
+            ->when($assignment?->getKey(), fn ($q, $id) => $q->whereKeyNot($id))
+            ->get(['id', 'route_id', 'vehicle_id', 'driver_profile_id']);
+
+        $map = [];
+        foreach ($rows as $row) {
+            $routeId = (string) $row->route_id;
+            $map[$routeId] ??= ['vehicles' => [], 'drivers' => []];
+
+            $driverName = $row->driver?->profile?->full_name ?: 'another driver';
+            $plate = $row->vehicle?->plate_number ?: 'another vehicle';
+
+            // Each side is labelled with its COUNTERPART: picking a vehicle, you want to
+            // know which driver has it, and the reverse. The id alone tells the admin
+            // nothing they can act on.
+            if ($row->vehicle_id) {
+                $map[$routeId]['vehicles'][(string) $row->vehicle_id] = $driverName;
+            }
+            if ($row->driver_profile_id) {
+                $map[$routeId]['drivers'][(string) $row->driver_profile_id] = $plate;
+            }
+        }
+
+        return $map;
     }
 }

@@ -521,6 +521,25 @@
         }
         .pw-toggle:hover { color: var(--amoec-brand); background: rgba(var(--amoec-brand-rgb), .1); }
         .pw-toggle:focus-visible { outline: 2px solid var(--amoec-brand); outline-offset: 1px; }
+
+        /* ---- Type-to-filter select -------------------------------- */
+        .ss-wrap { position: relative; }
+        .ss-menu {
+            position: absolute; z-index: 1056; left: 0; right: 0; top: calc(100% + 2px);
+            max-height: 16rem; overflow-y: auto;
+            background: #fff; border: 1px solid rgba(0,0,0,.15);
+            border-radius: .375rem; box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+            padding: .25rem 0; margin: 0; list-style: none;
+        }
+        .ss-menu[hidden] { display: none; }
+        .ss-opt { padding: .4rem .75rem; cursor: pointer; display: flex; gap: .5rem; align-items: baseline; }
+        .ss-opt:hover, .ss-opt.active { background: rgba(var(--amoec-brand-rgb), .12); }
+        .ss-opt[aria-disabled="true"] { cursor: not-allowed; opacity: .65; }
+        .ss-opt[aria-disabled="true"]:hover, .ss-opt[aria-disabled="true"].active { background: #f8f9fa; }
+        .ss-note { margin-left: auto; font-size: .75rem; white-space: nowrap; color: var(--bs-danger, #dc3545); }
+        .ss-group { padding: .35rem .75rem; font-size: .72rem; text-transform: uppercase;
+                    letter-spacing: .04em; color: #6c757d; }
+        .ss-empty { padding: .6rem .75rem; color: #6c757d; font-size: .875rem; }
     </style>
     @stack('head')
 </head>
@@ -1030,6 +1049,184 @@
                 btn.querySelector('i').className = show ? 'bi bi-eye-slash' : 'bi bi-eye';
                 input.focus();
             });
+        });
+    });
+</script>
+<script>
+    /* Type-to-filter for long <select> lists.
+       ----------------------------------------------------------------
+       Opt in with data-searchable on the select. The native element stays
+       in the DOM and keeps its name, value, required flag and .is-invalid
+       styling -- it is still the control that submits. All this adds is a
+       text input in front of it and a filtered list, so an admin with
+       thirty drivers types three letters instead of scrolling.
+
+       No library. Tom Select and friends would each be another CDN
+       dependency on a console whose styling already fails to a blank page
+       when the network blocks jsdelivr, and the whole behaviour here is a
+       filter over options we already have.
+
+       Options may be marked unavailable from outside by setting
+       data-ss-note on the <option>: the row then shows that note, is not
+       selectable, and sorts no differently. The assignment form uses it
+       for a vehicle or driver already taken on the chosen route. Nothing
+       is removed, because "why is this bus missing?" is a worse question
+       than "why is this bus greyed out?".
+
+       Degrades honestly: if the script never runs, the native select is
+       untouched and fully usable. */
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('select[data-searchable]').forEach(function (select) {
+            if (select.dataset.ssReady) return;
+            select.dataset.ssReady = '1';
+
+            var wrap = document.createElement('div');
+            wrap.className = 'ss-wrap';
+            select.parentNode.insertBefore(wrap, select);
+            wrap.appendChild(select);
+            select.classList.add('visually-hidden');
+            select.setAttribute('tabindex', '-1');
+            select.setAttribute('aria-hidden', 'true');
+
+            var input = document.createElement('input');
+            input.type = 'text';
+            input.className = select.className.replace('visually-hidden', '').trim();
+            input.setAttribute('role', 'combobox');
+            input.setAttribute('aria-expanded', 'false');
+            input.setAttribute('aria-autocomplete', 'list');
+            input.autocomplete = 'off';
+            input.placeholder = select.dataset.searchPlaceholder || 'Type to search…';
+            if (select.id) input.id = select.id + '_search';
+            wrap.insertBefore(input, select);
+
+            // The label points at the hidden select; move it to the box people type in.
+            if (select.id) {
+                var lbl = document.querySelector('label[for="' + select.id + '"]');
+                if (lbl && input.id) lbl.setAttribute('for', input.id);
+            }
+
+            var menu = document.createElement('ul');
+            menu.className = 'ss-menu';
+            menu.hidden = true;
+            menu.setAttribute('role', 'listbox');
+            wrap.appendChild(menu);
+
+            var activeIndex = -1;
+            var rows = [];
+
+            function selectedLabel() {
+                var o = select.options[select.selectedIndex];
+                return o && o.value !== '' ? o.textContent.trim() : '';
+            }
+
+            function commit(option) {
+                if (!option || option.disabled || option.dataset.ssNote) return;
+                select.value = option.value;
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+                input.value = option.textContent.trim();
+                close();
+            }
+
+            function close() {
+                menu.hidden = true;
+                input.setAttribute('aria-expanded', 'false');
+                activeIndex = -1;
+            }
+
+            function paintActive() {
+                rows.forEach(function (r, i) { r.el.classList.toggle('active', i === activeIndex); });
+                if (activeIndex >= 0 && rows[activeIndex]) {
+                    rows[activeIndex].el.scrollIntoView({ block: 'nearest' });
+                }
+            }
+
+            function open(filter) {
+                var q = (filter || '').trim().toLowerCase();
+                menu.textContent = '';
+                rows = [];
+                var lastGroup = null;
+
+                Array.prototype.forEach.call(select.options, function (opt) {
+                    if (opt.value === '') return;                 // the placeholder row
+                    var text = opt.textContent.trim();
+                    if (q && text.toLowerCase().indexOf(q) === -1) return;
+
+                    var groupLabel = opt.parentElement && opt.parentElement.tagName === 'OPTGROUP'
+                        ? opt.parentElement.label : null;
+                    if (groupLabel && groupLabel !== lastGroup) {
+                        var g = document.createElement('li');
+                        g.className = 'ss-group';
+                        g.textContent = groupLabel;
+                        menu.appendChild(g);
+                        lastGroup = groupLabel;
+                    }
+
+                    var li = document.createElement('li');
+                    li.className = 'ss-opt';
+                    li.setAttribute('role', 'option');
+
+                    var name = document.createElement('span');
+                    name.textContent = text;
+                    li.appendChild(name);
+
+                    var note = opt.dataset.ssNote;
+                    if (note) {
+                        li.setAttribute('aria-disabled', 'true');
+                        var n = document.createElement('span');
+                        n.className = 'ss-note';
+                        n.textContent = note;
+                        li.appendChild(n);
+                    } else {
+                        li.addEventListener('mousedown', function (e) { e.preventDefault(); commit(opt); });
+                    }
+
+                    menu.appendChild(li);
+                    rows.push({ el: li, option: opt, selectable: !note });
+                });
+
+                if (!rows.length) {
+                    var empty = document.createElement('li');
+                    empty.className = 'ss-empty';
+                    empty.textContent = 'No matches';
+                    menu.appendChild(empty);
+                }
+
+                menu.hidden = false;
+                input.setAttribute('aria-expanded', 'true');
+                activeIndex = rows.findIndex(function (r) { return r.selectable; });
+                paintActive();
+            }
+
+            function step(delta) {
+                if (menu.hidden) { open(input.value); return; }
+                if (!rows.length) return;
+                var i = activeIndex;
+                for (var n = 0; n < rows.length; n++) {
+                    i = (i + delta + rows.length) % rows.length;
+                    if (rows[i].selectable) { activeIndex = i; break; }
+                }
+                paintActive();
+            }
+
+            input.addEventListener('focus', function () { open(''); input.select(); });
+            input.addEventListener('input', function () { open(input.value); });
+            input.addEventListener('blur', function () {
+                // Restore the committed label: a half-typed query left in the box reads
+                // as a selection that was never made.
+                window.setTimeout(function () { input.value = selectedLabel(); close(); }, 120);
+            });
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'ArrowDown') { e.preventDefault(); step(1); }
+                else if (e.key === 'ArrowUp') { e.preventDefault(); step(-1); }
+                else if (e.key === 'Enter') {
+                    if (!menu.hidden && activeIndex >= 0) { e.preventDefault(); commit(rows[activeIndex].option); }
+                } else if (e.key === 'Escape') { input.value = selectedLabel(); close(); }
+            });
+
+            // Something else changed the select (the route-aware relabelling, or a
+            // browser restoring form state) -- keep the visible box in step.
+            select.addEventListener('change', function () { input.value = selectedLabel(); });
+            input.value = selectedLabel();
         });
     });
 </script>

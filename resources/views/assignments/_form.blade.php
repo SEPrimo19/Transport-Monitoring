@@ -14,7 +14,8 @@
 
 <div class="mb-3">
     <label for="driver_profile_id" class="form-label">Driver <span class="text-danger">*</span></label>
-    <select name="driver_profile_id" id="driver_profile_id"
+    <select name="driver_profile_id" id="driver_profile_id" data-searchable
+            data-search-placeholder="Type a driver's name or code…"
             class="form-select @error('driver_profile_id') is-invalid @enderror" required>
         <option value="">— select a driver —</option>
         @foreach ($driverGroups as $orgId => $group)
@@ -33,7 +34,8 @@
 <div class="row">
     <div class="col-md-6 mb-3">
         <label for="vehicle_id" class="form-label">Vehicle <span class="text-danger">*</span></label>
-        <select name="vehicle_id" id="vehicle_id"
+        <select name="vehicle_id" id="vehicle_id" data-searchable
+                data-search-placeholder="Type a plate or body number…"
                 class="form-select @error('vehicle_id') is-invalid @enderror" required>
             <option value="">— select a vehicle —</option>
             @foreach ($vehicleGroups as $orgId => $group)
@@ -106,3 +108,62 @@
         <div class="form-text">The driver, vehicle and route above must belong to this organization.</div>
     </div>
 @endif
+
+@push('scripts')
+    <script id="assignment-taken" type="application/json">@json($takenOnRoute ?? [])</script>
+    <script>
+        /* Mark the driver and vehicle already taken ON THE CHOSEN ROUTE.
+           ----------------------------------------------------------------
+           The database enforces uq_assignments_active_driver_route and
+           uq_assignments_active_vehicle_route, so the clash is per route, not
+           per vehicle. A bus on Allen→Calbayog is still free for
+           Calbayog→Allen — the normal shape of a corridor, and what the hint
+           under Status describes. Marking a bus taken outright would hide half
+           the legitimate work, so nothing is flagged until a route is picked,
+           and the flags are recomputed whenever it changes.
+
+           Advisory only. The server still validates, and the unique indexes
+           are the real guarantee; this just stops an admin filling in a form
+           that was always going to be rejected. */
+        (function () {
+            var holder = document.getElementById('assignment-taken');
+            if (!holder) return;
+
+            var taken;
+            try { taken = JSON.parse(holder.textContent || '{}'); } catch (e) { return; }
+
+            var routeSel = document.getElementById('route_id');
+            var driverSel = document.getElementById('driver_profile_id');
+            var vehicleSel = document.getElementById('vehicle_id');
+            if (!routeSel || !driverSel || !vehicleSel) return;
+
+            function mark(select, byId, prefix) {
+                Array.prototype.forEach.call(select.options, function (opt) {
+                    if (!opt.value) return;
+                    var holderName = byId ? byId[opt.value] : null;
+
+                    // Never disable what is already chosen. On the edit screen the
+                    // current pairing is legitimately "taken" by this very assignment,
+                    // and greying it out would make saving an unrelated field
+                    // impossible.
+                    if (holderName && opt.value !== select.value) {
+                        opt.dataset.ssNote = prefix + ' ' + holderName;
+                        opt.disabled = true;
+                    } else {
+                        delete opt.dataset.ssNote;
+                        opt.disabled = false;
+                    }
+                });
+            }
+
+            function refresh() {
+                var forRoute = taken[routeSel.value] || { drivers: {}, vehicles: {} };
+                mark(driverSel, forRoute.drivers, 'already on');
+                mark(vehicleSel, forRoute.vehicles, 'already with');
+            }
+
+            routeSel.addEventListener('change', refresh);
+            refresh();
+        })();
+    </script>
+@endpush
