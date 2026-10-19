@@ -9,6 +9,16 @@
     <style>
         #ops-map { height: 70vh; min-height: 460px; width: 100%; border-radius: .5rem; }
         #ops-list { height: 70vh; min-height: 460px; overflow-y: auto; }
+        /* Below lg the two panes stop being side by side and stack, where a 460px
+           floor on each means roughly 1000px of content before anything else --
+           and a list that scrolls inside a page that also scrolls, which on touch
+           is a coin toss over which one moves. So once stacked, the map gives up
+           some height and the list grows to its content instead, scrolling only
+           when it is genuinely long. */
+        @media (max-width: 991.98px) {
+            #ops-map { height: 52vh; min-height: 280px; }
+            #ops-list { height: auto; min-height: 0; max-height: 65vh; }
+        }
         .ops-dot { width: .7rem; height: .7rem; border-radius: 50%; display: inline-block; flex: none; }
         .min-w-0 { min-width: 0; }
         .ops-veh { background: transparent; border: 0; }

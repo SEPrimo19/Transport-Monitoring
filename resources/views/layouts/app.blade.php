@@ -711,7 +711,7 @@
                     <span class="visually-hidden" role="status" aria-live="polite" id="notif-live"></span>
                     {{-- A <div> menu rather than <ul>/<li>: Bootstrap 5 supports both, and it
                          lets the item region be one addressable container for the poller. --}}
-                    <div class="dropdown-menu dropdown-menu-end shadow p-0" style="min-width: 22rem; max-width: 95vw;">
+                    <div class="dropdown-menu dropdown-menu-end shadow p-0" style="min-width: min(22rem, 95vw); max-width: 95vw;">
                         <div class="d-flex justify-content-between align-items-center px-3 py-2">
                             <strong class="small">Notifications</strong>
                             <span class="badge text-bg-warning{{ $notifCount > 0 ? '' : ' d-none' }}" id="notif-pill">
