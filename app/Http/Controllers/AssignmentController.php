@@ -154,48 +154,76 @@ class AssignmentController extends Controller
     }
 
     /**
-     * Who already holds an active assignment, per route, so the form can grey out the
-     * combinations the database is going to refuse.
+     * What every driver and vehicle is already committed to, in two shapes.
      *
-     * KEYED BY ROUTE, and that is the whole point. The uniqueness rules are
-     * uq_assignments_active_driver_route and uq_assignments_active_vehicle_route — a
-     * bus on Allen→Calbayog is still free for Calbayog→Allen, which is not an edge case
-     * but the normal shape of this cooperative's day. Marking a vehicle "already used"
-     * outright would hide the second direction and make the form refuse work the system
-     * is built to do; the hint under Status says as much.
+     * `byRoute` is the BLOCKING view: who cannot be picked for a given route, because
+     * uq_assignments_active_driver_route and uq_assignments_active_vehicle_route will
+     * refuse it. Keyed by route, and that is the point — a bus on Allen→Calbayog is
+     * still free for Calbayog→Allen, which is not an edge case but how a corridor is
+     * staffed, and the hint under Status says so. Flagging a bus "already used"
+     * outright would hide the second direction.
      *
-     * The assignment being edited is excluded, or its own row would report it as a
-     * clash with itself.
+     * `summary` is the ADVISORY view, and it exists because the blocking view alone
+     * made the form look broken. Before a route is chosen there is no clash to report,
+     * so every option read as free — including a bus already running both directions,
+     * which is as unavailable as a vehicle gets. The summary says what each one is
+     * currently doing, so the list is informative from the moment it opens, and the
+     * blocking view then disables the specific rows the chosen route rules out.
      *
-     * @return array<string, array{vehicles: array<string, string>, drivers: array<string, string>}>
+     * The assignment being edited is excluded from both, or its own row would be
+     * reported as a clash with itself.
+     *
+     * @return array{
+     *     byRoute: array<string, array{vehicles: array<string, string>, drivers: array<string, string>}>,
+     *     summary: array{vehicles: array<string, string>, drivers: array<string, string>}
+     * }
      */
     private function takenOnRoute(?Assignment $assignment): array
     {
         $rows = Assignment::query()
-            ->with(['driver.profile', 'vehicle'])
+            ->with(['driver.profile', 'vehicle', 'route'])
             ->where('is_active', true)
             ->when($assignment?->getKey(), fn ($q, $id) => $q->whereKeyNot($id))
             ->get(['id', 'route_id', 'vehicle_id', 'driver_profile_id']);
 
-        $map = [];
+        $byRoute = [];
+        $vehicleRoutes = [];
+        $driverRoutes = [];
+
         foreach ($rows as $row) {
             $routeId = (string) $row->route_id;
-            $map[$routeId] ??= ['vehicles' => [], 'drivers' => []];
+            $byRoute[$routeId] ??= ['vehicles' => [], 'drivers' => []];
 
             $driverName = $row->driver?->profile?->full_name ?: 'another driver';
             $plate = $row->vehicle?->plate_number ?: 'another vehicle';
+            $routeCode = $row->route?->code ?: 'another route';
 
             // Each side is labelled with its COUNTERPART: picking a vehicle, you want to
             // know which driver has it, and the reverse. The id alone tells the admin
             // nothing they can act on.
             if ($row->vehicle_id) {
-                $map[$routeId]['vehicles'][(string) $row->vehicle_id] = $driverName;
+                $byRoute[$routeId]['vehicles'][(string) $row->vehicle_id] = $driverName;
+                $vehicleRoutes[(string) $row->vehicle_id][] = $routeCode;
             }
             if ($row->driver_profile_id) {
-                $map[$routeId]['drivers'][(string) $row->driver_profile_id] = $plate;
+                $byRoute[$routeId]['drivers'][(string) $row->driver_profile_id] = $plate;
+                $driverRoutes[(string) $row->driver_profile_id][] = $routeCode;
             }
         }
 
-        return $map;
+        $phrase = static function (array $codes): string {
+            $codes = array_values(array_unique($codes));
+            sort($codes);
+
+            return 'on '.implode(', ', $codes);
+        };
+
+        return [
+            'byRoute' => $byRoute,
+            'summary' => [
+                'vehicles' => array_map($phrase, $vehicleRoutes),
+                'drivers' => array_map($phrase, $driverRoutes),
+            ],
+        ];
     }
 }

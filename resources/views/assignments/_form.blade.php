@@ -137,29 +137,46 @@
             var vehicleSel = document.getElementById('vehicle_id');
             if (!routeSel || !driverSel || !vehicleSel) return;
 
-            function mark(select, byId, prefix) {
+            var byRoute = taken.byRoute || {};
+            var summary = taken.summary || { drivers: {}, vehicles: {} };
+
+            function mark(select, blockedById, summaryById, prefix) {
                 Array.prototype.forEach.call(select.options, function (opt) {
                     if (!opt.value) return;
-                    var holderName = byId ? byId[opt.value] : null;
+                    var blockedBy = blockedById ? blockedById[opt.value] : null;
 
                     // Never disable what is already chosen. On the edit screen the
                     // current pairing is legitimately "taken" by this very assignment,
                     // and greying it out would make saving an unrelated field
                     // impossible.
-                    if (holderName && opt.value !== select.value) {
-                        opt.dataset.ssNote = prefix + ' ' + holderName;
+                    if (blockedBy && opt.value !== select.value) {
+                        opt.dataset.ssNote = prefix + ' ' + blockedBy;
+                        opt.dataset.ssNoteTone = 'blocked';
                         opt.disabled = true;
+                        return;
+                    }
+
+                    opt.disabled = false;
+
+                    // Not blocked here, but say what it IS doing. Without this the list
+                    // read as entirely free until a route was picked -- including a bus
+                    // already running both directions, which is as booked as a vehicle
+                    // can be.
+                    var busy = summaryById ? summaryById[opt.value] : null;
+                    if (busy && opt.value !== select.value) {
+                        opt.dataset.ssNote = busy;
+                        opt.dataset.ssNoteTone = 'info';
                     } else {
                         delete opt.dataset.ssNote;
-                        opt.disabled = false;
+                        delete opt.dataset.ssNoteTone;
                     }
                 });
             }
 
             function refresh() {
-                var forRoute = taken[routeSel.value] || { drivers: {}, vehicles: {} };
-                mark(driverSel, forRoute.drivers, 'already on');
-                mark(vehicleSel, forRoute.vehicles, 'already with');
+                var forRoute = byRoute[routeSel.value] || { drivers: {}, vehicles: {} };
+                mark(driverSel, forRoute.drivers, summary.drivers, 'already on');
+                mark(vehicleSel, forRoute.vehicles, summary.vehicles, 'already with');
             }
 
             routeSel.addEventListener('change', refresh);

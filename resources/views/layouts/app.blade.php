@@ -536,7 +536,10 @@
         .ss-opt:hover, .ss-opt.active { background: rgba(var(--amoec-brand-rgb), .12); }
         .ss-opt[aria-disabled="true"] { cursor: not-allowed; opacity: .65; }
         .ss-opt[aria-disabled="true"]:hover, .ss-opt[aria-disabled="true"].active { background: #f8f9fa; }
+        /* Two tones, and the difference is load-bearing. Red means the choice is
+           refused; grey means it is merely busy elsewhere and still selectable. */
         .ss-note { margin-left: auto; font-size: .75rem; white-space: nowrap; color: var(--bs-danger, #dc3545); }
+        .ss-note.ss-note-info { color: #6c757d; }
         .ss-group { padding: .35rem .75rem; font-size: .72rem; text-transform: uppercase;
                     letter-spacing: .04em; color: #6c757d; }
         .ss-empty { padding: .6rem .75rem; color: #6c757d; font-size: .875rem; }
@@ -1120,7 +1123,8 @@
             }
 
             function commit(option) {
-                if (!option || option.disabled || option.dataset.ssNote) return;
+                if (!option || option.disabled) return;
+                if (option.dataset.ssNote && option.dataset.ssNoteTone !== 'info') return;
                 select.value = option.value;
                 select.dispatchEvent(new Event('change', { bubbles: true }));
                 input.value = option.textContent.trim();
@@ -1169,19 +1173,24 @@
                     name.textContent = text;
                     li.appendChild(name);
 
+                    // data-ss-note-tone="info" annotates WITHOUT refusing: the option is
+                    // busy somewhere else but still a legal choice here. Anything else
+                    // means blocked, and the row stops being selectable.
                     var note = opt.dataset.ssNote;
+                    var advisory = opt.dataset.ssNoteTone === 'info';
                     if (note) {
-                        li.setAttribute('aria-disabled', 'true');
                         var n = document.createElement('span');
-                        n.className = 'ss-note';
+                        n.className = 'ss-note' + (advisory ? ' ss-note-info' : '');
                         n.textContent = note;
                         li.appendChild(n);
-                    } else {
+                        if (!advisory) li.setAttribute('aria-disabled', 'true');
+                    }
+                    if (!note || advisory) {
                         li.addEventListener('mousedown', function (e) { e.preventDefault(); commit(opt); });
                     }
 
                     menu.appendChild(li);
-                    rows.push({ el: li, option: opt, selectable: !note });
+                    rows.push({ el: li, option: opt, selectable: !note || advisory });
                 });
 
                 if (!rows.length) {
