@@ -77,6 +77,15 @@
 
         /* ---- Sidebar --------------------------------------------- */
         .sidebar { min-height: 100vh; background: #fff; border-right: 1px solid #e5e7eb; }
+        /* Below md the sidebar is an offcanvas drawer, where a full-viewport minimum
+           and a right border are both wrong: the drawer sizes itself, and the border
+           would draw down the middle of the screen while it slides. */
+        @media (max-width: 767.98px) {
+            .sidebar.offcanvas-md { min-height: auto; border-right: 0; width: min(82vw, 20rem); }
+        }
+        /* Bootstrap gives .min-w-0 no utility of its own, and without it a flex child
+           refuses to shrink and .text-truncate never engages. */
+        .min-w-0 { min-width: 0; }
         /* Desktop: sidebar stays put while only the main panel scrolls; it
            scrolls internally if the nav ever outgrows the viewport. On narrow
            screens it stacks on top and scrolls with the page as normal. */
@@ -549,7 +558,13 @@
 <body>
 <div class="container-fluid">
     <div class="row">
-        <nav class="col-12 col-md-3 col-lg-2 sidebar p-3">
+        {{-- offcanvas-md: a slide-in drawer below `md`, an ordinary column at `md` and
+             up. The nav used to be col-12 on small screens, so it stacked ABOVE the
+             content as a full-height block and every page opened on a wall of menu —
+             the dashboard was a scroll away on a phone or a narrow window. Bootstrap's
+             own component, and its JS bundle is already loaded, so this costs nothing. --}}
+        <nav class="offcanvas-md offcanvas-start col-12 col-md-3 col-lg-2 sidebar p-3"
+             tabindex="-1" id="adminSidebar" aria-label="Main navigation">
             <div class="d-flex align-items-center gap-3 mb-4">
                 @if (! empty($orgLogoUrl))
                     <img src="{{ $orgLogoUrl }}" alt="{{ $brandLabel }} logo" class="brand-logo">
@@ -557,6 +572,10 @@
                     <span class="brand-mark">{{ $brandMark ?? Str::substr(config('app.name', 'AMOEC Admin'), 0, 2) }}</span>
                 @endif
                 <strong class="text-truncate brand-wordmark">{{ $brandLabel ?? config('app.name', 'AMOEC Admin') }}</strong>
+                {{-- Only reachable while the drawer is open, which is only below md. --}}
+                <button type="button" class="btn-close ms-auto d-md-none"
+                        data-bs-dismiss="offcanvas" data-bs-target="#adminSidebar"
+                        aria-label="Close menu"></button>
             </div>
             <ul class="nav flex-column">
                 <li class="nav-section-label">Overview</li>
@@ -647,11 +666,22 @@
             </ul>
         </nav>
 
-        <main class="col-12 col-md-9 col-lg-10 p-4">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h1 class="h4 mb-0">@yield('heading', 'Dashboard')</h1>
-                    <small class="text-muted"><i class="bi bi-building me-1"></i>{{ $orgName ?? 'All organizations' }}</small>
+        {{-- p-3 below md: 1.5rem of padding either side of a 360px screen is most of
+             a table column. --}}
+        <main class="col-12 col-md-9 col-lg-10 p-3 p-md-4">
+            {{-- gap-3 and flex-wrap: on a narrow window the heading and the action
+                 cluster used to collide rather than wrap. --}}
+            <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-4">
+                <div class="d-flex align-items-center gap-2 min-w-0">
+                    <button type="button" class="btn btn-light border d-md-none flex-shrink-0"
+                            data-bs-toggle="offcanvas" data-bs-target="#adminSidebar"
+                            aria-controls="adminSidebar" aria-label="Open navigation menu">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <div class="min-w-0">
+                        <h1 class="h4 mb-0 text-truncate">@yield('heading', 'Dashboard')</h1>
+                        <small class="text-muted d-block text-truncate"><i class="bi bi-building me-1"></i>{{ $orgName ?? 'All organizations' }}</small>
+                    </div>
                 </div>
                 <div class="d-flex align-items-center gap-2">
                 {{-- Notification bell: passenger reports awaiting triage. Clears itself
