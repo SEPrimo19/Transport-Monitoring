@@ -77,7 +77,15 @@ class AppServiceProvider extends ServiceProvider
             $view->with('brandColor', $org && $org->primary_color ? $org->primary_color : '#0d6efd');
             $view->with('brandLabel', $label);
             $view->with('brandMark', mb_strtoupper($initials ?: 'A'));
-            $view->with('orgLogoUrl', $isSuper ? null : ($org?->logo_url ?: null));
+            // A super_admin has no org, so there is no tenant logo to show -- but a bare
+            // "SA" monogram made the one cross-tenant role the only one without a mark.
+            // It gets the PLATFORM icon (the same image as the browser tab), never a
+            // tenant's: wearing one cooperative's branding while overseeing all of them
+            // would say the wrong thing, and would be actively confusing on a screen
+            // that lists every organization.
+            $view->with('orgLogoUrl', $isSuper
+                ? asset('images/favicon-192.png')
+                : ($org?->logo_url ?: null));
 
             // Notification bell: passenger reports still awaiting triage. Reports are
             // the only event admins must ACT on that arrives from outside the console,
