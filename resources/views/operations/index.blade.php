@@ -22,10 +22,101 @@
         .ops-dot { width: .7rem; height: .7rem; border-radius: 50%; display: inline-block; flex: none; }
         .min-w-0 { min-width: 0; }
         .ops-veh { background: transparent; border: 0; }
+
+        /* ---- Expanded ("theatre") mode -------------------------------
+           The stage is pinned over the CONTENT column, not the viewport: --ops-left and
+           --ops-top are measured from the live sidebar and page header, so the notification
+           bell and the account menu stay reachable and the nav stays where it was. They are
+           measured rather than hardcoded because the sidebar has three widths (rail, md, lg)
+           and the header wraps on a narrow window.
+
+           Every child below re-anchors onto the map. Nothing is moved in the DOM, so the
+           poller keeps writing to the same #ops-list-body and the filter keeps listening on
+           the same #ops-filter. */
+        #ops-stage.ops-on {
+            position: fixed;
+            top: var(--ops-top, 0px);
+            left: var(--ops-left, 0px);
+            right: 0;
+            bottom: 0;
+            z-index: 1035;          /* over the sticky toolbar (1020), under the offcanvas (1045) */
+            background: var(--bs-body-bg, #fff);
+            padding: 0;
+            overflow: hidden;
+        }
+        .ops-on .row { height: 100%; margin: 0; }
+
+        /* Map: the whole stage. */
+        /* width:auto matters: .col-lg-8 sets width:66.666667%, and on an absolutely
+           positioned box an explicit width beats the left:0/right:0 pair, so inset
+           alone left the map two thirds wide inside a full-width stage. */
+        .ops-on .ops-map-col {
+            position: absolute; inset: 0; padding: 0;
+            width: auto; max-width: none;
+            /* z-index:0 rather than auto, to trap Leaflet. Leaflet numbers its own panes
+               400-700 and its controls 800, all inside #ops-map -- but an auto z-index
+               creates no stacking context, so those numbers competed directly with the
+               floating overlays below and painted straight over them. A stacking context
+               here keeps Leaflet's scale private, and the overlays only have to beat 0. */
+            z-index: 0;
+        }
+        .ops-on .ops-map-col .card { height: 100%; border-radius: 0; box-shadow: none !important; }
+        .ops-on .ops-map-col .card-body { height: 100%; padding: 0 !important; }
+        .ops-on #ops-map { height: 100% !important; min-height: 0; border-radius: 0; }
+
+        /* Vehicle list: a floating panel, top right. */
+        .ops-on .ops-list-col {
+            position: absolute; top: 4.5rem; right: 1rem; z-index: 2;
+            width: 22rem; max-width: calc(100% - 2rem); padding: 0;
+        }
+        .ops-on .ops-list-col .card {
+            background: rgba(255, 255, 255, .94);
+            backdrop-filter: blur(6px);
+            box-shadow: 0 .5rem 1.5rem rgba(0, 0, 0, .18) !important;
+        }
+        .ops-on #ops-list-toggle { display: flex !important; background: transparent; }
+        .ops-on #ops-list { height: auto; min-height: 0; max-height: calc(100vh - 14rem); }
+        .ops-on.ops-list-closed #ops-list { display: none; }
+
+        /* Toolbar + corridor chips: one floating bar across the top. */
+        .ops-on .page-toolbar,
+        .ops-on #ops-filter {
+            position: absolute; left: 1rem; right: 24rem; z-index: 2; margin: 0;
+        }
+        .ops-on .page-toolbar { top: 1rem; }
+        .ops-on #ops-filter { top: 3.4rem; }
+
+        /* Legend: bottom left, clear of Leaflet's attribution on the right. */
+        .ops-on .ops-legend {
+            position: absolute; left: 1rem; bottom: 1rem; z-index: 2; margin: 0;
+        }
+
+        /* One pill treatment for all three floating clusters. */
+        .ops-on .page-toolbar,
+        .ops-on .ops-legend {
+            background: rgba(255, 255, 255, .92);
+            backdrop-filter: blur(6px);
+            border-radius: .5rem;
+            padding: .4rem .75rem;
+            box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .12);
+        }
+        /* The stale-poll warning has to come with us. A map full of markers looks
+           identical whether it is live or frozen, and that is twice as true filling a
+           projector, so the one place it must never be hidden is here. */
+        .ops-on #ops-stale { position: static; width: 100%; }
+
+        @media (max-width: 1199.98px) {
+            .ops-on .page-toolbar, .ops-on #ops-filter { right: 1rem; }
+            .ops-on .ops-list-col { top: 7rem; }
+        }
     </style>
 @endpush
 
 @section('content')
+{{-- Everything on this page lives inside the stage. In the normal layout the stage is
+     an ordinary static div and changes nothing; adding .ops-on pins it over the content
+     column and the children below re-anchor themselves onto the map. --}}
+<div id="ops-stage">
     <div class="page-toolbar d-flex justify-content-between align-items-center flex-wrap gap-2">
         <p class="text-muted mb-0">
             <strong id="ops-count">{{ count($vehicles) }}</strong> {{ Str::plural('vehicle', count($vehicles)) }} transmitting
@@ -34,6 +125,12 @@
         <span class="text-muted small">
             <i class="bi bi-arrow-repeat me-1"></i>Auto-refreshing · last update <span id="ops-updated">—</span>
         </span>
+        {{-- lg and up only. Below that the map and list already stack full-width, and a
+             22rem panel floating over a 390px screen would cover the map it floats on. --}}
+        <button type="button" id="ops-expand"
+                class="btn btn-sm btn-outline-secondary d-none d-lg-inline-flex align-items-center">
+            <i class="bi bi-arrows-fullscreen me-1"></i><span id="ops-expand-text">Expand map</span>
+        </button>
         {{-- A map full of markers looks identical whether it is live or frozen, so a
              failed poll has to say so. Without this the only clue was the timestamp
              above quietly ceasing to advance. --}}
@@ -56,7 +153,7 @@
         </div>
     @endif
 
-    <div class="d-flex flex-wrap gap-3 small mb-3">
+    <div class="d-flex flex-wrap gap-3 small mb-3 ops-legend">
         {{-- Same five the passenger sees; mirrors VehicleFreshnessPalette and
              OperationsController::classify. Change all three together. --}}
         <span><span class="ops-dot me-1" style="background:#15A04A"></span>Live (≤30s)</span>
@@ -67,21 +164,32 @@
     </div>
 
     <div class="row g-3">
-        <div class="col-12 col-lg-8">
+        <div class="col-12 col-lg-8 ops-map-col">
             <div class="card border-0 shadow-sm">
                 <div class="card-body p-2">
                     <div id="ops-map"></div>
                 </div>
             </div>
         </div>
-        <div class="col-12 col-lg-4">
+        <div class="col-12 col-lg-4 ops-list-col">
             <div class="card border-0 shadow-sm">
+                {{-- Only rendered while expanded: parked over the map, a 22rem panel is
+                     in the way the moment you want to see what is behind it. In the
+                     normal two-column layout it sits beside the map and there is
+                     nothing to get out of the way of. --}}
+                <button type="button" id="ops-list-toggle"
+                        class="btn btn-sm w-100 d-none justify-content-between align-items-center
+                               border-0 border-bottom rounded-0 fw-semibold px-3 py-2">
+                    <span><i class="bi bi-list-ul me-2"></i>Vehicles</span>
+                    <i class="bi bi-chevron-up" id="ops-list-caret"></i>
+                </button>
                 <div id="ops-list">
                     <div id="ops-list-body"></div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -323,6 +431,90 @@
             document.addEventListener('visibilitychange', function () {
                 if (document.visibilityState === 'visible') { poll(); start(); } else { stop(); }
             });
+
+
+            // ── Expanded ("theatre") mode ────────────────────────────────────
+            // The stage is pinned over the content column rather than the viewport, so
+            // the measurements come from the live sidebar and page header: the sidebar
+            // has three widths (rail / md / lg) and the header row wraps on a narrow
+            // window, which rules out a constant.
+            const stage = document.getElementById('ops-stage');
+            const expandBtn = document.getElementById('ops-expand');
+            const expandText = document.getElementById('ops-expand-text');
+            const listToggle = document.getElementById('ops-list-toggle');
+            const listCaret = document.getElementById('ops-list-caret');
+
+            function syncStageOffsets() {
+                const nav = document.getElementById('adminSidebar');
+                const header = document.querySelector('main > .d-flex');
+                // Below md the sidebar is an off-canvas drawer sitting off screen, so its
+                // right edge is negative and the stage should start at the window edge.
+                const left = (nav && window.innerWidth >= 768)
+                    ? Math.max(0, nav.getBoundingClientRect().right) : 0;
+                const top = header ? Math.max(0, header.getBoundingClientRect().bottom) : 0;
+                stage.style.setProperty('--ops-left', left + 'px');
+                stage.style.setProperty('--ops-top', top + 'px');
+            }
+
+            // Leaflet caches its container size. Resize the container without telling it
+            // and you get grey tiles and a map centred on the wrong place -- so this has
+            // to run AFTER the layout has settled, not in the same tick as the class flip.
+            function remeasureMap() {
+                map.invalidateSize();
+                const shown = activeRoute ? latest.filter(v => v.route === activeRoute) : latest;
+                if (!shown || !shown.length) return;
+                // Re-fit: the viewport just changed size by a lot, and the old zoom would
+                // leave every bus huddled in the middle of a much bigger map. Asymmetric
+                // padding keeps them out from under the floating panel on the right.
+                const on = stage.classList.contains('ops-on');
+                map.fitBounds(shown.map(v => [v.lat, v.lng]), {
+                    paddingTopLeft: [40, on ? 100 : 40],
+                    paddingBottomRight: [on && !stage.classList.contains('ops-list-closed') ? 380 : 40, 60],
+                    maxZoom: 14
+                });
+            }
+
+            function setExpanded(on) {
+                stage.classList.toggle('ops-on', on);
+                // Measured after the flip, not before: going fixed + overflow:hidden
+                // removes the page scrollbar, which shifts the sidebar's right edge.
+                if (on) syncStageOffsets();
+                expandBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+                expandText.textContent = on ? 'Exit' : 'Expand map';
+                expandBtn.querySelector('i').className =
+                    on ? 'bi bi-fullscreen-exit me-1' : 'bi bi-arrows-fullscreen me-1';
+                requestAnimationFrame(function () { requestAnimationFrame(remeasureMap); });
+            }
+
+            if (expandBtn) {
+                expandBtn.addEventListener('click', function () {
+                    setExpanded(!stage.classList.contains('ops-on'));
+                });
+                document.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape' && stage.classList.contains('ops-on')) setExpanded(false);
+                });
+                // Collapsing the sidebar moves the stage's left edge, and it is a CSS
+                // width change, which fires no event of its own -- hence the custom one.
+                window.addEventListener('amoec:nav-rail', function () {
+                    if (stage.classList.contains('ops-on')) { syncStageOffsets(); remeasureMap(); }
+                });
+                window.addEventListener('resize', function () {
+                    if (!stage.classList.contains('ops-on')) return;
+                    // Dropping below lg removes the expand button's own breakpoint; leaving
+                    // the stage pinned there would float a 22rem panel over a phone-width map.
+                    if (window.innerWidth < 992) { setExpanded(false); return; }
+                    syncStageOffsets();
+                    remeasureMap();
+                });
+            }
+
+            if (listToggle) {
+                listToggle.addEventListener('click', function () {
+                    const closed = stage.classList.toggle('ops-list-closed');
+                    listCaret.className = closed ? 'bi bi-chevron-down' : 'bi bi-chevron-up';
+                    listToggle.setAttribute('aria-expanded', closed ? 'false' : 'true');
+                });
+            }
 
             if (document.visibilityState === 'visible') start();
             setTimeout(function () { map.invalidateSize(); }, 200);

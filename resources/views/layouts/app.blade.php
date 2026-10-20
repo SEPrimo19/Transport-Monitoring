@@ -14,6 +14,20 @@
     <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('images/favicon-192.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/apple-touch-icon.png') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    {{-- Restore the collapsed-sidebar choice BEFORE first paint. Every page here is
+         a fresh server render, so applying this from the usual DOMContentLoaded
+         handler would show the full sidebar and then snap it to the rail on every
+         single navigation. Reading localStorage synchronously in <head> costs a
+         fraction of a millisecond and removes the flash entirely. Wrapped in
+         try/catch because storage throws outright in some privacy modes, and a
+         sidebar preference is not worth a blank page. --}}
+    <script>
+        try {
+            if (localStorage.getItem('amoec.navRail') === '1') {
+                document.documentElement.classList.add('nav-rail');
+            }
+        } catch (e) {}
+    </script>
     <title>@yield('title', 'Dashboard') · {{ config('app.name', 'AMOEC Admin') }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
@@ -86,6 +100,46 @@
         /* Bootstrap gives .min-w-0 no utility of its own, and without it a flex child
            refuses to shrink and .text-truncate never engages. */
         .min-w-0 { min-width: 0; }
+
+        /* ---- Collapsed sidebar ("rail") -------------------------------
+           Icons only, labels hidden, at md and up. Scoped inside the media query on
+           purpose: below md the sidebar is an offcanvas drawer, where a 4.5rem rail
+           would be a drawer of icons -- useless, and the drawer has the room for
+           labels anyway. The grid classes stay on the element and are overridden
+           here rather than swapped in markup, so the expanded widths remain the
+           single source of truth. */
+        @media (min-width: 768px) {
+            html.nav-rail .sidebar {
+                flex: 0 0 var(--nav-rail-w);
+                width: var(--nav-rail-w);
+                max-width: var(--nav-rail-w);
+                padding-left: .5rem !important;
+                padding-right: .5rem !important;
+                overflow-x: hidden;
+            }
+            html.nav-rail main { flex: 1 1 auto; max-width: none; }
+            html.nav-rail .brand-wordmark,
+            html.nav-rail .nav-label { display: none; }
+            /* The brand row is a 3-column flex; with the wordmark gone, centre what is left. */
+            html.nav-rail .sidebar > .d-flex:first-child { justify-content: center; }
+            html.nav-rail .sidebar .nav-link {
+                justify-content: center;
+                padding-left: .5rem;
+                padding-right: .5rem;
+            }
+            /* me-2 would push the icon off-centre once its label is gone. */
+            html.nav-rail .sidebar .nav-link > i { margin-right: 0 !important; font-size: 1.1rem; }
+            /* Section headings become hairlines: the groups they named are still
+               worth separating when all you can see is a column of icons. */
+            html.nav-rail .nav-section-label {
+                height: 1px; padding: 0; margin: .6rem .35rem;
+                background: var(--bs-border-color, #dee2e6);
+                font-size: 0; overflow: hidden;
+            }
+            html.nav-rail .nav-section-label:first-of-type { margin-top: 0; }
+        }
+        :root { --nav-rail-w: 4.5rem; }
+        .sidebar .nav-link { display: flex; align-items: center; }
         /* Desktop: sidebar stays put while only the main panel scrolls; it
            scrolls internally if the nav ever outgrows the viewport. On narrow
            screens it stacks on top and scrolls with the page as normal. */
@@ -581,13 +635,13 @@
                 <li class="nav-section-label">Overview</li>
                 <li class="nav-item">
                     <a class="nav-link @yield('nav_dashboard')" href="{{ route('dashboard') }}">
-                        <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                        <i class="bi bi-speedometer2 me-2"></i><span class="nav-label">Dashboard</span>
                     </a>
                 </li>
                 @if ($ctx->isOrgAdmin())
                     <li class="nav-item">
                         <a class="nav-link @yield('nav_operations')" href="{{ route('operations.index') }}">
-                            <i class="bi bi-broadcast me-2"></i>Live Ops
+                            <i class="bi bi-broadcast me-2"></i><span class="nav-label">Live Ops</span>
                         </a>
                     </li>
                 @endif
@@ -595,17 +649,17 @@
                     <li class="nav-section-label">Platform</li>
                     <li class="nav-item">
                         <a class="nav-link @yield('nav_organizations')" href="{{ route('organizations.index') }}">
-                            <i class="bi bi-buildings me-2"></i>Organizations
+                            <i class="bi bi-buildings me-2"></i><span class="nav-label">Organizations</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link @yield('nav_org_admins')" href="{{ route('org-admins.index') }}">
-                            <i class="bi bi-person-gear me-2"></i>Org Admins
+                            <i class="bi bi-person-gear me-2"></i><span class="nav-label">Org Admins</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link @yield('nav_onboarding')" href="{{ route('onboarding.create') }}">
-                            <i class="bi bi-rocket-takeoff me-2"></i>Onboard co-op
+                            <i class="bi bi-rocket-takeoff me-2"></i><span class="nav-label">Onboard co-op</span>
                         </a>
                     </li>
                 @endif
@@ -616,50 +670,50 @@
                 <li class="nav-section-label">Fleet</li>
                 <li class="nav-item">
                     <a class="nav-link @yield('nav_vehicles')" href="{{ route('vehicles.index') }}">
-                        <i class="bi bi-bus-front me-2"></i>Vehicles
+                        <i class="bi bi-bus-front me-2"></i><span class="nav-label">Vehicles</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link @yield('nav_drivers')" href="{{ route('drivers.index') }}">
-                        <i class="bi bi-person-badge me-2"></i>Drivers
+                        <i class="bi bi-person-badge me-2"></i><span class="nav-label">Drivers</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link @yield('nav_terminals')" href="{{ route('terminals.index') }}">
-                        <i class="bi bi-pin-map me-2"></i>Terminals
+                        <i class="bi bi-pin-map me-2"></i><span class="nav-label">Terminals</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link @yield('nav_routes')" href="{{ route('routes.index') }}">
-                        <i class="bi bi-signpost-2 me-2"></i>Routes
+                        <i class="bi bi-signpost-2 me-2"></i><span class="nav-label">Routes</span>
                     </a>
                 </li>
                 <li class="nav-section-label">Scheduling</li>
                 <li class="nav-item">
                     <a class="nav-link @yield('nav_schedules')" href="{{ route('schedules.index') }}">
-                        <i class="bi bi-calendar-week me-2"></i>Schedules
+                        <i class="bi bi-calendar-week me-2"></i><span class="nav-label">Schedules</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link @yield('nav_assignments')" href="{{ route('assignments.index') }}">
-                        <i class="bi bi-clipboard-check me-2"></i>Assignments
+                        <i class="bi bi-clipboard-check me-2"></i><span class="nav-label">Assignments</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link @yield('nav_trips')" href="{{ route('trips.index') }}">
-                        <i class="bi bi-clock-history me-2"></i>Trips
+                        <i class="bi bi-clock-history me-2"></i><span class="nav-label">Trips</span>
                     </a>
                 </li>
                 <li class="nav-section-label">Support</li>
                 <li class="nav-item">
                     <a class="nav-link @yield('nav_reports')" href="{{ route('reports.index') }}">
-                        <i class="bi bi-flag me-2"></i>Reports
+                        <i class="bi bi-flag me-2"></i><span class="nav-label">Reports</span>
                     </a>
                 </li>
                     <li class="nav-section-label">Settings</li>
                     <li class="nav-item">
                         <a class="nav-link @yield('nav_organization')" href="{{ route('organization.edit') }}">
-                            <i class="bi bi-building-gear me-2"></i>Organization
+                            <i class="bi bi-building-gear me-2"></i><span class="nav-label">Organization</span>
                         </a>
                     </li>
                 @endif
@@ -676,6 +730,15 @@
                     <button type="button" class="btn btn-light border d-md-none flex-shrink-0"
                             data-bs-toggle="offcanvas" data-bs-target="#adminSidebar"
                             aria-controls="adminSidebar" aria-label="Open navigation menu">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    {{-- The md+ twin of the hamburger: same icon, same place, so there is
+                         one "the nav lives here" control at every width. Below md the
+                         hamburger above owns that job and this is hidden. --}}
+                    <button type="button" id="nav-rail-toggle"
+                            class="btn btn-light border d-none d-md-inline-flex flex-shrink-0"
+                            aria-controls="adminSidebar" aria-expanded="true"
+                            title="Collapse sidebar" aria-label="Collapse sidebar">
                         <i class="bi bi-list"></i>
                     </button>
                     <div class="min-w-0">
@@ -801,6 +864,51 @@
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+{{-- Sidebar rail toggle. The <head> script has already applied the saved state, so
+     this only wires the button and keeps the labelling honest. --}}
+<script>
+    (function () {
+        var btn = document.getElementById('nav-rail-toggle');
+        if (!btn) return;
+        var root = document.documentElement;
+
+        // Native title tooltips rather than Bootstrap's: with the labels hidden the
+        // icons need names, and adding a title only while collapsed avoids a tooltip
+        // that merely repeats a label the user can already read.
+        function syncLinkTitles(collapsed) {
+            root.querySelectorAll('#adminSidebar .nav-link').forEach(function (a) {
+                var label = a.querySelector('.nav-label');
+                if (!label) return;
+                if (collapsed) {
+                    a.setAttribute('title', label.textContent.trim());
+                } else {
+                    a.removeAttribute('title');
+                }
+            });
+        }
+
+        function apply(collapsed, persist) {
+            root.classList.toggle('nav-rail', collapsed);
+            btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+            var label = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+            btn.setAttribute('title', label);
+            btn.setAttribute('aria-label', label);
+            syncLinkTitles(collapsed);
+            if (persist) {
+                try { localStorage.setItem('amoec.navRail', collapsed ? '1' : '0'); } catch (e) {}
+            }
+            // Anything measuring the sidebar's width (the Live Ops expanded map) has
+            // to re-measure, and a CSS width change fires no event of its own.
+            window.dispatchEvent(new CustomEvent('amoec:nav-rail', { detail: { collapsed: collapsed } }));
+        }
+
+        apply(root.classList.contains('nav-rail'), false);
+        btn.addEventListener('click', function () {
+            apply(!root.classList.contains('nav-rail'), true);
+        });
+    })();
+</script>
 
 {{-- Reusable confirmation dialog. Any <form data-confirm="…"> opens this styled
      modal instead of the native browser confirm(). Optional data-confirm-title
