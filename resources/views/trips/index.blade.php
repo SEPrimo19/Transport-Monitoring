@@ -33,6 +33,38 @@
         {{-- Trip list --}}
         <div class="col-12 col-lg-8">
             <div class="card border-0 shadow-sm">
+                {{-- Trips is the only index that paginates, so unlike the other screens
+                     this searches in the DATABASE. Filtering the twenty rows on this page
+                     client-side would report "no matches" for a plate sitting on page
+                     three -- confidently, and wrongly. It still needs no Enter: the form
+                     submits itself once typing pauses. --}}
+                <form method="GET" action="{{ route('trips.index') }}"
+                      class="p-3 border-bottom table-search" id="trip-search-form">
+                    @if ($activeStatus)
+                        <input type="hidden" name="status" value="{{ $activeStatus }}">
+                    @endif
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white border-end-0 text-muted">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="search" name="q" id="trip-search" value="{{ $searchTerm }}"
+                               class="form-control border-start-0 ps-0"
+                               placeholder="Search plate, body number, driver, route…"
+                               aria-label="Search all trips" autocomplete="off">
+                        @if ($searchTerm !== null)
+                            <a class="btn btn-outline-secondary" aria-label="Clear search"
+                               href="{{ route('trips.index', $activeStatus ? ['status' => $activeStatus] : []) }}">
+                                <i class="bi bi-x-lg"></i>
+                            </a>
+                        @endif
+                    </div>
+                    @if ($searchTerm !== null)
+                        <div class="small text-muted mt-2" role="status">
+                            {{ $trips->total() }} {{ Str::plural('trip', $trips->total()) }}
+                            matching “{{ $searchTerm }}”@if ($activeStatus) in {{ \App\Models\Trip::STATUSES[$activeStatus] }}@endif.
+                        </div>
+                    @endif
+                </form>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
@@ -111,3 +143,37 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+    (function () {
+        var form = document.getElementById('trip-search-form');
+        var input = document.getElementById('trip-search');
+        if (!form || !input) return;
+
+        // Submitting reloads the page, which would drop the caret at the start of the
+        // field and make the next keystroke land in the wrong place. Put it back.
+        if (input.value !== '') {
+            input.focus();
+            input.setSelectionRange(input.value.length, input.value.length);
+        }
+
+        var timer = null;
+        input.addEventListener('input', function () {
+            // Long enough that a word is typed before the round trip, short enough to
+            // still feel like it is keeping up. Every keystroke restarts it, so typing
+            // "ABC-123" costs one query, not seven.
+            clearTimeout(timer);
+            timer = setTimeout(function () { form.submit(); }, 450);
+        });
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { clearTimeout(timer); }        // let it submit now
+            if (e.key === 'Escape' && input.value !== '') {
+                clearTimeout(timer);
+                input.value = '';
+                form.submit();
+            }
+        });
+    })();
+</script>
+@endpush

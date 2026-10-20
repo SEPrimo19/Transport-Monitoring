@@ -17,6 +17,32 @@
         </p>
     </div>
 
+    {{-- One box over all eight tenant screens. org_admin only, matching the gate on
+         /search itself and on every screen it searches -- a super_admin has no
+         cooperative to search, and the route would refuse them anyway.
+
+         Submits rather than searching as you type: this reads eight tables, and a
+         query per keystroke on a free-tier dyno would be slower AND noisier than one
+         query when the admin has finished the thought. The per-screen boxes are the
+         opposite, and instant, because each already has its whole table on the page. --}}
+    @if ($ctx->isOrgAdmin())
+        <form method="GET" action="{{ route('search') }}" class="mb-4" role="search">
+            <div class="input-group input-group-lg shadow-sm">
+                <span class="input-group-text bg-white border-end-0 text-muted">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="search" name="q"
+                       class="form-control border-start-0 ps-0"
+                       placeholder="Search vehicles, drivers, terminals, routes, schedules, assignments, trips, reports…"
+                       aria-label="Search everything in your organization" autocomplete="off">
+                <button class="btn btn-brand px-4" type="submit">
+                    <span class="d-none d-sm-inline">Search</span>
+                    <i class="bi bi-arrow-return-left d-sm-none"></i>
+                </button>
+            </div>
+        </form>
+    @endif
+
     {{-- Actionable status band. Both counts are platform health and fine for either
          tier, but Live Ops and Reports are tenant data behind the tenant.admin gate —
          a super_admin's link here would always 403. So the count stays for both

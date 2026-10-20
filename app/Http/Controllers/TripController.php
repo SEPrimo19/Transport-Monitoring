@@ -24,9 +24,35 @@ class TripController extends Controller
             $status = null;
         }
 
+        // Trips is the one index that paginates, so its search has to run in the
+        // database: filtering the twenty rows on screen would quietly report "no
+        // matches" for a plate sitting on page three. Capped at 100 characters --
+        // nothing useful is longer and it bounds the pattern.
+        $term = trim((string) $request->query('q', ''));
+        $term = $term === '' ? null : mb_substr($term, 0, 100);
+
         $trips = Trip::query()
             ->with(['driver.profile', 'vehicle', 'route'])
             ->when($status, fn ($q) => $q->where('status', $status))
+            ->when($term, function ($query) use ($term) {
+                // Escape the LIKE wildcards: an admin typing "100%" means those four
+                // characters, not "anything starting with 100".
+                $like = '%'.addcslashes($term, '%_\\').'%';
+
+                // whereHas on scoped models, never a join on raw tables: each related
+                // query carries BelongsToOrganization's global scope, so a term can
+                // only ever match inside the admin's own organization.
+                $query->where(function ($w) use ($like) {
+                    $w->whereHas('vehicle', fn ($v) => $v
+                        ->where('plate_number', 'ilike', $like)
+                        ->orWhere('fleet_code', 'ilike', $like))
+                      ->orWhereHas('route', fn ($r) => $r
+                          ->where('code', 'ilike', $like)
+                          ->orWhere('name', 'ilike', $like))
+                      ->orWhereHas('driver.profile', fn ($p) => $p
+                          ->where('full_name', 'ilike', $like));
+                });
+            })
             ->orderByRaw('coalesce(ended_at, started_at, created_at) desc')
             ->paginate(20)
             ->withQueryString();
@@ -55,6 +81,7 @@ class TripController extends Controller
             'pointCounts' => $pointCounts,
             'counts' => $counts,
             'activeStatus' => $status,
+            'searchTerm' => $term,
             'routeStats' => $routeStats,
             'routeNames' => $routeNames,
         ]);

@@ -19,6 +19,7 @@
     </div>
 
     <div class="card border-0 shadow-sm">
+        @include('partials.table-search', ['placeholder' => 'Search category, vehicle, route, status…'])
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">

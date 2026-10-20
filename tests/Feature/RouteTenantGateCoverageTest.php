@@ -66,6 +66,9 @@ class RouteTenantGateCoverageTest extends TestCase
             ['trips.index'], ['trips.show'],
             ['reports.index'], ['reports.show'], ['reports.update'],
             ['notifications.pending'],
+            // Reads every tenant table at once, so it belongs behind the same gate as
+            // all eight screens it searches.
+            ['search'],
             // A cooperative's OWN profile — org_admin edits it; super_admin uses
             // Organizations instead. Nested in its own group per routes/web.php;
             // the thing most likely to be broken by that nesting.

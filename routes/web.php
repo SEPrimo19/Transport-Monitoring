@@ -14,6 +14,7 @@ use App\Http\Controllers\OrgProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RouteController;
 use App\Http\Controllers\RouteGeometryController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\TerminalController;
 use App\Http\Controllers\TripController;
 use App\Http\Controllers\TripScheduleController;
@@ -71,6 +72,11 @@ Route::middleware('supabase.admin')->group(function () {
         Route::resource('assignments', AssignmentController::class)->except(['show']);
         Route::resource('trips', TripController::class)->only(['index', 'show']);
         Route::resource('reports', ReportController::class)->only(['index', 'show', 'update']);
+
+        // One box over all eight tenant screens. INSIDE this group on purpose: it reads
+        // every tenant table at once, so it belongs behind the same gate as the screens
+        // it searches -- a super_admin must not reach it, for the reason stated above.
+        Route::get('search', [SearchController::class, 'index'])->name('search');
 
         // Polled by the header bell so a new passenger report shows up without a refresh.
         // Inside the tenant gate: the count itself is about one cooperative's reports.

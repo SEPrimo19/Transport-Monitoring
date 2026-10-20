@@ -1448,6 +1448,83 @@
         });
     });
 </script>
+{{-- Live table filter — see resources/views/partials/table-search.blade.php. --}}
+<script>
+    (function () {
+        document.querySelectorAll('[data-table-search]').forEach(function (input) {
+            var card = input.closest('.card');
+            var table = card && card.querySelector('table');
+            var body = table && table.tBodies[0];
+            if (!body) return;
+
+            var status = card.querySelector('[data-table-search-status]');
+            var clear = card.querySelector('[data-table-search-clear]');
+
+            // Snapshot the real rows once. A Blade empty-state row is a single cell
+            // spanning the table -- it is not a result, so it is excluded from both the
+            // filtering and the count, and left alone when there is nothing to filter.
+            var rows = Array.prototype.slice.call(body.rows).filter(function (r) {
+                return !(r.cells.length === 1 && r.cells[0].hasAttribute('colspan'));
+            });
+            if (!rows.length) { input.disabled = true; return; }
+
+            var empty = null;
+
+            function emptyRow() {
+                if (empty) return empty;
+                empty = body.insertRow();
+                var cell = empty.insertCell();
+                cell.colSpan = table.rows[0] ? table.rows[0].cells.length : 1;
+                cell.className = 'text-center text-muted py-4';
+                empty.className = 'd-none';
+                return empty;
+            }
+
+            function apply() {
+                var q = input.value.trim().toLowerCase();
+                var shown = 0;
+
+                rows.forEach(function (row) {
+                    // textContent, not innerHTML: a search for "span" should not match
+                    // the markup, and the visible text is what the admin is reading.
+                    var hit = q === '' || row.textContent.toLowerCase().indexOf(q) !== -1;
+                    row.classList.toggle('d-none', !hit);
+                    if (hit) shown++;
+                });
+
+                var none = emptyRow();
+                none.classList.toggle('d-none', !(q !== '' && shown === 0));
+                if (q !== '' && shown === 0) {
+                    none.cells[0].textContent = 'No matches for “' + input.value.trim() + '”.';
+                }
+
+                clear.classList.toggle('d-none', q === '');
+                status.classList.toggle('d-none', q === '');
+                if (q !== '') {
+                    status.textContent = 'Showing ' + shown + ' of ' + rows.length + '.';
+                }
+            }
+
+            input.addEventListener('input', apply);
+            input.addEventListener('keydown', function (e) {
+                // Enter would submit an enclosing form and throw away the filter; there is
+                // nothing to submit, the results are already on screen.
+                if (e.key === 'Enter') e.preventDefault();
+                if (e.key === 'Escape' && input.value !== '') {
+                    e.preventDefault();
+                    input.value = '';
+                    apply();
+                }
+            });
+            clear.addEventListener('click', function () {
+                input.value = '';
+                apply();
+                input.focus();
+            });
+        });
+    })();
+</script>
+
 @stack('scripts')
 </body>
 </html>
