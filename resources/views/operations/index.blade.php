@@ -20,6 +20,31 @@
             #ops-list { height: auto; min-height: 0; max-height: 65vh; }
         }
         .ops-dot { width: .7rem; height: .7rem; border-radius: 50%; display: inline-block; flex: none; }
+
+        /* ---- Corridor chips: one scrolling row, never a wrapping block ----
+           One chip per ACTIVE ROUTE, labelled with the route's full name, so the bar's
+           width is unbounded in two directions at once: a co-op with twenty routes, or
+           one with names like "Calbayog Terminal to Catbalogan Terminal". Wrapping meant
+           every extra row cost the map ~37px, in the normal layout and the expanded one.
+
+           Scrolling instead fixes the bar at one row forever -- five routes or fifty. At
+           AMOEC's seven (~920px) nothing overflows on a normal screen, so today this
+           changes nothing; it only engages when there is something to engage for. */
+        #ops-filter {
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: thin;
+            -webkit-overflow-scrolling: touch;
+        }
+        #ops-filter > .ops-chip { flex: 0 0 auto; }
+        /* overflow-y:hidden would clip a focus ring drawn outside the button, so chips in
+           the strip draw theirs inside. Keyboard users still get a visible focus, and Tab
+           scrolls the chip into view on its own. */
+        #ops-filter .ops-chip:focus-visible { outline-offset: -2px; }
+        #ops-filter::-webkit-scrollbar { height: 6px; }
+        #ops-filter::-webkit-scrollbar-track { background: transparent; }
+        #ops-filter::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, .2); border-radius: 3px; }
         .min-w-0 { min-width: 0; }
         .ops-veh { background: transparent; border: 0; }
 
@@ -211,7 +236,7 @@
     @if (count($corridors) > 1)
         {{-- Corridor filter. Built from the org's active routes, so it fits any
              cooperative rather than assuming AMOEC's two corridors. --}}
-        <div class="d-flex flex-wrap gap-2 mb-3" id="ops-filter">
+        <div class="d-flex gap-2 mb-3" id="ops-filter">
             <button type="button" class="btn btn-sm btn-brand ops-chip active" data-code="">All routes</button>
             @foreach ($corridors as $c)
                 <button type="button" class="btn btn-sm btn-outline-secondary ops-chip"
@@ -403,6 +428,16 @@
 
             const filterBar = document.getElementById('ops-filter');
             if (filterBar) {
+                filterBar.addEventListener('wheel', function (e) {
+                    // Only when there is something to scroll, and only for a vertical
+                    // wheel -- a trackpad's horizontal swipe already works, and
+                    // preventing it would make the strip feel stuck.
+                    if (filterBar.scrollWidth <= filterBar.clientWidth) return;
+                    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+                    e.preventDefault();
+                    filterBar.scrollLeft += e.deltaY;
+                }, { passive: false });
+
                 filterBar.addEventListener('click', function (e) {
                     const chip = e.target.closest('.ops-chip');
                     if (!chip) return;
