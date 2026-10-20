@@ -86,6 +86,15 @@
         .ops-on .page-toolbar { top: 1rem; }
         .ops-on #ops-filter { top: 3.4rem; }
 
+        /* Leaflet parks its zoom control in the top-left corner -- exactly where the
+           floating toolbar and the corridor chips now sit, so the +/- buttons ended up
+           both hidden AND unclickable (elementFromPoint over them returned the toolbar).
+           Raising them above the overlays would only swap which one is buried, so the
+           corner is pushed down instead, to just below whichever overlay reaches lowest.
+           Measured in JS rather than hardcoded: the chips are conditional on the org
+           having more than one corridor, and either bar can wrap on a narrow window. */
+        .ops-on .leaflet-top.leaflet-left { top: var(--ops-ctrl-top, 6rem); }
+
         /* Legend: bottom left, clear of Leaflet's attribution on the right. */
         .ops-on .ops-legend {
             position: absolute; left: 1rem; bottom: 1rem; z-index: 2; margin: 0;
@@ -459,7 +468,22 @@
             // Leaflet caches its container size. Resize the container without telling it
             // and you get grey tiles and a map centred on the wrong place -- so this has
             // to run AFTER the layout has settled, not in the same tick as the class flip.
+            // Leaflet's top-left corner holds the zoom control, and the floating toolbar
+            // and chips land on top of it. Push the corner below whichever reaches lowest.
+            function syncControlInset() {
+                const stageTop = stage.getBoundingClientRect().top;
+                let lowest = 0;
+                [stage.querySelector('.page-toolbar'), document.getElementById('ops-filter')]
+                    .forEach(function (el) {
+                        if (!el) return;
+                        const r = el.getBoundingClientRect();
+                        if (r.height) lowest = Math.max(lowest, r.bottom - stageTop);
+                    });
+                stage.style.setProperty('--ops-ctrl-top', (lowest + 12) + 'px');
+            }
+
             function remeasureMap() {
+                syncControlInset();
                 map.invalidateSize();
                 const shown = activeRoute ? latest.filter(v => v.route === activeRoute) : latest;
                 if (!shown || !shown.length) return;

@@ -732,14 +732,16 @@
                             aria-controls="adminSidebar" aria-label="Open navigation menu">
                         <i class="bi bi-list"></i>
                     </button>
-                    {{-- The md+ twin of the hamburger: same icon, same place, so there is
-                         one "the nav lives here" control at every width. Below md the
-                         hamburger above owns that job and this is hidden. --}}
+                    {{-- The md+ twin of the hamburger, in the same place but NOT the same
+                         glyph. A hamburger means "open the menu", which is what the button
+                         above does on a phone; this one narrows a sidebar that never goes
+                         away, and the panel glyph is what every desktop app uses for that.
+                         Below md the hamburger owns the job and this is hidden. --}}
                     <button type="button" id="nav-rail-toggle"
                             class="btn btn-light border d-none d-md-inline-flex flex-shrink-0"
                             aria-controls="adminSidebar" aria-expanded="true"
                             title="Collapse sidebar" aria-label="Collapse sidebar">
-                        <i class="bi bi-list"></i>
+                        <i class="bi bi-layout-sidebar"></i>
                     </button>
                     <div class="min-w-0">
                         <h1 class="h4 mb-0 text-truncate">@yield('heading', 'Dashboard')</h1>
