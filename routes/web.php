@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AdminActivityController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
@@ -83,6 +84,13 @@ Route::middleware('supabase.admin')->group(function () {
         Route::get('notifications/pending', [NotificationController::class, 'pending'])
             ->name('notifications.pending');
     }); // end tenant.admin
+
+    // Account-administration history. Deliberately in NEITHER tier group: both roles may
+    // open it and the SCOPE differs rather than the access -- an org_admin reads their own
+    // cooperative's events, a super_admin reads platform-tier ones only. Enforced by
+    // AccountAdminEvent::scopeVisibleTo, because this app connects as the database owner
+    // and so bypasses the RLS policy in migration 037.
+    Route::get('activity', [AdminActivityController::class, 'index'])->name('activity.index');
 
     // Self-service for the signed-in admin (both tiers): change display name / password.
     Route::get('account', [AccountController::class, 'edit'])->name('account.edit');

@@ -713,6 +713,19 @@
                 {{-- Tenant data. Hidden from a platform admin, and refused by the
                      tenant.admin middleware on the routes themselves, so a stale
                      bookmark does not become a back door. --}}
+                {{-- Outside both role blocks on purpose: both tiers open this one and
+                     the SCOPE differs, not the access. An org_admin reads their own
+                     cooperative's account history; a super_admin reads platform-tier
+                     events. Support below is inside the org_admin block, so putting it
+                     there would have hidden it from exactly the role that appoints
+                     administrators. --}}
+                <li class="nav-section-label">Accountability</li>
+                <li class="nav-item">
+                    <a class="nav-link @yield('nav_activity')" href="{{ route('activity.index') }}">
+                        <i class="bi bi-clipboard-check me-2"></i><span class="nav-label">Admin activity</span>
+                    </a>
+                </li>
+
                 @if ($ctx->isOrgAdmin())
                 <li class="nav-section-label">Fleet</li>
                 <li class="nav-item">

@@ -32,8 +32,14 @@ class RouteTenantGateCoverageTest extends TestCase
      * - dashboard: aggregate platform-health counts, safe for either tier (see
      *   DashboardController's docblock).
      * - account.edit / account.update: an admin's own account, not tenant data.
+     * - activity.index: account-administration history. Both tiers open it and the
+     *   SCOPE differs rather than the access — an org_admin reads their own
+     *   cooperative's events, a super_admin reads platform-tier ones (organization_id
+     *   IS NULL), per migration 037. A tier gate would have to pick one and lock the
+     *   other out, so the line is drawn by AccountAdminEvent::scopeVisibleTo instead
+     *   and pinned by AdminActivityVisibilityTest.
      */
-    private const TIER_FREE = ['dashboard', 'account.edit', 'account.update'];
+    private const TIER_FREE = ['dashboard', 'account.edit', 'account.update', 'activity.index'];
 
     /**
      * Every tenant-data route: org_admin only. A super_admin reaching any of these
