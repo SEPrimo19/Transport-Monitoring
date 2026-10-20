@@ -87,12 +87,26 @@
            keeps the row clear of the vehicle panel; past that the chips wrap, as before. */
         .ops-on #ops-float-top {
             position: absolute; top: 1rem; left: 1rem; right: 1rem; z-index: 2;
-            display: flex; flex-wrap: wrap; align-items: center; gap: .5rem;
+            display: flex; flex-wrap: wrap; align-items: flex-start; gap: .75rem;
+            /* flex-start, not center. On one line the two are identical now that the pill,
+               the chips and Exit are all 2rem. When the chip bar wraps to two rows it
+               becomes the tall item, and centring dropped the pill to the middle of it
+               while Exit stayed in the corner. Hugging the top keeps all three on the
+               first line at every width. */
             /* Room for the Exit button parked in the corner below, so a wrapping chip
                never slides underneath it. */
             padding-right: 6rem;
         }
-        .ops-on #ops-float-top > * { margin: 0; }
+        /* !important because mb-3 on the chip bar is a Bootstrap utility, which carries
+           its own. Without it the bar kept a 16px bottom margin, its margin box became the
+           tallest thing on the line, and align-items:center then centred that box -- which
+           put the visible chips 8px ABOVE the pill while the pill looked low. */
+        .ops-on #ops-float-top > * { margin: 0 !important; }
+
+        /* One height for all three, so centring has nothing left to disagree about: the
+           pill's own vertical padding made it 35px against the chips' and Exit's 31. */
+        .ops-on #ops-float-top > *,
+        .ops-on #ops-expand { min-height: 2rem; }
         .ops-on .page-toolbar { flex: 0 0 auto; width: auto; }
         /* flex-basis 0 with min-width 0, not `auto`: at `auto` the chip bar claims its full
            preferred width (~920px for seven corridors) and the OUTER flex wraps it onto a
@@ -149,6 +163,12 @@
            1052px from the right edge with it, 16px without). At 92% opacity it was
            invisible anyway. The legend has no absolute children, so it keeps it. */
         .ops-on .ops-legend { backdrop-filter: blur(6px); }
+
+        /* After the pill treatment above, which sets padding on both at the same
+           specificity and therefore wins on order. The toolbar's vertical padding is what
+           made it 35px tall against 32 for the chips and Exit; min-height already holds
+           the height, so the padding only has to be horizontal. */
+        .ops-on .page-toolbar { padding-block: 0; }
         /* The stale-poll warning has to come with us. A map full of markers looks
            identical whether it is live or frozen, and that is twice as true filling a
            projector, so the one place it must never be hidden is here. */
