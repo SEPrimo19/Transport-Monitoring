@@ -65,8 +65,11 @@
         .ops-on #ops-map { height: 100% !important; min-height: 0; border-radius: 0; }
 
         /* Vehicle list: a floating panel, top right. */
+        /* Top follows the measured row rather than a constant: the chip bar wraps to two
+           or three lines as the window narrows, and a fixed offset either overlapped it or
+           left a gap. --ops-ctrl-top is the same measurement Leaflet's corner uses. */
         .ops-on .ops-list-col {
-            position: absolute; top: 4.5rem; right: 1rem; z-index: 2;
+            position: absolute; top: var(--ops-ctrl-top, 4.5rem); right: 1rem; z-index: 2;
             width: 22rem; max-width: calc(100% - 2rem); padding: 0;
         }
         .ops-on .ops-list-col .card {
@@ -78,13 +81,42 @@
         .ops-on #ops-list { height: auto; min-height: 0; max-height: calc(100vh - 14rem); }
         .ops-on.ops-list-closed #ops-list { display: none; }
 
-        /* Toolbar + corridor chips: one floating bar across the top. */
-        .ops-on .page-toolbar,
-        .ops-on #ops-filter {
-            position: absolute; left: 1rem; right: 24rem; z-index: 2; margin: 0;
+        /* Toolbar + corridor chips share one floating row. The status pill shrinks to
+           its contents instead of spanning the bar, which is what left the chips stranded
+           on a line of their own with a stretch of empty pill beside them. right:24rem
+           keeps the row clear of the vehicle panel; past that the chips wrap, as before. */
+        .ops-on #ops-float-top {
+            position: absolute; top: 1rem; left: 1rem; right: 1rem; z-index: 2;
+            display: flex; flex-wrap: wrap; align-items: center; gap: .5rem;
+            /* Room for the Exit button parked in the corner below, so a wrapping chip
+               never slides underneath it. */
+            padding-right: 6rem;
         }
-        .ops-on .page-toolbar { top: 1rem; }
-        .ops-on #ops-filter { top: 3.4rem; }
+        .ops-on #ops-float-top > * { margin: 0; }
+        .ops-on .page-toolbar { flex: 0 0 auto; width: auto; }
+        /* flex-basis 0 with min-width 0, not `auto`: at `auto` the chip bar claims its full
+           preferred width (~920px for seven corridors) and the OUTER flex wraps it onto a
+           line of its own, which is what put it under the pill. Letting it take the leftover
+           width instead makes it wrap INSIDE, so "All routes" starts beside the pill. */
+        .ops-on #ops-filter { flex: 1 1 0; min-width: 0; }
+
+        /* The long half of each phrase. Worth reading on the normal page, not worth 350px
+           of a floating bar -- the icon and the timestamp already say "auto-refreshing",
+           and the title attribute keeps the full wording a hover away. */
+        .ops-on .ops-verbose { display: none; }
+
+        /* Exit moves to the corner rather than riding inside the status pill, where it was
+           both the widest thing in a bar that needed to be narrow and the least related to
+           the rest of it. */
+        /* Anchored to the row, which now spans the full width, because .page-toolbar is
+           itself positioned and would otherwise be the containing block -- that pinned
+           Exit to the middle of the bar instead of the corner. */
+        .ops-on #ops-expand {
+            position: absolute; top: 0; right: 0; z-index: 3;
+            background: rgba(255, 255, 255, .92);
+            backdrop-filter: blur(6px);
+            box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .12);
+        }
 
         /* Leaflet parks its zoom control in the top-left corner -- exactly where the
            floating toolbar and the corridor chips now sit, so the +/- buttons ended up
@@ -100,24 +132,28 @@
             position: absolute; left: 1rem; bottom: 1rem; z-index: 2; margin: 0;
         }
 
-        /* One pill treatment for all three floating clusters. */
+        /* One pill treatment for both floating clusters. The chips are already buttons
+           with their own surfaces, so they need no card behind them. */
         .ops-on .page-toolbar,
         .ops-on .ops-legend {
             background: rgba(255, 255, 255, .92);
-            backdrop-filter: blur(6px);
             border-radius: .5rem;
             padding: .4rem .75rem;
             box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .12);
+            border-bottom: 0;
+            margin-bottom: 0;
         }
+        /* Deliberately NOT on .page-toolbar: backdrop-filter makes an element a containing
+           block for absolutely positioned descendants, so the blur was quietly anchoring
+           the Exit button to the middle of the bar instead of the stage corner (measured:
+           1052px from the right edge with it, 16px without). At 92% opacity it was
+           invisible anyway. The legend has no absolute children, so it keeps it. */
+        .ops-on .ops-legend { backdrop-filter: blur(6px); }
         /* The stale-poll warning has to come with us. A map full of markers looks
            identical whether it is live or frozen, and that is twice as true filling a
            projector, so the one place it must never be hidden is here. */
         .ops-on #ops-stale { position: static; width: 100%; }
 
-        @media (max-width: 1199.98px) {
-            .ops-on .page-toolbar, .ops-on #ops-filter { right: 1rem; }
-            .ops-on .ops-list-col { top: 7rem; }
-        }
     </style>
 @endpush
 
@@ -126,13 +162,17 @@
      an ordinary static div and changes nothing; adding .ops-on pins it over the content
      column and the children below re-anchor themselves onto the map. --}}
 <div id="ops-stage">
+    {{-- Wrapper so expanded mode can sit the status pill and the corridor chips on one
+         line. Outside expanded mode it is a plain block and the two children keep their
+         own stacking and margins exactly as before. --}}
+    <div id="ops-float-top">
     <div class="page-toolbar d-flex justify-content-between align-items-center flex-wrap gap-2">
         <p class="text-muted mb-0">
-            <strong id="ops-count">{{ count($vehicles) }}</strong> {{ Str::plural('vehicle', count($vehicles)) }} transmitting
-            {{ $ctx->isSuperAdmin() ? 'across all organizations' : 'in your organization' }}
+            <strong id="ops-count">{{ count($vehicles) }}</strong> {{ Str::plural('vehicle', count($vehicles)) }} transmitting<span
+                class="ops-verbose"> {{ $ctx->isSuperAdmin() ? 'across all organizations' : 'in your organization' }}</span>
         </p>
-        <span class="text-muted small">
-            <i class="bi bi-arrow-repeat me-1"></i>Auto-refreshing · last update <span id="ops-updated">—</span>
+        <span class="text-muted small" title="Auto-refreshing">
+            <i class="bi bi-arrow-repeat me-1"></i><span class="ops-verbose">Auto-refreshing · last update </span><span id="ops-updated">—</span>
         </span>
         {{-- lg and up only. Below that the map and list already stack full-width, and a
              22rem panel floating over a 390px screen would cover the map it floats on. --}}
@@ -161,6 +201,8 @@
             @endforeach
         </div>
     @endif
+
+    </div>
 
     <div class="d-flex flex-wrap gap-3 small mb-3 ops-legend">
         {{-- Same five the passenger sees; mirrors VehicleFreshnessPalette and
@@ -473,12 +515,11 @@
             function syncControlInset() {
                 const stageTop = stage.getBoundingClientRect().top;
                 let lowest = 0;
-                [stage.querySelector('.page-toolbar'), document.getElementById('ops-filter')]
-                    .forEach(function (el) {
-                        if (!el) return;
-                        const r = el.getBoundingClientRect();
-                        if (r.height) lowest = Math.max(lowest, r.bottom - stageTop);
-                    });
+                [document.getElementById('ops-float-top')].forEach(function (el) {
+                    if (!el) return;
+                    const r = el.getBoundingClientRect();
+                    if (r.height) lowest = Math.max(lowest, r.bottom - stageTop);
+                });
                 stage.style.setProperty('--ops-ctrl-top', (lowest + 12) + 'px');
             }
 

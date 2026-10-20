@@ -120,8 +120,17 @@
             html.nav-rail main { flex: 1 1 auto; max-width: none; }
             html.nav-rail .brand-wordmark,
             html.nav-rail .nav-label { display: none; }
-            /* The brand row is a 3-column flex; with the wordmark gone, centre what is left. */
-            html.nav-rail .sidebar > .d-flex:first-child { justify-content: center; }
+            /* With the wordmark gone there is no room for the logo and the toggle side by
+               side in 4.5rem, so they stack. The logo stays rather than being dropped:
+               this is a multi-tenant console and the brand mark is how you know whose. */
+            html.nav-rail .sidebar-brand {
+                flex-direction: column;
+                justify-content: center;
+                gap: .5rem;
+            }
+            /* ms-auto pushed the toggle to the right of a row; in a column it would push
+               it to the bottom of one. */
+            html.nav-rail .sidebar-brand > * { margin-left: 0 !important; }
             html.nav-rail .sidebar .nav-link {
                 justify-content: center;
                 padding-left: .5rem;
@@ -619,13 +628,25 @@
              own component, and its JS bundle is already loaded, so this costs nothing. --}}
         <nav class="offcanvas-md offcanvas-start col-12 col-md-3 col-lg-2 sidebar p-3"
              tabindex="-1" id="adminSidebar" aria-label="Main navigation">
-            <div class="d-flex align-items-center gap-3 mb-4">
+            <div class="d-flex align-items-center gap-3 mb-4 sidebar-brand">
                 @if (! empty($orgLogoUrl))
                     <img src="{{ $orgLogoUrl }}" alt="{{ $brandLabel }} logo" class="brand-logo">
                 @else
                     <span class="brand-mark">{{ $brandMark ?? Str::substr(config('app.name', 'AMOEC Admin'), 0, 2) }}</span>
                 @endif
                 <strong class="text-truncate brand-wordmark">{{ $brandLabel ?? config('app.name', 'AMOEC Admin') }}</strong>
+                {{-- The collapse control belongs to the sidebar, so it lives in the sidebar:
+                     it is the one thing on screen that is still there, and still means the
+                     same thing, in both states. md and up only -- below that the sidebar is
+                     a drawer and the hamburger in the page header owns opening it. Both this
+                     and the close button below carry ms-auto, which is safe because exactly
+                     one of them is ever displayed at a given width. --}}
+                <button type="button" id="nav-rail-toggle"
+                        class="btn btn-sm btn-light border ms-auto d-none d-md-inline-flex flex-shrink-0"
+                        aria-controls="adminSidebar" aria-expanded="true"
+                        title="Collapse sidebar" aria-label="Collapse sidebar">
+                    <i class="bi bi-layout-sidebar"></i>
+                </button>
                 {{-- Only reachable while the drawer is open, which is only below md. --}}
                 <button type="button" class="btn-close ms-auto d-md-none"
                         data-bs-dismiss="offcanvas" data-bs-target="#adminSidebar"
@@ -731,17 +752,6 @@
                             data-bs-toggle="offcanvas" data-bs-target="#adminSidebar"
                             aria-controls="adminSidebar" aria-label="Open navigation menu">
                         <i class="bi bi-list"></i>
-                    </button>
-                    {{-- The md+ twin of the hamburger, in the same place but NOT the same
-                         glyph. A hamburger means "open the menu", which is what the button
-                         above does on a phone; this one narrows a sidebar that never goes
-                         away, and the panel glyph is what every desktop app uses for that.
-                         Below md the hamburger owns the job and this is hidden. --}}
-                    <button type="button" id="nav-rail-toggle"
-                            class="btn btn-light border d-none d-md-inline-flex flex-shrink-0"
-                            aria-controls="adminSidebar" aria-expanded="true"
-                            title="Collapse sidebar" aria-label="Collapse sidebar">
-                        <i class="bi bi-layout-sidebar"></i>
                     </button>
                     <div class="min-w-0">
                         <h1 class="h4 mb-0 text-truncate">@yield('heading', 'Dashboard')</h1>
