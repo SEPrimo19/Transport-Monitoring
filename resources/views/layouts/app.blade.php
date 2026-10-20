@@ -120,17 +120,43 @@
             html.nav-rail main { flex: 1 1 auto; max-width: none; }
             html.nav-rail .brand-wordmark,
             html.nav-rail .nav-label { display: none; }
-            /* With the wordmark gone there is no room for the logo and the toggle side by
-               side in 4.5rem, so they stack. The logo stays rather than being dropped:
-               this is a multi-tenant console and the brand mark is how you know whose. */
+            /* Collapsed, the logo IS the expand control. The toggle lies on top of it at
+               zero opacity and the two cross-fade on hover, so the rail shows the brand
+               until you reach for it and the panel glyph the moment you do. One 3.25rem
+               target instead of a logo with a second button stacked under it, and the
+               thing you aim at is the thing that was already there. */
             html.nav-rail .sidebar-brand {
-                flex-direction: column;
+                position: relative;
                 justify-content: center;
-                gap: .5rem;
+                width: 3.25rem;
+                height: 3.25rem;
+                margin-inline: auto;
             }
-            /* ms-auto pushed the toggle to the right of a row; in a column it would push
-               it to the bottom of one. */
+            /* ms-auto would otherwise still apply to the close button in this row. */
             html.nav-rail .sidebar-brand > * { margin-left: 0 !important; }
+            html.nav-rail #nav-rail-toggle {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                padding: 0;
+                border-radius: .65rem;
+                align-items: center;
+                justify-content: center;
+                opacity: 0;
+            }
+            /* Opacity rather than display:none or visibility:hidden, so the button stays
+               in the accessibility tree and keyboard-reachable; :focus-within then makes
+               it visible for anyone arriving by Tab rather than by cursor. */
+            html.nav-rail .sidebar-brand:hover .brand-logo,
+            html.nav-rail .sidebar-brand:hover .brand-mark,
+            html.nav-rail .sidebar-brand:focus-within .brand-logo,
+            html.nav-rail .sidebar-brand:focus-within .brand-mark { opacity: 0; }
+            html.nav-rail .sidebar-brand:hover #nav-rail-toggle,
+            html.nav-rail .sidebar-brand:focus-within #nav-rail-toggle { opacity: 1; }
+            html.nav-rail .sidebar-brand .brand-logo,
+            html.nav-rail .sidebar-brand .brand-mark,
+            html.nav-rail #nav-rail-toggle { transition: opacity .12s ease-in-out; }
             html.nav-rail .sidebar .nav-link {
                 justify-content: center;
                 padding-left: .5rem;
