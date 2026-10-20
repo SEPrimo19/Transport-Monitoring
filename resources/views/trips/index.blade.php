@@ -15,13 +15,13 @@
 @section('content')
     {{-- Status filter chips --}}
     <div class="page-toolbar d-flex flex-wrap gap-2">
-        <a href="{{ route('trips.index') }}"
+        <a href="{{ route('trips.index', $searchTerm !== null ? ['q' => $searchTerm] : []) }}"
            class="btn btn-sm {{ $activeStatus === null ? 'btn-primary' : 'btn-outline-secondary' }}">
             All <span class="badge text-bg-light ms-1">{{ $counts->sum() }}</span>
         </a>
         @foreach (\App\Models\Trip::STATUSES as $value => $label)
             @if (($counts[$value] ?? 0) > 0 || $activeStatus === $value)
-                <a href="{{ route('trips.index', ['status' => $value]) }}"
+                <a href="{{ route('trips.index', array_filter(['status' => $value, 'q' => $searchTerm], fn ($v) => $v !== null)) }}"
                    class="btn btn-sm {{ $activeStatus === $value ? 'btn-primary' : 'btn-outline-secondary' }}">
                     {{ $label }} <span class="badge text-bg-light ms-1">{{ $counts[$value] ?? 0 }}</span>
                 </a>
@@ -153,9 +153,21 @@
 
         // Submitting reloads the page, which would drop the caret at the start of the
         // field and make the next keystroke land in the wrong place. Put it back.
-        if (input.value !== '') {
-            input.focus();
-            input.setSelectionRange(input.value.length, input.value.length);
+        var FOCUS_KEY = 'amoec.tripSearchFocus';
+        try {
+            if (sessionStorage.getItem(FOCUS_KEY) === '1') {
+                sessionStorage.removeItem(FOCUS_KEY);
+                input.focus();
+                input.setSelectionRange(input.value.length, input.value.length);
+            }
+        } catch (e) {}
+
+        function submitAndKeepFocus() {
+            // Flag it so the reload knows the search caused it. Paging or a status chip
+            // reloads the same page with a value still in the box, and pulling focus and
+            // scroll back up there would fight the click the admin just made.
+            try { sessionStorage.setItem(FOCUS_KEY, '1'); } catch (e) {}
+            form.submit();
         }
 
         var timer = null;
@@ -164,14 +176,14 @@
             // still feel like it is keeping up. Every keystroke restarts it, so typing
             // "ABC-123" costs one query, not seven.
             clearTimeout(timer);
-            timer = setTimeout(function () { form.submit(); }, 450);
+            timer = setTimeout(submitAndKeepFocus, 450);
         });
         input.addEventListener('keydown', function (e) {
             if (e.key === 'Enter') { clearTimeout(timer); }        // let it submit now
             if (e.key === 'Escape' && input.value !== '') {
                 clearTimeout(timer);
                 input.value = '';
-                form.submit();
+                submitAndKeepFocus();
             }
         });
     })();

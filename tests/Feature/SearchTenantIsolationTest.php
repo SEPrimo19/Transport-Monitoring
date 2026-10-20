@@ -60,6 +60,35 @@ class SearchTenantIsolationTest extends TestCase
         }
     }
 
+    /**
+     * Profile is deliberately NOT org-scoped -- passengers are org-less and the
+     * promote-to-driver flow needs an exact-email lookup across the whole table. Its
+     * docblock spells out the consequence: an unfiltered read of profiles exposes the
+     * entire rider base of every cooperative.
+     *
+     * The search matches driver names, so it does touch profiles -- but only through
+     * whereHas on Driver, Assignment and Trip, which ARE scoped. A correlated subquery
+     * on an org-filtered parent can only reach that parent's own row, which is exactly
+     * case (a) the Profile docblock permits. Querying the model directly would not be,
+     * and is what this pins.
+     */
+    public function test_the_search_reaches_profiles_only_through_a_scoped_parent(): void
+    {
+        $source = $this->codeOf(app_path('Http/Controllers/SearchController.php'));
+
+        $this->assertStringNotContainsString('Profile::', $source,
+            'SearchController queries Profile directly. Profile carries no organization '.
+            'scope by design, so a direct read is not bounded to one cooperative — reach '.
+            "it through whereHas('profile') on a scoped model instead.");
+
+        // Every mention has to be a relation path on a scoped parent.
+        preg_match_all("/'((?:[a-z]+\.)*profile)'/", $source, $m);
+        foreach (array_unique($m[1]) as $path) {
+            $this->assertContains($path, ['profile', 'driver.profile'],
+                "Unexpected profile relation path '{$path}' in SearchController.");
+        }
+    }
+
     public function test_the_search_controller_never_queries_a_raw_table(): void
     {
         // Comments stripped first: the controller's own docblock states this rule in
@@ -68,7 +97,16 @@ class SearchTenantIsolationTest extends TestCase
 
         // DB::table() and the query-builder facade bypass Eloquent, and with it the
         // global scope that is the whole isolation guarantee on this screen.
-        foreach (['DB::table(', 'DB::select(', 'DB::raw(', '->fromQuery(', 'whereRaw('] as $escape) {
+        // withoutGlobalScope is the sharpest of these: it needs no new import and
+        // reads like a performance tweak, but it switches tenant isolation off for
+        // that query. toBase() and DB::statement/connection leave Eloquent entirely.
+        $escapes = [
+            'DB::table(', 'DB::select(', 'DB::raw(', 'DB::statement(', 'DB::connection(',
+            '->fromQuery(', '->toBase(', 'whereRaw(',
+            'withoutGlobalScope', 'setConnection(',
+        ];
+
+        foreach ($escapes as $escape) {
             $this->assertStringNotContainsString(
                 $escape,
                 $source,

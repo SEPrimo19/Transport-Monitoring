@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Route;
 use App\Models\Trip;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -34,25 +35,7 @@ class TripController extends Controller
         $trips = Trip::query()
             ->with(['driver.profile', 'vehicle', 'route'])
             ->when($status, fn ($q) => $q->where('status', $status))
-            ->when($term, function ($query) use ($term) {
-                // Escape the LIKE wildcards: an admin typing "100%" means those four
-                // characters, not "anything starting with 100".
-                $like = '%'.addcslashes($term, '%_\\').'%';
-
-                // whereHas on scoped models, never a join on raw tables: each related
-                // query carries BelongsToOrganization's global scope, so a term can
-                // only ever match inside the admin's own organization.
-                $query->where(function ($w) use ($like) {
-                    $w->whereHas('vehicle', fn ($v) => $v
-                        ->where('plate_number', 'ilike', $like)
-                        ->orWhere('fleet_code', 'ilike', $like))
-                      ->orWhereHas('route', fn ($r) => $r
-                          ->where('code', 'ilike', $like)
-                          ->orWhere('name', 'ilike', $like))
-                      ->orWhereHas('driver.profile', fn ($p) => $p
-                          ->where('full_name', 'ilike', $like));
-                });
-            })
+            ->when($term !== null, fn ($q) => $this->applyTerm($q, $term))
             ->orderByRaw('coalesce(ended_at, started_at, created_at) desc')
             ->paginate(20)
             ->withQueryString();
@@ -64,11 +47,14 @@ class TripController extends Controller
             ->groupBy('trip_id')
             ->pluck('c', 'trip_id');
 
-        $counts = Trip::query()->selectRaw('status, count(*) as n')->groupBy('status')->pluck('n', 'status');
+        $counts = Trip::query()
+            ->when($term !== null, fn ($q) => $this->applyTerm($q, $term))
+            ->selectRaw('status, count(*) as n')->groupBy('status')->pluck('n', 'status');
 
         // Per-route rollup (over completed trips with timing).
         $routeStats = Trip::query()
             ->when($status, fn ($q) => $q->where('status', $status))
+            ->when($term !== null, fn ($q) => $this->applyTerm($q, $term))
             ->whereNotNull('started_at')->whereNotNull('ended_at')
             ->selectRaw('route_id, count(*) as trips, avg(extract(epoch from (ended_at - started_at))) as avg_secs')
             ->groupBy('route_id')
@@ -85,6 +71,35 @@ class TripController extends Controller
             'routeStats' => $routeStats,
             'routeNames' => $routeNames,
         ]);
+    }
+
+    /**
+     * The search term, as a constraint shared by the list, the status counts and the
+     * route rollup. One definition on purpose: while only the list applied it, a chip
+     * could read "Ended 42" and then open three rows.
+     *
+     * whereHas on scoped models, never a join on raw tables -- each related query
+     * carries BelongsToOrganization's global scope, so a term can only ever match
+     * inside the admin's own organization.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<\App\Models\Trip>  $query
+     */
+    private function applyTerm(Builder $query, string $term): void
+    {
+        // Escape the LIKE wildcards: an admin typing "100%" means those four
+        // characters, not "anything starting with 100".
+        $like = '%'.addcslashes($term, '%_\\').'%';
+
+        $query->where(function (Builder $w) use ($like) {
+            $w->whereHas('vehicle', fn ($v) => $v
+                ->where('plate_number', 'ilike', $like)
+                ->orWhere('fleet_code', 'ilike', $like))
+              ->orWhereHas('route', fn ($r) => $r
+                  ->where('code', 'ilike', $like)
+                  ->orWhere('name', 'ilike', $like))
+              ->orWhereHas('driver.profile', fn ($p) => $p
+                  ->where('full_name', 'ilike', $like));
+        });
     }
 
     public function show(Trip $trip): View

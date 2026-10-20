@@ -9,7 +9,11 @@ use App\Models\Route;
 use App\Models\Terminal;
 use App\Models\Trip;
 use App\Models\TripSchedule;
+use App\Models\Organization;
 use App\Models\Vehicle;
+use App\Providers\AppServiceProvider;
+use App\Support\AdminContext;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -43,7 +47,7 @@ class SearchController extends Controller
     /** Long enough for a plate, a name or a route code; bounds the LIKE pattern. */
     private const MAX_TERM = 100;
 
-    public function index(Request $request): View
+    public function index(Request $request, AdminContext $ctx): View
     {
         $term = trim((string) $request->query('q', ''));
         $term = $term === '' ? null : mb_substr($term, 0, self::MAX_TERM);
@@ -51,7 +55,31 @@ class SearchController extends Controller
         return view('search.index', [
             'term' => $term,
             'groups' => $term === null ? [] : $this->search($term),
+            // The composer that supplies $orgName is bound to layouts.app, so it is not
+            // in scope inside this view's own @section. ReportController::show passes it
+            // by hand for the same reason.
+            'orgName' => $this->organizationName($ctx),
         ]);
+    }
+
+    /**
+     * The admin's own cooperative, for the "searched ... in X" line.
+     *
+     * Reuses the exact cache entry the layout's chrome composer already fills, so this
+     * costs no query on a normal page view and stays correct after a rebrand (the org
+     * profile update forgets that key).
+     */
+    private function organizationName(AdminContext $ctx): ?string
+    {
+        if ($ctx->organizationId === null) {
+            return null;
+        }
+
+        return Cache::remember(
+            AppServiceProvider::orgChromeCacheKey($ctx->organizationId),
+            now()->addMinutes(10),
+            fn () => Organization::find($ctx->organizationId)
+        )?->name;
     }
 
     /**
@@ -146,7 +174,7 @@ class SearchController extends Controller
                 ->orderByRaw('coalesce(ended_at, started_at, created_at) desc'),
             fn (Trip $t) => [
                 'title' => ($t->vehicle?->plate_number ?? 'Trip').' · '.($t->route?->code ?? '—'),
-                'meta' => trim($t->statusLabel().' · '.optional($t->started_at)->format('d M Y, H:i') ?? ''),
+                'meta' => implode(' · ', array_filter([$t->statusLabel(), $t->started_at?->format('d M Y, H:i')])),
                 'url' => route('trips.show', $t),
             ]);
 
@@ -159,7 +187,7 @@ class SearchController extends Controller
                 ->orderByDesc('created_at'),
             fn (Report $r) => [
                 'title' => $r->categoryLabel(),
-                'meta' => trim($r->statusLabel().' · '.($r->vehicle?->plate_number ?? 'no vehicle').' · '.optional($r->created_at)->format('d M Y')),
+                'meta' => implode(' · ', array_filter([$r->statusLabel(), $r->vehicle?->plate_number, $r->created_at?->format('d M Y')])),
                 'url' => route('reports.show', $r),
             ]);
 
