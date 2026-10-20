@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToOrganization;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -18,6 +19,22 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Route extends Model
 {
     use BelongsToOrganization;
+
+    // Postgres mints routes.id (uuid primary key default gen_random_uuid()), but
+    // Eloquent only reads a generated key back for an INCREMENTING model:
+    // performInsert() calls insertAndSetId() for those and a bare insert for
+    // everything else, so $route->getKey() stayed null after a create. That was
+    // invisible in every other controller, because their store() methods redirect
+    // to a parameterless *.index. RouteController::store() redirects to
+    // routes.geometry.edit, whose URI is routes/{route}/geometry -- so the insert
+    // committed, URL generation then threw UrlGenerationException on the null key,
+    // and the admin saw a 500 for a route that had in fact been saved, minus the
+    // polyline step that redirect exists to force.
+    //
+    // HasUuids assigns the key in PHP before the insert (performInsert ->
+    // setUniqueIds), so the model knows its own id. It also makes a non-UUID
+    // {route} segment a clean 404 instead of a Postgres 22P02 cast error.
+    use HasUuids;
 
     protected $table = 'routes';
 
