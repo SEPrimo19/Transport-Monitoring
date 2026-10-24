@@ -4,6 +4,18 @@
 @section('heading', 'Driver performance')
 @section('nav_analytics_drivers', 'active')
 
+@push('head')
+    <style media="print">
+        /* The chrome is for the screen: on paper only the title, the period and the table matter. */
+        .sidebar, .no-print, .table-search, .page-toolbar .badge { display: none !important; }
+        main { width: 100% !important; max-width: 100% !important; flex: 0 0 100% !important; padding: 0 !important; }
+        main > .d-flex:first-child { display: none !important; }
+        .card { box-shadow: none !important; border: 0 !important; }
+        .table { font-size: 11px; }
+        a { color: inherit !important; text-decoration: none !important; }
+    </style>
+@endpush
+
 @php
     $labels = [
         'received' => 'received', 'under_review' => 'under review', 'upheld' => 'upheld',
@@ -31,12 +43,19 @@
                 &middot; trips under 30 minutes old are not in yet.
             </span>
         </p>
-        <span class="badge text-bg-light border"><i class="bi bi-shield-lock me-1"></i>Read-only</span>
+        <div class="d-flex gap-2 no-print">
+            <a href="{{ route('analytics.drivers.export', $periodQuery) }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-filetype-csv me-1"></i>Export CSV
+            </a>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()">
+                <i class="bi bi-printer me-1"></i>Print / Save as PDF
+            </button>
+        </div>
     </div>
 
     {{-- Period and route. Plain GET links and one small form, so the whole view is addressable
          by URL and the browser back button works. --}}
-    <form method="GET" action="{{ route('analytics.drivers.index') }}" class="row g-2 align-items-end mb-3">
+    <form method="GET" action="{{ route('analytics.drivers.index') }}" class="row g-2 align-items-end mb-3 no-print">
         <div class="col-auto">
             <div class="btn-group" role="group" aria-label="Period">
                 @foreach (\App\Support\ScorecardPolicy::PRESETS as $days)

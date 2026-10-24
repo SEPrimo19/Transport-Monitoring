@@ -366,6 +366,89 @@ class DriverPerformancePageTest extends TestCase
         $this->get('/analytics/drivers')->assertOk()->assertSee("/analytics/drivers/{$this->anaId}", false);
     }
 
+    // ── the CSV export ──────────────────────────────────────────────────────
+
+    /** @return array<int, array<int, string>> the CSV as rows, header first */
+    private function csv(\Illuminate\Testing\TestResponse $response): array
+    {
+        $body = $response->streamedContent();
+        $body = preg_replace('/^\xEF\xBB\xBF/', '', $body);
+
+        return array_map('str_getcsv', array_filter(explode("\n", str_replace("\r\n", "\n", $body)), 'strlen'));
+    }
+
+    public function test_the_export_is_a_csv_of_the_same_rows_as_the_page(): void
+    {
+        $this->seedTrip($this->orgA, $this->anaId, 'on_time');
+        $this->seedTrip($this->orgA, $this->anaId, 'late');
+        $this->seedTrip($this->orgB, $this->benId, 'on_time');
+
+        $this->actAs('org_admin', $this->orgA);
+        $response = $this->get('/analytics/drivers/export')->assertOk();
+
+        $this->assertStringContainsString('text/csv', $response->headers->get('Content-Type'));
+        $this->assertStringContainsString('driver-performance-', $response->headers->get('Content-Disposition'));
+
+        $rows = $this->csv($response);
+        $header = array_shift($rows);
+
+        $this->assertSame('Driver', $header[0]);
+        $this->assertSame(['Ana Cruz', 'bob'], array_column($rows, 0), 'The same two drivers as the page, nobody from cooperative B.');
+        $this->assertSame('2', $rows[0][array_search('Trips', $header, true)]);
+    }
+
+    public function test_a_driver_named_like_a_formula_cannot_run_in_a_spreadsheet(): void
+    {
+        $evil = $this->seedDriver($this->orgA, '=HYPERLINK("http://evil","click")', 'evil');
+        $this->seedTrip($this->orgA, $evil, 'on_time');
+
+        $this->actAs('org_admin', $this->orgA);
+        $rows = $this->csv($this->get('/analytics/drivers/export')->assertOk());
+
+        $names = array_column($rows, 0);
+        $this->assertContains("'=HYPERLINK(\"http://evil\",\"click\")", $names);
+        $this->assertNotContains('=HYPERLINK("http://evil","click")', $names);
+    }
+
+    public function test_a_missing_value_is_an_empty_cell_not_a_zero(): void
+    {
+        // Bob has no scored trips: on-time must be blank, never 0.
+        $this->seedTrip($this->orgA, $this->bobId, 'no_timetable');
+
+        $this->actAs('org_admin', $this->orgA);
+        $rows = $this->csv($this->get('/analytics/drivers/export')->assertOk());
+        $header = array_shift($rows);
+        $bob = collect($rows)->firstWhere(0, 'bob');
+
+        $this->assertSame('', $bob[array_search('On time %', $header, true)]);
+    }
+
+    public function test_the_export_route_is_not_swallowed_by_the_driver_route(): void
+    {
+        $this->actAs('org_admin', $this->orgA);
+
+        // If {driver} matched first, "export" would be looked up as a driver id and 404.
+        $this->get('/analytics/drivers/export')->assertOk()->assertHeader('Content-Type');
+    }
+
+    public function test_a_super_admin_cannot_export_a_cooperatives_drivers(): void
+    {
+        $this->actAs('super_admin', null);
+
+        $this->get('/analytics/drivers/export')->assertForbidden();
+    }
+
+    public function test_the_index_offers_the_export_and_print(): void
+    {
+        $this->seedTrip($this->orgA, $this->anaId, 'on_time');
+
+        $this->actAs('org_admin', $this->orgA);
+
+        $this->get('/analytics/drivers')->assertOk()
+            ->assertSee('/analytics/drivers/export', false)
+            ->assertSee('Print');
+    }
+
     public function test_a_super_admin_is_refused(): void
     {
         $this->actAs('super_admin', null);

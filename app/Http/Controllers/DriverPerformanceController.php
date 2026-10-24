@@ -8,6 +8,7 @@ use App\Models\Report;
 use App\Models\Route;
 use App\Models\TripMetric;
 use App\Support\AdminContext;
+use App\Support\CsvSanitizer;
 use App\Support\ScorecardBuilder;
 use App\Support\ScorecardPolicy;
 use Carbon\Carbon;
@@ -15,6 +16,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Driver performance for the signed-in cooperative: trips, punctuality, driving indicators and
@@ -40,6 +42,60 @@ class DriverPerformanceController extends Controller
     public function index(Request $request, AdminContext $ctx): View
     {
         return view('analytics.drivers.index', $this->scorecard($request, $ctx));
+    }
+
+    /**
+     * The same rows as the page, as a CSV, with the same filters and the same scoping, because
+     * it calls the same scorecard(). Two copies of the query would eventually disagree about a
+     * number that a person is judged by.
+     *
+     * Every cell goes through CsvSanitizer: a driver name is typed by a person, and a name that
+     * begins with = or @ would otherwise be a formula in the spreadsheet that opens this file.
+     * Missing values are blank cells, never 0, for the same reason the page shows a dash.
+     *
+     * The UTF-8 byte order mark is what makes Excel read Filipino names correctly.
+     */
+    public function export(Request $request, AdminContext $ctx): StreamedResponse
+    {
+        $card = $this->scorecard($request, $ctx);
+
+        $filename = 'driver-performance-'.$card['from']->format('Y-m-d').'-to-'.$card['to']->format('Y-m-d').'.csv';
+
+        $header = [
+            'Driver', 'Employee code', 'Trips', 'Hours', 'Distance (km)',
+            'On time %', 'Scored trips', 'Early', 'Late', 'No timetable', 'Unscheduled',
+            'Avg speed (km/h)', 'Top speed (km/h)', 'Over-speed share %', 'Partial-data trips',
+            'Complaints', 'Received', 'Under review', 'Upheld', 'Not upheld', 'Outcome not recorded',
+            'Dismissed', 'Safety-related', 'Complaints per 100 trips', 'Anonymous share %',
+        ];
+
+        // A limit that is not set means over-speed was not measured, so the column is blank.
+        $limitSet = $card['overspeedLimit'] !== null;
+
+        return response()->streamDownload(function () use ($card, $header, $limitSet): void {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+
+            // escape: '' is explicit because PHP's default escape character is deprecated.
+            fputcsv($out, $header, ',', '"', '');
+
+            foreach ($card['rows'] as $r) {
+                $c = $r['complaints'];
+
+                fputcsv($out, array_map([CsvSanitizer::class, 'cell'], [
+                    $r['name'], $r['employee_code'], $r['trips'], $r['hours'], $r['distance_km'],
+                    $r['on_time_pct'], $r['scored'], $r['early'], $r['late'], $r['no_timetable'], $r['unscheduled'],
+                    $r['avg_speed_kmh'], $r['max_speed_kmh'],
+                    $limitSet && $r['overspeed_share'] !== null ? round($r['overspeed_share'] * 100, 1) : null,
+                    $r['partial'],
+                    $c['total'], $c['received'], $c['under_review'], $c['upheld'], $c['not_upheld'],
+                    $c['outcome_not_recorded'], $c['dismissed'], $r['safety_related'], $r['rate_per_100'],
+                    $r['anonymous_share'] === null ? null : round($r['anonymous_share'] * 100, 1),
+                ]), ',', '"', '');
+            }
+
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     /**
