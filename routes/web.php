@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AdminActivityController;
+use App\Http\Controllers\DriverPerformanceController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
@@ -78,6 +79,10 @@ Route::middleware('supabase.admin')->group(function () {
         // every tenant table at once, so it belongs behind the same gate as the screens
         // it searches -- a super_admin must not reach it, for the reason stated above.
         Route::get('search', [SearchController::class, 'index'])->name('search');
+
+        // Per-driver performance. HR data about named people, so it sits behind the same gate
+        // as the rest of the tenant data and a super_admin never reaches it.
+        Route::get('analytics/drivers', [DriverPerformanceController::class, 'index'])->name('analytics.drivers.index');
 
         // Polled by the header bell so a new passenger report shows up without a refresh.
         // Inside the tenant gate: the count itself is about one cooperative's reports.

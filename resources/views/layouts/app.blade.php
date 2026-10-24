@@ -764,6 +764,12 @@
                         <i class="bi bi-clock-history me-2"></i><span class="nav-label">Trips</span>
                     </a>
                 </li>
+                <li class="nav-section-label">Analytics</li>
+                <li class="nav-item">
+                    <a class="nav-link @yield('nav_analytics_drivers')" href="{{ route('analytics.drivers.index') }}">
+                        <i class="bi bi-graph-up me-2"></i><span class="nav-label">Driver performance</span>
+                    </a>
+                </li>
                 <li class="nav-section-label">Support</li>
                 <li class="nav-item">
                     <a class="nav-link @yield('nav_reports')" href="{{ route('reports.index') }}">
