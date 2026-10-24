@@ -56,8 +56,28 @@ class Report extends Model
         'dismissed' => 'Dismissed',
     ];
 
+    /**
+     * What closing a report found. Set only while the report is 'resolved' (migration 046).
+     * NULL on a resolved report means it was closed before outcomes existed, and is shown as
+     * "Outcome not recorded": it is never assumed to be either.
+     */
+    public const OUTCOMES = [
+        'upheld' => 'Upheld',
+        'not_upheld' => 'Not upheld',
+    ];
+
     /** Statuses that require resolved_at / resolved_by to be set. */
     public const RESOLVED_STATES = ['resolved', 'dismissed'];
+
+    /** The outcome for display, or '' when the report is not resolved. */
+    public function outcomeLabel(): string
+    {
+        if ($this->status !== 'resolved') {
+            return '';
+        }
+
+        return self::OUTCOMES[$this->resolution_outcome] ?? 'Outcome not recorded';
+    }
 
     public function reporter(): BelongsTo
     {

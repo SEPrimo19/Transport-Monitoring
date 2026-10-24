@@ -69,6 +69,16 @@
                                 by {{ $report->resolvedBy?->full_name ?? '—' }}
                             </dd>
                         @endif
+                        @if ($report->status === 'resolved')
+                            <dt class="col-sm-3">Outcome</dt>
+                            <dd class="col-sm-9">
+                                @if ($report->resolution_outcome)
+                                    {{ $report->outcomeLabel() }}
+                                @else
+                                    <span class="text-muted">{{ $report->outcomeLabel() }}</span>
+                                @endif
+                            </dd>
+                        @endif
                     </dl>
                 </div>
             </div>
@@ -136,6 +146,22 @@
                             @error('status') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             <div class="form-text">Resolved / Dismissed records who closed it and when.</div>
                         </div>
+                        {{-- Resolving means the cooperative reviewed it and closed it; it does not say
+                             the complaint was true. This is what says so, and the driver scorecard
+                             reads it. Hidden unless Resolved is selected. --}}
+                        <div class="mb-3 d-none" id="outcome-group">
+                            <div class="form-label">Was the complaint upheld?</div>
+                            @foreach (\App\Models\Report::OUTCOMES as $value => $label)
+                                <div class="form-check">
+                                    <input class="form-check-input @error('resolution_outcome') is-invalid @enderror"
+                                           type="radio" name="resolution_outcome" id="outcome-{{ $value }}" value="{{ $value }}"
+                                           @checked(old('resolution_outcome', $report->resolution_outcome) === $value)>
+                                    <label class="form-check-label" for="outcome-{{ $value }}">{{ $label }}</label>
+                                </div>
+                            @endforeach
+                            @error('resolution_outcome') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                            <div class="form-text">Required to resolve. Reports resolved before this existed read &ldquo;Outcome not recorded&rdquo;.</div>
+                        </div>
                         <button type="submit" class="btn btn-primary w-100">
                             <i class="bi bi-check-lg me-1"></i>Update status
                         </button>
@@ -145,3 +171,19 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+    (function () {
+        var status = document.getElementById('status');
+        var group = document.getElementById('outcome-group');
+        if (!status || !group) return;
+
+        // Shown only while Resolved is selected. Hidden rather than removed, so a stale choice
+        // can still be posted; the server ignores it for any other status.
+        function sync() { group.classList.toggle('d-none', status.value !== 'resolved'); }
+        status.addEventListener('change', sync);
+        sync();
+    })();
+</script>
+@endpush
