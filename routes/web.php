@@ -83,6 +83,7 @@ Route::middleware('supabase.admin')->group(function () {
         // Per-driver performance. HR data about named people, so it sits behind the same gate
         // as the rest of the tenant data and a super_admin never reaches it.
         Route::get('analytics/drivers', [DriverPerformanceController::class, 'index'])->name('analytics.drivers.index');
+        Route::get('analytics/drivers/{driver}', [DriverPerformanceController::class, 'show'])->name('analytics.drivers.show');
 
         // Polled by the header bell so a new passenger report shows up without a refresh.
         // Inside the tenant gate: the count itself is about one cooperative's reports.

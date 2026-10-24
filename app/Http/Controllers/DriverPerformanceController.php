@@ -43,11 +43,101 @@ class DriverPerformanceController extends Controller
     }
 
     /**
+     * One driver page: their summary, how they did on each route, their trips, and the
+     * complaints behind the count, each one linking to the report itself.
+     *
+     * `{driver}` is bound through the Driver model, so OrganizationScope runs before this method
+     * does and another cooperative driver is a 404, not a page. DriverPerformanceIsolationTest
+     * pins the type-hint, because dropping it would quietly turn this into a cross-tenant read.
+     *
+     * The reporter is deliberately NOT shown here. This page is about the driver; who complained
+     * is for the administrator on the report itself, and a figure about a driver sitting beside
+     * the complainant name, masked or not, is the wrong place for it.
+     */
+    public function show(Driver $driver, Request $request, AdminContext $ctx): View
+    {
+        $id = (string) $driver->profile_id;
+        $card = $this->scorecard($request, $ctx, $id);
+        $from = $card['from'];
+        $to = $card['to'];
+        $routeId = $card['routeId'];
+
+        // An inactive driver with no trips is dropped from the list, but opening their page
+        // directly should still work, so the row is built from the driver itself in that case.
+        $row = $card['rows'][0] ?? ScorecardBuilder::build([[
+            'profile_id' => $id,
+            'name' => $driver->profile?->full_name,
+            'employee_code' => $driver->employee_code,
+            'is_active' => true,
+        ]], [], [])[0];
+
+        $periodTrips = TripMetric::query()
+            ->where('driver_profile_id', $id)
+            ->whereBetween('started_at', [$from, $to])
+            ->when($routeId, static fn ($q) => $q->where('route_id', $routeId));
+
+        $perRoute = (clone $periodTrips)
+            ->groupBy('route_id')
+            ->selectRaw(
+                "route_id,
+                 count(*) as trips,
+                 count(*) filter (where punctuality = 'on_time') as on_time,
+                 count(*) filter (where punctuality in ('on_time', 'early', 'late')) as scored,
+                 avg(avg_moving_speed_kmh) as avg_speed_kmh"
+            )
+            ->get();
+
+        $codes = Route::query()->whereIn('id', $perRoute->pluck('route_id')->filter()->all())->pluck('code', 'id');
+
+        $byRoute = $perRoute->map(static function (TripMetric $m) use ($codes): array {
+            $a = $m->getAttributes();
+
+            return [
+                'route_id' => $a['route_id'],
+                'code' => $codes[$a['route_id']] ?? '—',
+                'trips' => (int) $a['trips'],
+                'on_time_pct' => ScorecardPolicy::onTimePercent((int) $a['on_time'], (int) $a['scored']),
+                'avg_speed_kmh' => $a['avg_speed_kmh'] === null ? null : round((float) $a['avg_speed_kmh']),
+            ];
+        })->sortBy('code')->values()->all();
+
+        // The complaints behind the count. Conduct and safety only: a vehicle or route report is
+        // not about this driver. Pinned to this organization like the scorecard own join.
+        $complaints = Report::query()
+            ->join('trip_metrics as m', 'm.trip_id', '=', 'reports.trip_id')
+            ->where('m.organization_id', $ctx->organizationId)
+            ->where('m.driver_profile_id', $id)
+            ->whereBetween('m.started_at', [$from, $to])
+            ->when($routeId, static fn ($q) => $q->where('m.route_id', $routeId))
+            ->whereIn('reports.category', ['driver_behavior', 'safety'])
+            ->orderByDesc('reports.created_at')
+            ->get(['reports.*']);
+
+        return view('analytics.drivers.show', [
+            'driver' => $driver,
+            'row' => $row,
+            'from' => $from,
+            'to' => $to,
+            'routeId' => $routeId,
+            'byRoute' => $byRoute,
+            'trips' => (clone $periodTrips)->with('route')->orderByDesc('started_at')->paginate(25)->withQueryString(),
+            'complaints' => $complaints,
+            'overspeedLimit' => $card['overspeedLimit'],
+            'minTripsForRate' => $card['minTripsForRate'],
+            'periodQuery' => array_filter([
+                'from' => $from->format('Y-m-d'),
+                'to' => $to->format('Y-m-d'),
+                'route' => $routeId,
+            ]),
+        ]);
+    }
+
+    /**
      * Everything the page and, later, the export need, in one place so the two cannot disagree.
      *
      * @return array<string, mixed>
      */
-    private function scorecard(Request $request, AdminContext $ctx): array
+    private function scorecard(Request $request, AdminContext $ctx, ?string $driverId = null): array
     {
         $period = ScorecardPolicy::resolvePeriod(
             $this->queryString($request, 'preset'),
@@ -60,7 +150,9 @@ class DriverPerformanceController extends Controller
 
         $routeId = $this->routeFilter($this->queryString($request, 'route'));
 
-        $drivers = Driver::query()->with('profile')->get()
+        $drivers = Driver::query()->with('profile')
+            ->when($driverId, static fn ($q) => $q->whereKey($driverId))
+            ->get()
             ->map(static fn (Driver $d): array => [
                 'profile_id' => (string) $d->profile_id,
                 'name' => $d->profile?->full_name,
@@ -70,6 +162,7 @@ class DriverPerformanceController extends Controller
 
         $aggregates = TripMetric::query()
             ->whereBetween('started_at', [$from, $to])
+            ->when($driverId, static fn ($q) => $q->where('driver_profile_id', $driverId))
             ->when($routeId, static fn ($q) => $q->where('route_id', $routeId))
             ->groupBy('driver_profile_id')
             ->selectRaw(
@@ -113,6 +206,7 @@ class DriverPerformanceController extends Controller
             ->join('trip_metrics as m', 'm.trip_id', '=', 'reports.trip_id')
             ->where('m.organization_id', $ctx->organizationId)
             ->whereBetween('m.started_at', [$from, $to])
+            ->when($driverId, static fn ($q) => $q->where('m.driver_profile_id', $driverId))
             ->when($routeId, static fn ($q) => $q->where('m.route_id', $routeId))
             ->get([
                 'm.driver_profile_id as driver_id',

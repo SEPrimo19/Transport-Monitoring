@@ -12,6 +12,9 @@
     $activePreset = ($preset !== null && in_array((int) $preset, \App\Support\ScorecardPolicy::PRESETS, true))
         ? (int) $preset : null;
     $partialTotal = collect($rows)->sum('partial');
+    $periodQuery = array_filter([
+        'from' => $from->format('Y-m-d'), 'to' => $to->format('Y-m-d'), 'route' => $routeId,
+    ]);
 @endphp
 
 @section('content')
@@ -86,7 +89,8 @@
                     @forelse ($rows as $row)
                         <tr>
                             <td class="min-w-0">
-                                <div class="fw-semibold text-truncate">{{ $row['name'] }}</div>
+                                <a href="{{ route('analytics.drivers.show', ['driver' => $row['driver_id']] + $periodQuery) }}"
+                                   class="fw-semibold text-truncate d-block text-decoration-none">{{ $row['name'] }}</a>
                                 @if ($row['employee_code'] && $row['employee_code'] !== $row['name'])
                                     <div class="small text-muted">{{ $row['employee_code'] }}</div>
                                 @endif
@@ -134,7 +138,8 @@
                                 @if ($c['total'] === 0)
                                     <span class="text-muted">0</span>
                                 @else
-                                    <strong>{{ $c['total'] }}</strong>
+                                    <a href="{{ route('analytics.drivers.show', ['driver' => $row['driver_id']] + $periodQuery) }}#complaints"
+                                       class="fw-bold text-decoration-none">{{ $c['total'] }}</a>
                                     <div class="small text-muted">
                                         {{ collect($labels)->filter(fn ($l, $k) => $c[$k] > 0)->map(fn ($l, $k) => $c[$k].' '.$l)->implode(' · ') }}
                                     </div>

@@ -77,6 +77,7 @@ class RouteTenantGateCoverageTest extends TestCase
             ['search'],
             // Per-driver performance figures and complaint counts: HR data about named people.
             ['analytics.drivers.index'],
+            ['analytics.drivers.show'],
             // A cooperative's OWN profile — org_admin edits it; super_admin uses
             // Organizations instead. Nested in its own group per routes/web.php;
             // the thing most likely to be broken by that nesting.

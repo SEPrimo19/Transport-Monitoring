@@ -64,6 +64,15 @@ class DriverPerformanceIsolationTest extends TestCase
         $this->assertStringNotContainsString('Profile::', $this->source());
     }
 
+    public function test_the_detail_route_resolves_its_driver_through_the_scoped_model(): void
+    {
+        // Type-hinting Driver is what makes another cooperative's id a 404 rather than a page:
+        // route-model binding runs through OrganizationScope before the method does.
+        $type = (new \ReflectionMethod(DriverPerformanceController::class, 'show'))->getParameters()[0]->getType();
+
+        $this->assertSame(\App\Models\Driver::class, $type->getName());
+    }
+
     public function test_the_controller_cannot_write(): void
     {
         $source = $this->source();

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Maps public.trip_metrics: one summary row per ended trip (migration 045), filled hourly by
@@ -38,6 +39,11 @@ class TripMetric extends Model
     public $timestamps = false;
 
     protected $guarded = ['*'];
+
+    public function route(): BelongsTo
+    {
+        return $this->belongsTo(Route::class, 'route_id');
+    }
 
     protected $casts = [
         'started_at' => 'datetime',

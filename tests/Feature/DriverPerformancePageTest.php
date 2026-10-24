@@ -291,6 +291,81 @@ class DriverPerformancePageTest extends TestCase
             ->assertSee('indicative, not evidence', false);
     }
 
+    // ── the per-driver detail page ──────────────────────────────────────────
+
+    private function seedRoute(string $org, string $code): string
+    {
+        $id = (string) Str::uuid();
+        DB::table('routes')->insert(['id' => $id, 'organization_id' => $org, 'code' => $code, 'name' => "Route $code"]);
+
+        return $id;
+    }
+
+    public function test_the_detail_page_shows_that_drivers_routes_trips_and_complaints(): void
+    {
+        $r1 = $this->seedRoute($this->orgA, 'ALN-CAL');
+        $r2 = $this->seedRoute($this->orgA, 'CAL-ALN');
+        $t1 = $this->seedTrip($this->orgA, $this->anaId, 'on_time', ['route_id' => $r1]);
+        $this->seedTrip($this->orgA, $this->anaId, 'late', ['route_id' => $r2]);
+        $this->seedTrip($this->orgA, $this->bobId, 'on_time', ['route_id' => $r1]);
+        $this->seedReport($this->orgA, $t1, 'driver_behavior', 'resolved', 'upheld');
+        $this->seedReport($this->orgA, $t1, 'vehicle_condition');
+
+        $this->actAs('org_admin', $this->orgA);
+        $response = $this->get("/analytics/drivers/{$this->anaId}")->assertOk();
+
+        $this->assertSame(2, $response->viewData('row')['trips'], 'Only this driver trips are counted, not the other driver.');
+        $this->assertEqualsCanonicalizing(['ALN-CAL', 'CAL-ALN'], array_column($response->viewData('byRoute'), 'code'));
+        $this->assertSame(1, $response->viewData('complaints')->count(),
+            'Only the conduct report is listed; a vehicle-condition one is not about the driver.');
+
+        $response->assertSee('Ana Cruz')->assertSee('ALN-CAL')->assertSee('Upheld');
+    }
+
+    public function test_the_detail_page_never_names_who_complained(): void
+    {
+        $t1 = $this->seedTrip($this->orgA, $this->anaId, 'on_time');
+        $reporter = (string) Str::uuid();
+        DB::table('profiles')->insert(['id' => $reporter, 'full_name' => 'Zelda Complainant', 'role' => 'passenger']);
+        DB::table('reports')->insert([
+            'id' => (string) Str::uuid(), 'organization_id' => $this->orgA, 'trip_id' => $t1,
+            'category' => 'driver_behavior', 'status' => 'submitted', 'passenger_profile_id' => $reporter,
+            'created_at' => now()->format('Y-m-d H:i:s'),
+        ]);
+
+        $this->actAs('org_admin', $this->orgA);
+
+        $this->get("/analytics/drivers/{$this->anaId}")->assertOk()->assertDontSee('Zelda Complainant');
+    }
+
+    public function test_another_cooperatives_driver_is_not_found(): void
+    {
+        $this->seedTrip($this->orgB, $this->benId, 'on_time');
+
+        $this->actAs('org_admin', $this->orgA);
+
+        $this->get("/analytics/drivers/{$this->benId}")->assertNotFound();
+    }
+
+    public function test_a_driver_with_no_trips_still_has_a_page(): void
+    {
+        $this->actAs('org_admin', $this->orgA);
+
+        $response = $this->get("/analytics/drivers/{$this->bobId}")->assertOk();
+
+        $this->assertSame(0, $response->viewData('row')['trips']);
+        $response->assertSee('bob');
+    }
+
+    public function test_the_index_links_each_driver_to_their_page(): void
+    {
+        $this->seedTrip($this->orgA, $this->anaId, 'on_time');
+
+        $this->actAs('org_admin', $this->orgA);
+
+        $this->get('/analytics/drivers')->assertOk()->assertSee("/analytics/drivers/{$this->anaId}", false);
+    }
+
     public function test_a_super_admin_is_refused(): void
     {
         $this->actAs('super_admin', null);
