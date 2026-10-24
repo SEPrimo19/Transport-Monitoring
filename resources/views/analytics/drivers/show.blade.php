@@ -17,6 +17,16 @@
     ];
 @endphp
 
+@push('head')
+    <style media="print">
+        .sidebar, .no-print, .table-search { display: none !important; }
+        main { width: 100% !important; max-width: 100% !important; flex: 0 0 100% !important; padding: 0 !important; }
+        main > .d-flex:first-child { display: none !important; }
+        .card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; }
+        a { color: inherit !important; text-decoration: none !important; }
+    </style>
+@endpush
+
 @section('content')
     <div class="page-toolbar d-flex justify-content-between align-items-start flex-wrap gap-2">
         <div class="min-w-0">
@@ -29,7 +39,9 @@
                 {{ $from->format('M j, Y') }} &ndash; {{ $to->format('M j, Y') }}
             </div>
         </div>
-        <span class="badge text-bg-light border"><i class="bi bi-shield-lock me-1"></i>Read-only</span>
+        <button type="button" class="btn btn-sm btn-outline-secondary no-print" onclick="window.print()">
+            <i class="bi bi-printer me-1"></i>Print / Save as PDF
+        </button>
     </div>
 
     <div class="row g-3 mb-3">

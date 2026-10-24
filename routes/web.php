@@ -85,7 +85,7 @@ Route::middleware('supabase.admin')->group(function () {
         Route::get('analytics/drivers', [DriverPerformanceController::class, 'index'])->name('analytics.drivers.index');
         // export BEFORE {driver}: registered after it, the word export would be looked up as a driver id.
         Route::get('analytics/drivers/export', [DriverPerformanceController::class, 'export'])->name('analytics.drivers.export');
-        Route::get('analytics/drivers/{driver}', [DriverPerformanceController::class, 'show'])->name('analytics.drivers.show');
+        Route::get('analytics/drivers/{driver}', [DriverPerformanceController::class, 'show'])->whereUuid('driver')->name('analytics.drivers.show');
 
         // Polled by the header bell so a new passenger report shows up without a refresh.
         // Inside the tenant gate: the count itself is about one cooperative's reports.

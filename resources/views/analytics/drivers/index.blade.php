@@ -30,6 +30,7 @@
 @endphp
 
 @section('content')
+    <h1 class="h4 d-none d-print-block">Driver performance</h1>
     <div class="page-toolbar d-flex justify-content-between align-items-start flex-wrap gap-2">
         <p class="text-muted mb-0">
             How each driver's trips went, and what passengers reported, between

@@ -449,6 +449,23 @@ class DriverPerformancePageTest extends TestCase
             ->assertSee('Print');
     }
 
+    public function test_a_driver_id_that_is_not_a_uuid_is_a_404_not_a_server_error(): void
+    {
+        $this->actAs('org_admin', $this->orgA);
+
+        $this->get('/analytics/drivers/not-a-uuid')->assertNotFound();
+    }
+
+    public function test_the_driver_page_prints_without_the_console_chrome(): void
+    {
+        $this->seedTrip($this->orgA, $this->anaId, 'on_time');
+        $this->actAs('org_admin', $this->orgA);
+
+        $this->get('/analytics/drivers/'.$this->anaId)->assertOk()
+            ->assertSee('media="print"', false)
+            ->assertSee('Print');
+    }
+
     public function test_a_super_admin_is_refused(): void
     {
         $this->actAs('super_admin', null);

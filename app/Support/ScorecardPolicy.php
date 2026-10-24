@@ -58,7 +58,7 @@ final class ScorecardPolicy
 
         if ($start !== null && $end !== null && $start <= $end) {
             $end = $end->endOfDay();
-            $earliest = $end->subDays(self::MAX_RANGE_DAYS)->startOfDay();
+            $earliest = $end->subDays(self::MAX_RANGE_DAYS - 1)->startOfDay();
 
             return ['from' => $start < $earliest ? $earliest : $start->startOfDay(), 'to' => $end];
         }

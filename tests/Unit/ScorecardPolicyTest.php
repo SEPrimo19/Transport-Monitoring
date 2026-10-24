@@ -146,6 +146,7 @@ class ScorecardPolicyTest extends TestCase
         $p = ScorecardPolicy::resolvePeriod(null, '2020-01-01', '2026-10-01', $this->now);
 
         $this->assertSame('2026-10-01 23:59:59', $p['to']->format('Y-m-d H:i:s'));
-        $this->assertEquals($p['to']->subDays(366)->startOfDay(), $p['from']);
+        // 366 days INCLUSIVE of both ends, so the start is 365 days before the end day.
+        $this->assertEquals($p['to']->subDays(365)->startOfDay(), $p['from']);
     }
 }
