@@ -192,6 +192,31 @@
             </div>
         </div>
 
+        {{-- ── Driver performance ──────────────────────────────────── --}}
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <h2 class="h6 text-muted mb-3"><i class="bi bi-speedometer2 me-1"></i>Driver performance</h2>
+                <div class="row align-items-start">
+                    <div class="col-md-4 mb-3">
+                        <label for="overspeed_limit_kmh" class="form-label">Over-speed limit (km/h)</label>
+                        <input type="number" min="20" max="200" step="1" name="overspeed_limit_kmh" id="overspeed_limit_kmh"
+                               value="{{ old('overspeed_limit_kmh', $organization->overspeed_limit_kmh) }}"
+                               class="form-control @error('overspeed_limit_kmh') is-invalid @enderror" placeholder="Not set">
+                        @error('overspeed_limit_kmh') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="col-md-8 mb-3">
+                        <div class="alert alert-light border small mb-0">
+                            <i class="bi bi-info-circle me-1"></i>
+                            The speed above which a recorded GPS reading counts toward a driver's over-speed share.
+                            <strong>Leave blank to skip over-speed reporting.</strong>
+                            No limit is assumed: the figures come from phone GPS, so set one only if you are
+                            confident of the limit that applies on your routes.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="card shadow-sm mb-4">
             <div class="card-body">
                 <h2 class="h6 text-muted mb-3"><i class="bi bi-clock me-1"></i>Operations</h2>
