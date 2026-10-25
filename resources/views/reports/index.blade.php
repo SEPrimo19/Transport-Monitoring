@@ -16,6 +16,9 @@
                 {{ $label }} <span class="badge text-bg-light ms-1">{{ $counts[$value] ?? 0 }}</span>
             </a>
         @endforeach
+        <a href="{{ route('report-center.complaints') }}" class="btn btn-sm btn-brand ms-auto">
+            <i class="bi bi-file-earmark-text me-1"></i>Generate report
+        </a>
     </div>
 
     <div class="card border-0 shadow-sm">
