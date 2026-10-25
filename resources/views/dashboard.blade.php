@@ -17,6 +17,14 @@
         </p>
     </div>
 
+    @if ($ctx->isOrgAdmin())
+        <div class="mb-3">
+            <a href="{{ route('report-center.summary') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-file-earmark-text me-1"></i>Generate summary report
+            </a>
+        </div>
+    @endif
+
     {{-- One box over all eight tenant screens. org_admin only, matching the gate on
          /search itself and on every screen it searches -- a super_admin has no
          cooperative to search, and the route would refuse them anyway.

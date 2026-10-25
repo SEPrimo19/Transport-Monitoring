@@ -72,7 +72,7 @@ class ComplaintReportController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private function data(Request $request): array
+    public function data(Request $request): array
     {
         $period = ReportRequest::fromRequest($request, CarbonImmutable::now());
 

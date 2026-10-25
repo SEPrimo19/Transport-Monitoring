@@ -16,6 +16,7 @@ use App\Http\Controllers\OrgProfileController;
 use App\Http\Controllers\ComplaintReportController;
 use App\Http\Controllers\FleetReportController;
 use App\Http\Controllers\ReportCenterController;
+use App\Http\Controllers\SummaryReportController;
 use App\Http\Controllers\TripReportController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RouteController;
@@ -94,6 +95,8 @@ Route::middleware('supabase.admin')->group(function () {
         Route::get('report-center/complaints/export', [ComplaintReportController::class, 'export'])->name('report-center.complaints.export');
         Route::get('report-center/fleet', [FleetReportController::class, 'report'])->name('report-center.fleet');
         Route::get('report-center/fleet/export', [FleetReportController::class, 'export'])->name('report-center.fleet.export');
+        Route::get('report-center/summary', [SummaryReportController::class, 'report'])->name('report-center.summary');
+        Route::get('report-center/summary/export', [SummaryReportController::class, 'export'])->name('report-center.summary.export');
         Route::get('report-center/drivers', [DriverPerformanceController::class, 'report'])->name('report-center.drivers');
         // export BEFORE {driver}: registered after it, the word export would be looked up as a driver id.
         Route::get('analytics/drivers/export', [DriverPerformanceController::class, 'export'])->name('analytics.drivers.export');
