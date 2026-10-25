@@ -34,6 +34,9 @@ class Organization extends Model
         'contact_phone',
         'status',
         'location_retention_days',
+        // Migration 044: the speed limit used for the over-speed share on driver scorecards.
+        // NULL = not set, and over-speed is not reported. Deliberately no default.
+        'overspeed_limit_kmh',
         // Migration 20260814_029: the tenant's IANA zone (trip_schedules stores local
         // clock times) and how far either side of a published departure a driver may
         // start the trip.
@@ -47,6 +50,7 @@ class Organization extends Model
         'region_center_lat' => 'float',
         'region_center_lng' => 'float',
         'location_retention_days' => 'integer',
+        'overspeed_limit_kmh' => 'integer',
         'enforce_departure_window' => 'boolean',
     ];
 

@@ -61,6 +61,8 @@ class CrossTenantIsolationTest extends TestCase
                 $b->boolean('is_active')->default(true);
                 $b->string('resolved_at')->nullable();
                 $b->string('resolved_by_profile_id')->nullable();
+                // Mirrors migration 046 (reports.resolution_outcome).
+                $b->string('resolution_outcome')->nullable();
                 $b->string('created_at')->nullable();
                 $b->string('updated_at')->nullable();
             });
@@ -158,10 +160,11 @@ class CrossTenantIsolationTest extends TestCase
         $this->actAs('org_admin', $this->orgA);
         $report = $this->insertRow('reports', $this->orgA, ['status' => 'submitted']);
 
-        $this->put("/reports/{$report}", ['status' => 'resolved'])->assertRedirect();
+        $this->put("/reports/{$report}", ['status' => 'resolved', 'resolution_outcome' => 'upheld'])->assertRedirect();
 
         $this->assertSame('resolved', DB::table('reports')->where('id', $report)->value('status'));
         $this->assertNotNull(DB::table('reports')->where('id', $report)->value('resolved_at'));
+        $this->assertSame('upheld', DB::table('reports')->where('id', $report)->value('resolution_outcome'));
     }
 
     public function test_vehicle_query_contains_only_own_cooperatives_rows(): void
@@ -253,12 +256,39 @@ class CrossTenantIsolationTest extends TestCase
         $this->actAs('org_admin', $this->orgA);
         $report = $this->insertRow('reports', $this->orgA, [
             'status' => 'resolved', 'resolved_at' => '2026-10-01', 'resolved_by_profile_id' => 'someone',
+            'resolution_outcome' => 'upheld',
         ]);
 
         $this->put("/reports/{$report}", ['status' => 'reviewing'])->assertRedirect();
 
         $this->assertNull(DB::table('reports')->where('id', $report)->value('resolved_at'));
         $this->assertNull(DB::table('reports')->where('id', $report)->value('resolved_by_profile_id'));
+        $this->assertNull(DB::table('reports')->where('id', $report)->value('resolution_outcome'),
+            'A reopened report must not keep a verdict; migration 046 would refuse it.');
+    }
+
+    public function test_resolving_a_report_without_an_outcome_is_refused_and_changes_nothing(): void
+    {
+        // The point of the outcome: "resolved" alone must never be able to read as upheld.
+        $this->actAs('org_admin', $this->orgA);
+        $report = $this->insertRow('reports', $this->orgA, ['status' => 'reviewing']);
+
+        $this->put("/reports/{$report}", ['status' => 'resolved'])->assertSessionHasErrors('resolution_outcome');
+
+        $this->assertSame('reviewing', DB::table('reports')->where('id', $report)->value('status'));
+        $this->assertNull(DB::table('reports')->where('id', $report)->value('resolved_at'));
+    }
+
+    public function test_dismissing_a_report_never_stores_a_stale_outcome(): void
+    {
+        $this->actAs('org_admin', $this->orgA);
+        $report = $this->insertRow('reports', $this->orgA, ['status' => 'reviewing']);
+
+        // The radios are hidden, not removed, so this can arrive with any status.
+        $this->put("/reports/{$report}", ['status' => 'dismissed', 'resolution_outcome' => 'upheld'])->assertRedirect();
+
+        $this->assertSame('dismissed', DB::table('reports')->where('id', $report)->value('status'));
+        $this->assertNull(DB::table('reports')->where('id', $report)->value('resolution_outcome'));
     }
 
     public function test_an_org_admin_is_refused_every_platform_route(): void

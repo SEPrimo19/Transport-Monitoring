@@ -5,10 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Organization;
 use App\Models\Report;
 use App\Support\AdminContext;
+use App\Support\ReportResolutionPolicy;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
@@ -107,21 +107,15 @@ class ReportController extends Controller
 
     public function update(Request $request, Report $report, AdminContext $ctx): RedirectResponse
     {
-        $data = $request->validate([
-            'status' => ['required', Rule::in(array_keys(Report::STATUSES))],
-        ]);
+        $data = $request->validate(ReportResolutionPolicy::rules());
 
-        $report->status = $data['status'];
-
-        if (in_array($data['status'], Report::RESOLVED_STATES, true)) {
-            // Constraint: resolved/dismissed require resolved_at.
-            $report->resolved_at = now();
-            $report->resolved_by_profile_id = $ctx->userId;
-        } else {
-            // Constraint: submitted/reviewing require resolved_at to be null.
-            $report->resolved_at = null;
-            $report->resolved_by_profile_id = null;
-        }
+        ReportResolutionPolicy::apply(
+            $report,
+            $data['status'],
+            $data['resolution_outcome'] ?? null,
+            $ctx->userId,
+            now()
+        );
 
         $report->save();
 
