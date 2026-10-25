@@ -79,6 +79,7 @@ class SummaryReportController extends Controller
             'complaints' => $complaints,
             'fleet' => $fleet,
             'drivers' => $drivers,
+            'conductComplaints' => SummaryReportBuilder::value($measures, 'Complaints', 'Driver-conduct complaints'),
             'from' => $trips['from'],
             'to' => $trips['to'],
             'routeLabel' => $trips['routeLabel'],

@@ -61,7 +61,7 @@ class SummaryReportBuilderTest extends TestCase
             ['Complaints', 'Median time to close (minutes)'], ['Complaints', 'Slowest time to close (minutes)'],
             ['Complaints', 'Driver-conduct complaints'],
             ['Fleet', 'Vehicles with trips'], ['Fleet', 'Idle vehicles'], ['Fleet', 'Routes run'],
-            ['Drivers', 'Drivers with trips'], ['Drivers', 'On time % (all drivers)'], ['Drivers', 'Complaints about drivers'],
+            ['Drivers', 'Drivers with trips'], ['Drivers', 'On time % (all drivers)'],
         ], array_map(static fn (array $x): array => [$x['area'], $x['measure']], $m));
         $this->assertSame(250.0, $this->value($m, 'Trips', 'Distance (km)'));
     }
@@ -143,7 +143,7 @@ class SummaryReportBuilderTest extends TestCase
             $this->assertTrue($x['value'] === null || is_int($x['value']) || is_float($x['value']), $x['measure'].' must be a plain number or null.');
         }
         $this->assertSame(
-            ['Drivers with trips', 'On time % (all drivers)', 'Complaints about drivers'],
+            ['Drivers with trips', 'On time % (all drivers)'],
             array_values(array_map(static fn (array $x): string => $x['measure'], array_filter($m, static fn (array $x): bool => $x['area'] === 'Drivers')))
         );
     }

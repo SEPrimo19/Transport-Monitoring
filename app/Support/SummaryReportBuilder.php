@@ -10,6 +10,11 @@ namespace App\Support;
  * feeds both the key-figures strip and the CSV, so the two cannot disagree, and because every
  * value is taken from an individual report's own figures, the summary cannot disagree with them.
  *
+ * There is ONE driver-complaint figure, 'Driver-conduct complaints', taken from the complaints
+ * report: every conduct report filed in the period. The Driver performance report attributes
+ * complaints to named drivers through the trip a report names, so it can show fewer; putting both
+ * numbers on one page would be two answers to one question.
+ *
  * Every value is a plain number or null. There is no per-person value in the list, on purpose: a
  * board pack states what the cooperative did, not what named people did. A figure nobody
  * measured stays null (never 0), and the idle-vehicle count is null under a route filter,
@@ -21,7 +26,7 @@ final class SummaryReportBuilder
      * @param  array{figures: array<string, mixed>}  $trips
      * @param  array{figures: array<string, mixed>, byCategory: array<int, array<string, mixed>>}  $complaints
      * @param  array{figures: array<string, mixed>, routeFiltered: bool}  $fleet
-     * @param  array{drivers_with_trips: int, trips: int, on_time_pct: ?float, complaints: int}  $drivers
+     * @param  array{drivers_with_trips: int, trips: int, on_time_pct: ?float}  $drivers
      * @return array<int, array{area: string, measure: string, value: int|float|null}>
      */
     public static function measures(array $trips, array $complaints, array $fleet, array $drivers): array
@@ -56,8 +61,23 @@ final class SummaryReportBuilder
 
             self::m('Drivers', 'Drivers with trips', $drivers['drivers_with_trips']),
             self::m('Drivers', 'On time % (all drivers)', $drivers['on_time_pct']),
-            self::m('Drivers', 'Complaints about drivers', $drivers['complaints']),
         ];
+    }
+
+    /**
+     * One measure's value by area and name, or null when there is no such measure.
+     *
+     * @param  array<int, array{area: string, measure: string, value: int|float|null}>  $measures
+     */
+    public static function value(array $measures, string $area, string $measure): int|float|null
+    {
+        foreach ($measures as $m) {
+            if ($m['area'] === $area && $m['measure'] === $measure) {
+                return $m['value'];
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -68,15 +88,7 @@ final class SummaryReportBuilder
      */
     public static function headline(array $measures): array
     {
-        $pick = static function (string $area, string $measure) use ($measures): int|float|null {
-            foreach ($measures as $m) {
-                if ($m['area'] === $area && $m['measure'] === $measure) {
-                    return $m['value'];
-                }
-            }
-
-            return null;
-        };
+        $pick = static fn (string $area, string $measure): int|float|null => self::value($measures, $area, $measure);
 
         return [
             ['label' => 'Trips', 'value' => $pick('Trips', 'Trips')],

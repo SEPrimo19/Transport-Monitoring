@@ -72,7 +72,7 @@
         <p>
             {{ $drivers['drivers_with_trips'] }} {{ \Illuminate\Support\Str::plural('driver', $drivers['drivers_with_trips']) }} ran trips.
             On time across all drivers: <strong>{{ $pct($drivers['on_time_pct']) }}</strong>.
-            Complaints about drivers in this period: <strong>{{ $drivers['complaints'] }}</strong>.
+            Reports about driver conduct in this period: <strong>{{ $conductComplaints }}</strong>.
         </p>
         <p class="sub">Individual drivers are not listed in this summary. They are in the Driver performance report.</p>
     @endif
@@ -149,7 +149,7 @@
     <ul>
         <li><strong>Every figure here is the same figure the individual reports show</strong> for the same period and route: Trips, Complaints, Vehicles and routes, and Driver performance. Open those reports for the full tables.</li>
         <li><strong>No individual is named.</strong> The Drivers section gives totals across all drivers only. No passenger, complainant or report text appears anywhere.</li>
-        <li><strong>A complaint is a report, not a finding.</strong> Only reports about driver conduct are counted as complaints about drivers; safety reports are shown separately.</li>
+        <li><strong>A complaint is a report, not a finding.</strong> Reports about driver conduct counts every conduct report filed in the period; safety reports are shown separately. The Driver performance report attributes complaints to a named driver through the trip a report names, so it can show fewer.</li>
         <li><strong>Idle vehicles</strong> are active vehicles that ran no trip in the period; they are not shown for a single route.</li>
         <li><strong>Average vs scheduled</strong> is the average trip time minus the route's configured duration; a plus sign means trips took longer than scheduled.</li>
         <li>Days are counted in {{ $timezone }} time.</li>

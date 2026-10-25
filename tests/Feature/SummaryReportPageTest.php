@@ -161,10 +161,27 @@ class SummaryReportPageTest extends TestCase
             $this->get('/report-center/fleet')->viewData('figures')['idle_vehicles'],
             $this->measure($summary, 'Fleet', 'Idle vehicles')
         );
-        $this->assertSame(
-            $this->get('/report-center/drivers')->viewData('figures')['complaints'],
-            $this->measure($summary, 'Drivers', 'Complaints about drivers')
-        );
+        $conduct = array_sum(array_column(array_filter(
+            $this->get('/report-center/complaints')->viewData('byCategory'),
+            static fn (array $c): bool => $c['scope'] === 'driver'
+        ), 'received'));
+        $this->assertSame($conduct, $this->measure($summary, 'Complaints', 'Driver-conduct complaints'));
+    }
+
+    public function test_a_conduct_complaint_with_no_linked_trip_is_counted_once_and_consistently(): void
+    {
+        $this->seedTrip($this->orgA, $this->anaId, 'on_time');
+        // A conduct report that names no trip: it cannot be attributed to any driver, but it is
+        // still a conduct complaint filed in the period, and the page must say so with ONE figure.
+        $this->seedReport($this->orgA, null, 'driver_behavior', 'submitted');
+        $this->actAs('org_admin', $this->orgA);
+
+        $response = $this->get('/report-center/summary')->assertOk();
+
+        $this->assertSame(1, $this->measure($response, 'Complaints', 'Driver-conduct complaints'));
+        $names = array_column($response->viewData('measures'), 'measure');
+        $this->assertNotContains('Complaints about drivers', $names, 'A second, differently-attributed driver complaint figure must not exist.');
+        $response->assertSee('Reports about driver conduct in this period');
     }
 
     public function test_another_cooperatives_data_never_appears(): void
