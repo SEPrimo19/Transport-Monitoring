@@ -8,7 +8,7 @@ use App\Models\Report;
 use App\Models\Route;
 use App\Models\TripMetric;
 use App\Support\AdminContext;
-use App\Support\CsvSanitizer;
+use App\Support\CsvReport;
 use App\Support\ReportRequest;
 use App\Support\ScorecardBuilder;
 use App\Support\ScorecardPolicy;
@@ -73,17 +73,11 @@ class DriverPerformanceController extends Controller
         // A limit that is not set means over-speed was not measured, so the column is blank.
         $limitSet = $card['overspeedLimit'] !== null;
 
-        return response()->streamDownload(function () use ($card, $header, $limitSet): void {
-            $out = fopen('php://output', 'w');
-            fwrite($out, "\xEF\xBB\xBF");
-
-            // escape: '' is explicit because PHP's default escape character is deprecated.
-            fputcsv($out, $header, ',', '"', '');
-
+        $rows = static function () use ($card, $limitSet): \Generator {
             foreach ($card['rows'] as $r) {
                 $c = $r['complaints'];
 
-                fputcsv($out, array_map([CsvSanitizer::class, 'cell'], [
+                yield [
                     $r['name'], $r['employee_code'], $r['trips'], $r['hours'], $r['distance_km'],
                     $r['on_time_pct'], $r['scored'], $r['early'], $r['late'], $r['no_timetable'], $r['unscheduled'],
                     $r['avg_speed_kmh'], $r['max_speed_kmh'],
@@ -92,11 +86,11 @@ class DriverPerformanceController extends Controller
                     $c['total'], $c['received'], $c['under_review'], $c['upheld'], $c['not_upheld'],
                     $c['outcome_not_recorded'], $c['dismissed'], $r['safety_related'], $r['rate_per_100'],
                     $r['anonymous_share'] === null ? null : round($r['anonymous_share'] * 100, 1),
-                ]), ',', '"', '');
+                ];
             }
+        };
 
-            fclose($out);
-        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+        return CsvReport::stream($filename, $header, $rows());
     }
 
     /**
