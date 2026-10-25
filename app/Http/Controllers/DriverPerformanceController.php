@@ -259,7 +259,7 @@ class DriverPerformanceController extends Controller
      *
      * @return array<string, mixed>
      */
-    private function scorecard(Request $request, AdminContext $ctx, ?string $driverId = null): array
+    public function scorecard(Request $request, AdminContext $ctx, ?string $driverId = null): array
     {
         $period = ReportRequest::fromRequest($request, CarbonImmutable::now());
         $from = $period->from;
