@@ -42,6 +42,15 @@ class ReportRequestTest extends TestCase
         $this->assertNull(ReportRequest::noticeFor('2026-10-05', '2026-10-05', null, true));
     }
 
+    public function test_a_range_longer_than_366_days_says_it_was_shortened(): void
+    {
+        $notice = ReportRequest::noticeFor('2020-01-01', '2026-10-01', null, true);
+
+        $this->assertIsString($notice);
+        $this->assertStringContainsString('366 days', $notice);
+        $this->assertNull(ReportRequest::noticeFor('2025-10-01', '2026-10-01', null, true), 'Exactly 366 days inclusive is allowed.');
+    }
+
     public function test_an_unusable_route_gets_a_notice(): void
     {
         $notice = ReportRequest::noticeFor(null, null, 'zzz', false);

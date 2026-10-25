@@ -61,6 +61,8 @@ final class ReportRequest
 
             if ($start === null || $end === null || $start > $end) {
                 $notices[] = 'That date range could not be used, so the last 30 days are shown.';
+            } elseif ($start->diffInDays($end) + 1 > ScorecardPolicy::MAX_RANGE_DAYS) {
+                $notices[] = 'A report covers at most '.ScorecardPolicy::MAX_RANGE_DAYS.' days, so the start date was moved forward.';
             }
         }
 
@@ -94,6 +96,10 @@ final class ReportRequest
         if ($routeId === null || ! Str::isUuid($routeId)) {
             return null;
         }
+
+        // Lower-cased: Postgres matches a UUID in any case, but the page compares ids as strings
+        // to label the route, so an upper-case id would filter correctly and be labelled wrongly.
+        $routeId = strtolower($routeId);
 
         return Route::query()->whereKey($routeId)->exists() ? $routeId : null;
     }

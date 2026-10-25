@@ -580,6 +580,17 @@ class DriverPerformancePageTest extends TestCase
             ->assertSee('Print');
     }
 
+    public function test_an_uppercase_route_id_is_still_labelled_as_that_route(): void
+    {
+        $route = $this->seedRoute($this->orgA, 'ALN-CAL');
+        $this->seedTrip($this->orgA, $this->anaId, 'on_time', ['route_id' => $route]);
+        $this->actAs('org_admin', $this->orgA);
+
+        $this->get('/report-center/drivers?route='.strtoupper($route))->assertOk()
+            ->assertSee('ALN-CAL')
+            ->assertDontSee('All routes');
+    }
+
     public function test_an_unusable_range_says_so_on_the_report(): void
     {
         $this->actAs('org_admin', $this->orgA);
