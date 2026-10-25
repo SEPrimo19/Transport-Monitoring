@@ -10,9 +10,14 @@
             {{ $routes->count() }} {{ Str::plural('route', $routes->count()) }}
             {{ $ctx->isSuperAdmin() ? 'across all organizations' : 'in your organization' }}
         </p>
-        <a href="{{ route('routes.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i>Add route
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{{ route('report-center.fleet') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-file-earmark-text me-1"></i>Generate report
+            </a>
+            <a href="{{ route('routes.create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>Add route
+            </a>
+        </div>
     </div>
 
     <div class="card border-0 shadow-sm">

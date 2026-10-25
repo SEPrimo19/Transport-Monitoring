@@ -10,9 +10,14 @@
             {{ $vehicles->count() }} {{ Str::plural('vehicle', $vehicles->count()) }}
             {{ $ctx->isSuperAdmin() ? 'across all organizations' : 'in your fleet' }}
         </p>
-        <a href="{{ route('vehicles.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i>Add vehicle
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{{ route('report-center.fleet') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-file-earmark-text me-1"></i>Generate report
+            </a>
+            <a href="{{ route('vehicles.create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>Add vehicle
+            </a>
+        </div>
     </div>
 
     <div class="card border-0 shadow-sm">
