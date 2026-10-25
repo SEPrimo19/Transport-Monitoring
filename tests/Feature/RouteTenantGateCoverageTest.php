@@ -81,6 +81,8 @@ class RouteTenantGateCoverageTest extends TestCase
             ['analytics.drivers.export'],
             ['report-center.drivers'],
             ['report-center.index'],
+            ['report-center.trips'],
+            ['report-center.trips.export'],
             // A cooperative's OWN profile — org_admin edits it; super_admin uses
             // Organizations instead. Nested in its own group per routes/web.php;
             // the thing most likely to be broken by that nesting.
