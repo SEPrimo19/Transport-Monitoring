@@ -453,15 +453,14 @@ class DriverPerformancePageTest extends TestCase
         $this->get('/analytics/drivers/export')->assertForbidden();
     }
 
-    public function test_the_index_offers_the_export_and_print(): void
+    public function test_the_index_offers_the_export(): void
     {
         $this->seedTrip($this->orgA, $this->anaId, 'on_time');
 
         $this->actAs('org_admin', $this->orgA);
 
         $this->get('/analytics/drivers')->assertOk()
-            ->assertSee('/analytics/drivers/export', false)
-            ->assertSee('Print');
+            ->assertSee('/analytics/drivers/export', false);
     }
 
     public function test_a_driver_id_that_is_not_a_uuid_is_a_404_not_a_server_error(): void
@@ -469,16 +468,6 @@ class DriverPerformancePageTest extends TestCase
         $this->actAs('org_admin', $this->orgA);
 
         $this->get('/analytics/drivers/not-a-uuid')->assertNotFound();
-    }
-
-    public function test_the_driver_page_prints_without_the_console_chrome(): void
-    {
-        $this->seedTrip($this->orgA, $this->anaId, 'on_time');
-        $this->actAs('org_admin', $this->orgA);
-
-        $this->get('/analytics/drivers/'.$this->anaId)->assertOk()
-            ->assertSee('media="print"', false)
-            ->assertSee('Print');
     }
 
     public function test_an_unusable_range_says_so_on_the_page(): void
@@ -603,6 +592,57 @@ class DriverPerformancePageTest extends TestCase
         $this->actAs('super_admin', null);
 
         $this->get('/report-center/drivers')->assertForbidden();
+    }
+
+    // ── the Report center hub ───────────────────────────────────────────────
+
+    public function test_the_hub_lists_the_driver_report_with_generate_and_export_links(): void
+    {
+        $this->actAs('org_admin', $this->orgA);
+
+        $this->get('/report-center')->assertOk()
+            ->assertSee('Driver performance')
+            ->assertSee('/report-center/drivers', false)
+            ->assertSee('/analytics/drivers/export', false);
+    }
+
+    public function test_the_hub_carries_the_chosen_period_into_the_links(): void
+    {
+        $this->actAs('org_admin', $this->orgA);
+
+        $this->get('/report-center?from=2026-10-01&to=2026-10-20')->assertOk()
+            ->assertSee('from=2026-10-01', false)
+            ->assertSee('to=2026-10-20', false);
+    }
+
+    public function test_a_super_admin_is_refused_on_the_hub(): void
+    {
+        $this->actAs('super_admin', null);
+
+        $this->get('/report-center')->assertForbidden();
+    }
+
+    public function test_the_hub_route_is_not_swallowed_by_a_later_route(): void
+    {
+        $this->actAs('org_admin', $this->orgA);
+
+        $this->get('/report-center')->assertOk();
+        $this->get('/report-center/drivers')->assertOk();
+    }
+
+    public function test_the_drivers_screens_offer_generate_report_and_no_longer_a_print_button(): void
+    {
+        $this->seedTrip($this->orgA, $this->anaId, 'on_time');
+        $this->actAs('org_admin', $this->orgA);
+
+        $this->get('/analytics/drivers')->assertOk()
+            ->assertSee('Generate report')
+            ->assertSee('/report-center/drivers', false)
+            ->assertDontSee('window.print()', false);
+
+        $this->get('/analytics/drivers/'.$this->anaId)->assertOk()
+            ->assertSee('Generate report')
+            ->assertDontSee('window.print()', false);
     }
 
     public function test_a_super_admin_is_refused(): void

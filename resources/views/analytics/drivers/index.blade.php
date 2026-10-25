@@ -4,18 +4,6 @@
 @section('heading', 'Driver performance')
 @section('nav_analytics_drivers', 'active')
 
-@push('head')
-    <style media="print">
-        /* The chrome is for the screen: on paper only the title, the period and the table matter. */
-        .sidebar, .no-print, .table-search, .page-toolbar .badge { display: none !important; }
-        main { width: 100% !important; max-width: 100% !important; flex: 0 0 100% !important; padding: 0 !important; }
-        main > .d-flex:first-child { display: none !important; }
-        .card { box-shadow: none !important; border: 0 !important; }
-        .table { font-size: 11px; }
-        a { color: inherit !important; text-decoration: none !important; }
-    </style>
-@endpush
-
 @php
     $labels = [
         'received' => 'received', 'under_review' => 'under review', 'upheld' => 'upheld',
@@ -30,7 +18,6 @@
 @endphp
 
 @section('content')
-    <h1 class="h4 d-none d-print-block">Driver performance</h1>
     <div class="page-toolbar d-flex justify-content-between align-items-start flex-wrap gap-2">
         <p class="text-muted mb-0">
             How each driver's trips went, and what passengers reported, between
@@ -48,9 +35,9 @@
             <a href="{{ route('analytics.drivers.export', $periodQuery) }}" class="btn btn-sm btn-outline-secondary">
                 <i class="bi bi-filetype-csv me-1"></i>Export CSV
             </a>
-            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()">
-                <i class="bi bi-printer me-1"></i>Print / Save as PDF
-            </button>
+            <a href="{{ route('report-center.drivers', $periodQuery) }}" class="btn btn-sm btn-brand">
+                <i class="bi bi-file-earmark-text me-1"></i>Generate report
+            </a>
         </div>
     </div>
 

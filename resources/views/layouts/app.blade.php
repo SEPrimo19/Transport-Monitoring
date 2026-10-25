@@ -770,6 +770,11 @@
                         <i class="bi bi-graph-up me-2"></i><span class="nav-label">Driver performance</span>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link @yield('nav_report_center')" href="{{ route('report-center.index') }}">
+                        <i class="bi bi-file-earmark-bar-graph me-2"></i><span class="nav-label">Report center</span>
+                    </a>
+                </li>
                 <li class="nav-section-label">Support</li>
                 <li class="nav-item">
                     <a class="nav-link @yield('nav_reports')" href="{{ route('reports.index') }}">
