@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Support\AdminContext;
 use Tests\Concerns\TwoCooperativeFixture;
 use Tests\TestCase;
 
@@ -511,6 +512,23 @@ class DriverPerformancePageTest extends TestCase
         $this->get('/analytics/drivers/'.$this->anaId)->assertOk()
             ->assertSee('Generate report')
             ->assertDontSee('window.print()', false);
+    }
+
+    public function test_detail_with_a_trip_limit_returns_only_that_many_recent_trips(): void
+    {
+        for ($i = 0; $i < 12; $i++) {
+            $this->seedTrip($this->orgA, $this->anaId, 'on_time', ['started_at' => now()->subDays(2)->addMinutes($i)->format('Y-m-d H:i:s')]);
+        }
+        $this->actAs('org_admin', $this->orgA);
+
+        $driver = \App\Models\Driver::query()->whereKey($this->anaId)->firstOrFail();
+        $data = app(\App\Http\Controllers\DriverPerformanceController::class)
+            ->detail($driver, request(), app(AdminContext::class), 5);
+
+        $this->assertCount(5, $data['trips']);
+        $this->assertNotInstanceOf(\Illuminate\Contracts\Pagination\Paginator::class, $data['trips']);
+        $this->assertArrayHasKey('notice', $data);
+        $this->assertSame(12, $data['row']['trips'], 'The summary still counts every trip in the period.');
     }
 
     public function test_a_super_admin_is_refused(): void
