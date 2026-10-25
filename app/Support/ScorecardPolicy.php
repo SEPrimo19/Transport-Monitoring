@@ -117,7 +117,7 @@ final class ScorecardPolicy
     }
 
     /** A strict Y-m-d, or null. "2026-02-31" is rejected rather than rolled into March. */
-    private static function parseDay(?string $value, DateTimeZone $tz): ?CarbonImmutable
+    public static function parseDay(?string $value, DateTimeZone $tz): ?CarbonImmutable
     {
         if ($value === null || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
             return null;

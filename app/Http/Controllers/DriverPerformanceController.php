@@ -8,7 +8,9 @@ use App\Models\Report;
 use App\Models\Route;
 use App\Models\TripMetric;
 use App\Support\AdminContext;
-use App\Support\CsvSanitizer;
+use App\Support\CsvReport;
+use App\Support\DriverReportSummary;
+use App\Support\ReportRequest;
 use App\Support\ScorecardBuilder;
 use App\Support\ScorecardPolicy;
 use Carbon\Carbon;
@@ -72,17 +74,11 @@ class DriverPerformanceController extends Controller
         // A limit that is not set means over-speed was not measured, so the column is blank.
         $limitSet = $card['overspeedLimit'] !== null;
 
-        return response()->streamDownload(function () use ($card, $header, $limitSet): void {
-            $out = fopen('php://output', 'w');
-            fwrite($out, "\xEF\xBB\xBF");
-
-            // escape: '' is explicit because PHP's default escape character is deprecated.
-            fputcsv($out, $header, ',', '"', '');
-
+        $rows = static function () use ($card, $limitSet): \Generator {
             foreach ($card['rows'] as $r) {
                 $c = $r['complaints'];
 
-                fputcsv($out, array_map([CsvSanitizer::class, 'cell'], [
+                yield [
                     $r['name'], $r['employee_code'], $r['trips'], $r['hours'], $r['distance_km'],
                     $r['on_time_pct'], $r['scored'], $r['early'], $r['late'], $r['no_timetable'], $r['unscheduled'],
                     $r['avg_speed_kmh'], $r['max_speed_kmh'],
@@ -91,11 +87,81 @@ class DriverPerformanceController extends Controller
                     $c['total'], $c['received'], $c['under_review'], $c['upheld'], $c['not_upheld'],
                     $c['outcome_not_recorded'], $c['dismissed'], $r['safety_related'], $r['rate_per_100'],
                     $r['anonymous_share'] === null ? null : round($r['anonymous_share'] * 100, 1),
-                ]), ',', '"', '');
+                ];
             }
+        };
 
-            fclose($out);
-        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+        return CsvReport::stream($filename, $header, $rows());
+    }
+
+    /**
+     * The printable report: the scorecard rows, the headline figures and a driver-by-route
+     * table, on the shared report layout. It calls scorecard(), so it cannot disagree with the
+     * screen or the CSV about a number, and it adds one more aggregate: how each driver did on
+     * each route, so a driver who works two corridors is not averaged into one figure.
+     */
+    public function report(Request $request, AdminContext $ctx): View
+    {
+        // `?driver=` narrows the report to one person, for a conversation with them. It is
+        // resolved through the scoped Driver model, so another cooperative's driver is a 404.
+        $driverParam = $request->query('driver');
+        $driverId = null;
+        $driverName = null;
+        if ($driverParam !== null) {
+            abort_unless(is_string($driverParam) && Str::isUuid($driverParam), 404);
+            $driver = Driver::query()->with('profile')->whereKey(strtolower($driverParam))->firstOrFail();
+            $driverId = (string) $driver->profile_id;
+            $driverName = $driver->profile?->full_name ?: ($driver->employee_code ?: 'Unnamed driver');
+        }
+
+        $card = $this->scorecard($request, $ctx, $driverId);
+
+        $aggregates = TripMetric::query()
+            ->whereBetween('started_at', [$card['from'], $card['to']])
+            ->when($driverId, static fn ($q) => $q->where('driver_profile_id', $driverId))
+            ->when($card['routeId'], static fn ($q) => $q->where('route_id', $card['routeId']))
+            ->groupBy('driver_profile_id', 'route_id')
+            ->selectRaw(
+                "driver_profile_id, route_id,
+                 count(*) as trips,
+                 count(*) filter (where punctuality = 'on_time') as on_time,
+                 count(*) filter (where punctuality in ('on_time', 'early', 'late')) as scored"
+            )
+            ->get()
+            ->map(static function (TripMetric $m): array {
+                $a = $m->getAttributes();
+
+                return [
+                    'driver_id' => (string) $a['driver_profile_id'],
+                    'route_id' => $a['route_id'] === null ? null : (string) $a['route_id'],
+                    'trips' => (int) $a['trips'],
+                    'on_time' => (int) $a['on_time'],
+                    'scored' => (int) $a['scored'],
+                ];
+            })->all();
+
+        $codes = Route::query()
+            ->whereIn('id', array_values(array_filter(array_column($aggregates, 'route_id'))))
+            ->pluck('code', 'id')
+            ->all();
+
+        $chosen = $card['routeId'] === null ? null : $card['routes']->firstWhere('id', $card['routeId']);
+
+        return view('analytics.drivers.report', $card + [
+            'figures' => DriverReportSummary::figures($card['rows']),
+            'perRoute' => DriverReportSummary::perRoute($card['rows'], $aggregates, $codes),
+            'routeLabel' => $chosen === null ? 'All routes' : $chosen->code.' · '.$chosen->name,
+            'driverId' => $driverId,
+            'driverName' => $driverName,
+            'organization' => $ctx->organizationId === null ? null : Organization::find($ctx->organizationId),
+            'generatedBy' => $ctx->fullName ?: ($ctx->email ?: 'an administrator'),
+            'generatedAt' => CarbonImmutable::now(),
+            'periodQuery' => array_filter([
+                'from' => $card['from']->format('Y-m-d'),
+                'to' => $card['to']->format('Y-m-d'),
+                'route' => $card['routeId'],
+            ]),
+        ]);
     }
 
     /**
@@ -195,16 +261,10 @@ class DriverPerformanceController extends Controller
      */
     private function scorecard(Request $request, AdminContext $ctx, ?string $driverId = null): array
     {
-        $period = ScorecardPolicy::resolvePeriod(
-            $this->queryString($request, 'preset'),
-            $this->queryString($request, 'from'),
-            $this->queryString($request, 'to'),
-            CarbonImmutable::now()
-        );
-        $from = $period['from'];
-        $to = $period['to'];
-
-        $routeId = $this->routeFilter($this->queryString($request, 'route'));
+        $period = ReportRequest::fromRequest($request, CarbonImmutable::now());
+        $from = $period->from;
+        $to = $period->to;
+        $routeId = $period->routeId;
 
         $drivers = Driver::query()->with('profile')
             ->when($driverId, static fn ($q) => $q->whereKey($driverId))
@@ -296,7 +356,8 @@ class DriverPerformanceController extends Controller
             'rows' => ScorecardBuilder::build($drivers, $aggregates, $reports),
             'from' => $from,
             'to' => $to,
-            'preset' => $this->queryString($request, 'preset'),
+            'preset' => $period->preset,
+            'notice' => $period->notice,
             'routeId' => $routeId,
             'routes' => Route::query()->orderBy('code')->get(['id', 'code', 'name']),
             'unattributed' => $unattributed,
@@ -304,27 +365,5 @@ class DriverPerformanceController extends Controller
             'overspeedLimit' => $overspeedLimit,
             'minTripsForRate' => ScorecardPolicy::MIN_TRIPS_FOR_RATE,
         ];
-    }
-
-    /** A query value that is a plain string, or null. `?from[]=x` arrives as an array. */
-    private function queryString(Request $request, string $key): ?string
-    {
-        $value = $request->query($key);
-
-        return is_string($value) && $value !== '' ? $value : null;
-    }
-
-    /**
-     * The route filter, only if it is a UUID that resolves through the scoped Route model. A
-     * malformed value would otherwise reach Postgres as an invalid uuid and become a 500, and
-     * another cooperative's route id is simply not found.
-     */
-    private function routeFilter(?string $routeId): ?string
-    {
-        if ($routeId === null || ! Str::isUuid($routeId)) {
-            return null;
-        }
-
-        return Route::query()->whereKey($routeId)->exists() ? $routeId : null;
     }
 }
