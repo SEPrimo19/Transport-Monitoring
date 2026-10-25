@@ -481,6 +481,13 @@ class DriverPerformancePageTest extends TestCase
             ->assertSee('Print');
     }
 
+    public function test_an_unusable_range_says_so_on_the_page(): void
+    {
+        $this->actAs('org_admin', $this->orgA);
+
+        $this->get('/analytics/drivers?from=2026-10-20&to=2026-10-01')->assertOk()->assertSee('last 30 days');
+    }
+
     public function test_a_super_admin_is_refused(): void
     {
         $this->actAs('super_admin', null);

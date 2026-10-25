@@ -9,6 +9,7 @@ use App\Models\Route;
 use App\Models\TripMetric;
 use App\Support\AdminContext;
 use App\Support\CsvSanitizer;
+use App\Support\ReportRequest;
 use App\Support\ScorecardBuilder;
 use App\Support\ScorecardPolicy;
 use Carbon\Carbon;
@@ -195,16 +196,10 @@ class DriverPerformanceController extends Controller
      */
     private function scorecard(Request $request, AdminContext $ctx, ?string $driverId = null): array
     {
-        $period = ScorecardPolicy::resolvePeriod(
-            $this->queryString($request, 'preset'),
-            $this->queryString($request, 'from'),
-            $this->queryString($request, 'to'),
-            CarbonImmutable::now()
-        );
-        $from = $period['from'];
-        $to = $period['to'];
-
-        $routeId = $this->routeFilter($this->queryString($request, 'route'));
+        $period = ReportRequest::fromRequest($request, CarbonImmutable::now());
+        $from = $period->from;
+        $to = $period->to;
+        $routeId = $period->routeId;
 
         $drivers = Driver::query()->with('profile')
             ->when($driverId, static fn ($q) => $q->whereKey($driverId))
@@ -296,7 +291,8 @@ class DriverPerformanceController extends Controller
             'rows' => ScorecardBuilder::build($drivers, $aggregates, $reports),
             'from' => $from,
             'to' => $to,
-            'preset' => $this->queryString($request, 'preset'),
+            'preset' => $period->preset,
+            'notice' => $period->notice,
             'routeId' => $routeId,
             'routes' => Route::query()->orderBy('code')->get(['id', 'code', 'name']),
             'unattributed' => $unattributed,
@@ -304,27 +300,5 @@ class DriverPerformanceController extends Controller
             'overspeedLimit' => $overspeedLimit,
             'minTripsForRate' => ScorecardPolicy::MIN_TRIPS_FOR_RATE,
         ];
-    }
-
-    /** A query value that is a plain string, or null. `?from[]=x` arrives as an array. */
-    private function queryString(Request $request, string $key): ?string
-    {
-        $value = $request->query($key);
-
-        return is_string($value) && $value !== '' ? $value : null;
-    }
-
-    /**
-     * The route filter, only if it is a UUID that resolves through the scoped Route model. A
-     * malformed value would otherwise reach Postgres as an invalid uuid and become a 500, and
-     * another cooperative's route id is simply not found.
-     */
-    private function routeFilter(?string $routeId): ?string
-    {
-        if ($routeId === null || ! Str::isUuid($routeId)) {
-            return null;
-        }
-
-        return Route::query()->whereKey($routeId)->exists() ? $routeId : null;
     }
 }

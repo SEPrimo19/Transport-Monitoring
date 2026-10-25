@@ -54,6 +54,10 @@
         </div>
     </div>
 
+    @if (! empty($notice))
+        <div class="alert alert-warning py-2 small" role="status">{{ $notice }}</div>
+    @endif
+
     {{-- Period and route. Plain GET links and one small form, so the whole view is addressable
          by URL and the browser back button works. --}}
     <form method="GET" action="{{ route('analytics.drivers.index') }}" class="row g-2 align-items-end mb-3 no-print">
