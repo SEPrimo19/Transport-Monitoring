@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Organization;
 use App\Support\AdminContext;
 use App\Support\PendingReportFeed;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -26,6 +27,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // The default pagination view is written for Tailwind, which this console does not load, so
+        // its arrow icons render at full size. The console is Bootstrap throughout: say so once here
+        // rather than asking for the Bootstrap view at every links() call.
+        Paginator::useBootstrapFive();
+
         // Every generated URL is https in production. Without this the app will
         // happily emit http:// links behind a TLS-terminating proxy, and the HSTS
         // header in SecurityHeaders is only sent on an ALREADY-secure request — so
