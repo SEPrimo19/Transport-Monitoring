@@ -531,6 +531,20 @@ class DriverPerformancePageTest extends TestCase
         $this->assertSame(12, $data['row']['trips'], 'The summary still counts every trip in the period.');
     }
 
+    public function test_the_trips_pagination_uses_bootstrap_not_unsized_tailwind_icons(): void
+    {
+        // The default Laravel pagination view is written for Tailwind, which this console does not
+        // load, so its arrow icons render at full size (a giant chevron over the page).
+        for ($i = 0; $i < 30; $i++) {
+            $this->seedTrip($this->orgA, $this->anaId, 'on_time', ['started_at' => now()->subDays(2)->addMinutes($i)->format('Y-m-d H:i:s')]);
+        }
+        $this->actAs('org_admin', $this->orgA);
+
+        $this->get('/analytics/drivers/'.$this->anaId)->assertOk()
+            ->assertSee('class="pagination"', false)
+            ->assertDontSee('w-5 h-5', false);
+    }
+
     public function test_a_super_admin_is_refused(): void
     {
         $this->actAs('super_admin', null);
