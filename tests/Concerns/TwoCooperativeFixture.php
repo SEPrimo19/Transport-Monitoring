@@ -170,9 +170,10 @@ trait TwoCooperativeFixture
         return $id;
     }
 
-    protected function seedReport(string $org, ?string $trip, string $category, string $status = 'submitted', ?string $outcome = null): void
+    /** @param array<string, mixed> $extra columns to set or override, such as route_id, resolved_at, created_at */
+    protected function seedReport(string $org, ?string $trip, string $category, string $status = 'submitted', ?string $outcome = null, array $extra = []): void
     {
-        DB::table('reports')->insert([
+        DB::table('reports')->insert($extra + [
             'id' => (string) Str::uuid(), 'organization_id' => $org, 'trip_id' => $trip, 'category' => $category,
             'status' => $status, 'resolution_outcome' => $outcome, 'created_at' => now()->format('Y-m-d H:i:s'),
         ]);

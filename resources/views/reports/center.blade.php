@@ -58,6 +58,23 @@
         <div class="col-12 col-lg-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
+                    <h2 class="h6 mb-1">Complaints</h2>
+                    <p class="text-muted small mb-3">
+                        Passenger reports by category, status and route, and how long closing them took. Counts only:
+                        no names, no report text.
+                    </p>
+                    <a class="btn btn-sm btn-brand" href="{{ route('report-center.complaints', $periodQuery) }}">
+                        <i class="bi bi-file-earmark-text me-1"></i>Generate report
+                    </a>
+                    <a class="btn btn-sm btn-outline-secondary" href="{{ route('report-center.complaints.export', $periodQuery) }}">
+                        <i class="bi bi-filetype-csv me-1"></i>Export CSV
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
                     <h2 class="h6 mb-1">Trips</h2>
                     <p class="text-muted small mb-3">
                         How many trips ran, how long they took and how many left on time, by route and by day or week.
