@@ -70,6 +70,8 @@ trait TwoCooperativeFixture
             $b->string('code')->nullable();
             $b->string('name')->nullable();
             $b->boolean('is_active')->default(true);
+            $b->integer('duration_minutes')->nullable();
+            $b->float('distance_km')->nullable();
         });
         // The layout's notification bell reads recent reports with their vehicle and route, so
         // a full page render needs these even though the scorecard itself does not.
