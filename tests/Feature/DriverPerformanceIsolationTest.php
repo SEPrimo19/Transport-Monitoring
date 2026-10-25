@@ -56,6 +56,32 @@ class DriverPerformanceIsolationTest extends TestCase
         }
     }
 
+    public function test_the_report_support_classes_have_no_way_around_the_organization_scope(): void
+    {
+        foreach (['ReportRequest', 'CsvReport', 'DriverReportSummary'] as $class) {
+            $path = (new \ReflectionClass('App\\Support\\'.$class))->getFileName();
+
+            $code = '';
+            foreach (token_get_all(file_get_contents($path)) as $token) {
+                if (is_array($token)) {
+                    if ($token[0] === T_COMMENT || $token[0] === T_DOC_COMMENT) {
+                        continue;
+                    }
+                    $code .= $token[1];
+                } else {
+                    $code .= $token;
+                }
+            }
+
+            foreach ([
+                'DB::table(', 'DB::select(', 'DB::raw(', 'DB::statement(', 'DB::connection(',
+                'whereRaw(', 'withoutGlobalScope', '->toBase(', 'setConnection(',
+            ] as $escape) {
+                $this->assertStringNotContainsString($escape, $code, "$class: $escape steps outside OrganizationScope.");
+            }
+        }
+    }
+
     public function test_profiles_are_never_queried_directly(): void
     {
         // Profile carries no organization scope by design (passengers are org-less), so a direct

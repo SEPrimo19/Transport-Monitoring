@@ -83,6 +83,7 @@ Route::middleware('supabase.admin')->group(function () {
         // Per-driver performance. HR data about named people, so it sits behind the same gate
         // as the rest of the tenant data and a super_admin never reaches it.
         Route::get('analytics/drivers', [DriverPerformanceController::class, 'index'])->name('analytics.drivers.index');
+        Route::get('report-center/drivers', [DriverPerformanceController::class, 'report'])->name('report-center.drivers');
         // export BEFORE {driver}: registered after it, the word export would be looked up as a driver id.
         Route::get('analytics/drivers/export', [DriverPerformanceController::class, 'export'])->name('analytics.drivers.export');
         Route::get('analytics/drivers/{driver}', [DriverPerformanceController::class, 'show'])->whereUuid('driver')->name('analytics.drivers.show');

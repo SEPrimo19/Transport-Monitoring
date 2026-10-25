@@ -9,6 +9,7 @@ use App\Models\Route;
 use App\Models\TripMetric;
 use App\Support\AdminContext;
 use App\Support\CsvReport;
+use App\Support\DriverReportSummary;
 use App\Support\ReportRequest;
 use App\Support\ScorecardBuilder;
 use App\Support\ScorecardPolicy;
@@ -91,6 +92,61 @@ class DriverPerformanceController extends Controller
         };
 
         return CsvReport::stream($filename, $header, $rows());
+    }
+
+    /**
+     * The printable report: the scorecard rows, the headline figures and a driver-by-route
+     * table, on the shared report layout. It calls scorecard(), so it cannot disagree with the
+     * screen or the CSV about a number, and it adds one more aggregate: how each driver did on
+     * each route, so a driver who works two corridors is not averaged into one figure.
+     */
+    public function report(Request $request, AdminContext $ctx): View
+    {
+        $card = $this->scorecard($request, $ctx);
+
+        $aggregates = TripMetric::query()
+            ->whereBetween('started_at', [$card['from'], $card['to']])
+            ->when($card['routeId'], static fn ($q) => $q->where('route_id', $card['routeId']))
+            ->groupBy('driver_profile_id', 'route_id')
+            ->selectRaw(
+                "driver_profile_id, route_id,
+                 count(*) as trips,
+                 count(*) filter (where punctuality = 'on_time') as on_time,
+                 count(*) filter (where punctuality in ('on_time', 'early', 'late')) as scored"
+            )
+            ->get()
+            ->map(static function (TripMetric $m): array {
+                $a = $m->getAttributes();
+
+                return [
+                    'driver_id' => (string) $a['driver_profile_id'],
+                    'route_id' => $a['route_id'] === null ? null : (string) $a['route_id'],
+                    'trips' => (int) $a['trips'],
+                    'on_time' => (int) $a['on_time'],
+                    'scored' => (int) $a['scored'],
+                ];
+            })->all();
+
+        $codes = Route::query()
+            ->whereIn('id', array_values(array_filter(array_column($aggregates, 'route_id'))))
+            ->pluck('code', 'id')
+            ->all();
+
+        $chosen = $card['routeId'] === null ? null : $card['routes']->firstWhere('id', $card['routeId']);
+
+        return view('analytics.drivers.report', $card + [
+            'figures' => DriverReportSummary::figures($card['rows']),
+            'perRoute' => DriverReportSummary::perRoute($card['rows'], $aggregates, $codes),
+            'routeLabel' => $chosen === null ? 'All routes' : $chosen->code.' · '.$chosen->name,
+            'organization' => $ctx->organizationId === null ? null : Organization::find($ctx->organizationId),
+            'generatedBy' => $ctx->fullName ?: ($ctx->email ?: 'an administrator'),
+            'generatedAt' => CarbonImmutable::now(),
+            'periodQuery' => array_filter([
+                'from' => $card['from']->format('Y-m-d'),
+                'to' => $card['to']->format('Y-m-d'),
+                'route' => $card['routeId'],
+            ]),
+        ]);
     }
 
     /**
