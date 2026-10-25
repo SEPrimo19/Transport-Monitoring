@@ -58,6 +58,23 @@
         <div class="col-12 col-lg-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
+                    <h2 class="h6 mb-1">Dashboard summary</h2>
+                    <p class="text-muted small mb-3">
+                        One page for a board pack: the headline figures of every report below for the period. No
+                        individuals are named.
+                    </p>
+                    <a class="btn btn-sm btn-brand" href="{{ route('report-center.summary', $periodQuery) }}">
+                        <i class="bi bi-file-earmark-text me-1"></i>Generate report
+                    </a>
+                    <a class="btn btn-sm btn-outline-secondary" href="{{ route('report-center.summary.export', $periodQuery) }}">
+                        <i class="bi bi-filetype-csv me-1"></i>Export CSV
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
                     <h2 class="h6 mb-1">Vehicles and routes</h2>
                     <p class="text-muted small mb-3">
                         How hard each vehicle worked, which active vehicles sat idle, and how each route ran against its
