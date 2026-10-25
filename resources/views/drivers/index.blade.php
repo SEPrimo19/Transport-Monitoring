@@ -36,7 +36,9 @@
                 <tbody>
                     @forelse ($drivers as $driver)
                         <tr>
-                            <td class="fw-semibold">{{ $driver->profile?->full_name ?? '—' }}</td>
+                            <td class="fw-semibold">
+                                <a href="{{ route('drivers.show', $driver) }}" class="text-decoration-none">{{ $driver->profile?->full_name ?? '—' }}</a>
+                            </td>
                             {{-- An admin-created login's address is a synthetic one we derive from the
                                  username; showing it here is an implementation detail the operator can do
                                  nothing with. Show what they actually tell the driver to type. A promoted
