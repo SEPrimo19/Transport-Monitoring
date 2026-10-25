@@ -58,6 +58,22 @@
         <div class="col-12 col-lg-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
+                    <h2 class="h6 mb-1">Trips</h2>
+                    <p class="text-muted small mb-3">
+                        How many trips ran, how long they took and how many left on time, by route and by day or week.
+                    </p>
+                    <a class="btn btn-sm btn-brand" href="{{ route('report-center.trips', $periodQuery) }}">
+                        <i class="bi bi-file-earmark-text me-1"></i>Generate report
+                    </a>
+                    <a class="btn btn-sm btn-outline-secondary" href="{{ route('report-center.trips.export', $periodQuery) }}">
+                        <i class="bi bi-filetype-csv me-1"></i>Export CSV
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
                     <h2 class="h6 mb-1">Driver performance</h2>
                     <p class="text-muted small mb-3">
                         How each driver's trips went, on time and by route, and what passengers reported

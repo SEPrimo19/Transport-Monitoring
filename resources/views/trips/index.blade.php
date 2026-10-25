@@ -27,6 +27,9 @@
                 </a>
             @endif
         @endforeach
+        <a href="{{ route('report-center.trips') }}" class="btn btn-sm btn-brand ms-auto">
+            <i class="bi bi-file-earmark-text me-1"></i>Generate report
+        </a>
     </div>
 
     <div class="row g-3">

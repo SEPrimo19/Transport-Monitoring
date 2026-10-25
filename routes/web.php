@@ -14,6 +14,7 @@ use App\Http\Controllers\OrgAdminController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\OrgProfileController;
 use App\Http\Controllers\ReportCenterController;
+use App\Http\Controllers\TripReportController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RouteController;
 use App\Http\Controllers\RouteGeometryController;
@@ -85,6 +86,8 @@ Route::middleware('supabase.admin')->group(function () {
         // as the rest of the tenant data and a super_admin never reaches it.
         Route::get('analytics/drivers', [DriverPerformanceController::class, 'index'])->name('analytics.drivers.index');
         Route::get('report-center', [ReportCenterController::class, 'index'])->name('report-center.index');
+        Route::get('report-center/trips', [TripReportController::class, 'report'])->name('report-center.trips');
+        Route::get('report-center/trips/export', [TripReportController::class, 'export'])->name('report-center.trips.export');
         Route::get('report-center/drivers', [DriverPerformanceController::class, 'report'])->name('report-center.drivers');
         // export BEFORE {driver}: registered after it, the word export would be looked up as a driver id.
         Route::get('analytics/drivers/export', [DriverPerformanceController::class, 'export'])->name('analytics.drivers.export');
