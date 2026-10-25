@@ -591,6 +591,37 @@ class DriverPerformancePageTest extends TestCase
             ->assertDontSee('All routes');
     }
 
+    public function test_a_single_driver_report_lists_only_that_driver(): void
+    {
+        $cy = $this->seedDriver($this->orgA, 'Cy Dela', 'cy');
+        $this->seedTrip($this->orgA, $this->anaId, 'on_time');
+        $this->seedTrip($this->orgA, $cy, 'late');
+        $this->actAs('org_admin', $this->orgA);
+
+        $response = $this->get('/report-center/drivers?driver='.$this->anaId)->assertOk();
+
+        $response->assertSee('Ana Cruz')->assertDontSee('Cy Dela');
+        $this->assertCount(1, $this->rows($response));
+    }
+
+    public function test_a_single_driver_report_for_another_cooperatives_driver_is_a_404(): void
+    {
+        $this->seedTrip($this->orgB, $this->benId, 'on_time');
+        $this->actAs('org_admin', $this->orgA);
+
+        $this->get('/report-center/drivers?driver='.$this->benId)->assertNotFound();
+        $this->get('/report-center/drivers?driver=not-a-uuid')->assertNotFound();
+    }
+
+    public function test_the_driver_page_generates_a_report_for_that_driver(): void
+    {
+        $this->seedTrip($this->orgA, $this->anaId, 'on_time');
+        $this->actAs('org_admin', $this->orgA);
+
+        $this->get('/analytics/drivers/'.$this->anaId)->assertOk()
+            ->assertSee('driver='.$this->anaId, false);
+    }
+
     public function test_an_unusable_range_says_so_on_the_report(): void
     {
         $this->actAs('org_admin', $this->orgA);

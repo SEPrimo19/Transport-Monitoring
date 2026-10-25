@@ -29,7 +29,7 @@
                 {{ $from->format('M j, Y') }} &ndash; {{ $to->format('M j, Y') }}
             </div>
         </div>
-        <a href="{{ route('report-center.drivers', $periodQuery) }}" class="btn btn-sm btn-brand">
+        <a href="{{ route('report-center.drivers', ['driver' => $row['driver_id']] + $periodQuery) }}" class="btn btn-sm btn-brand">
             <i class="bi bi-file-earmark-text me-1"></i>Generate report
         </a>
     </div>

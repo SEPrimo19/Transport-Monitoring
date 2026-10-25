@@ -2,12 +2,14 @@
 
 @section('title', 'Driver performance')
 @section('subtitle')
-    {{ $from->format('M j, Y') }} &ndash; {{ $to->format('M j, Y') }} &middot; {{ $routeLabel }}
+    @if ($driverName){{ $driverName }} &middot; @endif{{ $from->format('M j, Y') }} &ndash; {{ $to->format('M j, Y') }} &middot; {{ $routeLabel }}
 @endsection
 
 @section('toolbar')
-    <a class="btn" href="{{ route('analytics.drivers.export', $periodQuery) }}">Export CSV</a>
-    <a class="btn" href="{{ route('analytics.drivers.index', $periodQuery) }}">Back to the screen</a>
+    @unless ($driverId)
+        <a class="btn" href="{{ route('analytics.drivers.export', $periodQuery) }}">Export CSV</a>
+    @endunless
+    <a class="btn" href="{{ $driverId ? route('analytics.drivers.show', ['driver' => $driverId] + $periodQuery) : route('analytics.drivers.index', $periodQuery) }}">Back to the screen</a>
 @endsection
 
 @php

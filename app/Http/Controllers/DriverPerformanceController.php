@@ -102,10 +102,23 @@ class DriverPerformanceController extends Controller
      */
     public function report(Request $request, AdminContext $ctx): View
     {
-        $card = $this->scorecard($request, $ctx);
+        // `?driver=` narrows the report to one person, for a conversation with them. It is
+        // resolved through the scoped Driver model, so another cooperative's driver is a 404.
+        $driverParam = $request->query('driver');
+        $driverId = null;
+        $driverName = null;
+        if ($driverParam !== null) {
+            abort_unless(is_string($driverParam) && Str::isUuid($driverParam), 404);
+            $driver = Driver::query()->with('profile')->whereKey(strtolower($driverParam))->firstOrFail();
+            $driverId = (string) $driver->profile_id;
+            $driverName = $driver->profile?->full_name ?: ($driver->employee_code ?: 'Unnamed driver');
+        }
+
+        $card = $this->scorecard($request, $ctx, $driverId);
 
         $aggregates = TripMetric::query()
             ->whereBetween('started_at', [$card['from'], $card['to']])
+            ->when($driverId, static fn ($q) => $q->where('driver_profile_id', $driverId))
             ->when($card['routeId'], static fn ($q) => $q->where('route_id', $card['routeId']))
             ->groupBy('driver_profile_id', 'route_id')
             ->selectRaw(
@@ -138,6 +151,8 @@ class DriverPerformanceController extends Controller
             'figures' => DriverReportSummary::figures($card['rows']),
             'perRoute' => DriverReportSummary::perRoute($card['rows'], $aggregates, $codes),
             'routeLabel' => $chosen === null ? 'All routes' : $chosen->code.' · '.$chosen->name,
+            'driverId' => $driverId,
+            'driverName' => $driverName,
             'organization' => $ctx->organizationId === null ? null : Organization::find($ctx->organizationId),
             'generatedBy' => $ctx->fullName ?: ($ctx->email ?: 'an administrator'),
             'generatedAt' => CarbonImmutable::now(),
