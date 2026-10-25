@@ -100,7 +100,7 @@
         <span class="text-muted small">{{ $from->format('M j, Y') }} &ndash; {{ $to->format('M j, Y') }}</span>
         <div class="btn-group ms-auto" role="group" aria-label="Period">
             @foreach (\App\Support\ScorecardPolicy::PRESETS as $days)
-                <a href="{{ route('drivers.show', ['driver' => $pid, 'preset' => $days]) }}"
+                <a href="{{ route('drivers.show', array_filter(['driver' => $pid, 'preset' => $days, 'route' => $routeId])) }}"
                    class="btn btn-sm {{ ($activePreset === $days || ($activePreset === null && $days === 30 && ! request()->has('from'))) ? 'btn-primary' : 'btn-outline-secondary' }}">
                     {{ $days }} days
                 </a>

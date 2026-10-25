@@ -218,6 +218,27 @@ class DriverProfilePageTest extends TestCase
         $this->profile($this->anaId, '?from=2026-10-20&to=2026-10-01')->assertOk()->assertSee('last 30 days');
     }
 
+    public function test_the_chosen_preset_is_the_highlighted_one(): void
+    {
+        $this->actAs('org_admin', $this->orgA);
+
+        $body = $this->profile($this->anaId, '?preset=7')->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('/btn-primary"\s*>\s*7 days/', $body);
+        $this->assertDoesNotMatchRegularExpression('/btn-primary"\s*>\s*30 days/', $body);
+    }
+
+    public function test_the_period_buttons_keep_the_route_filter(): void
+    {
+        $route = $this->seedRoute($this->orgA, 'ALN-CAL');
+        $this->actAs('org_admin', $this->orgA);
+
+        $body = $this->profile($this->anaId, '?route='.$route)->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('/preset=7&amp;route='.$route.'/', $body);
+        $this->assertMatchesRegularExpression('/preset=90&amp;route='.$route.'/', $body);
+    }
+
     public function test_another_cooperatives_driver_is_a_404(): void
     {
         $this->actAs('org_admin', $this->orgA);

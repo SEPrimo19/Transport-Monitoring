@@ -261,6 +261,7 @@ class DriverPerformanceController extends Controller
                 ? (clone $periodTrips)->with('route')->orderByDesc('started_at')->paginate(25)->withQueryString()
                 : (clone $periodTrips)->with('route')->orderByDesc('started_at')->limit($recentTrips)->get(),
             'notice' => $card['notice'],
+            'preset' => $card['preset'],
             'complaints' => $complaints,
             'overspeedLimit' => $card['overspeedLimit'],
             'minTripsForRate' => $card['minTripsForRate'],
