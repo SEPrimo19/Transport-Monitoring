@@ -187,6 +187,21 @@ class FleetReportBuilderTest extends TestCase
         $this->assertSame(['AA', 'ZZ'], array_column($routes, 'route_code'));
     }
 
+    public function test_label_prefers_the_fleet_code_then_the_plate_then_a_dash(): void
+    {
+        $this->assertSame('BUS-1', FleetReportBuilder::label('BUS-1', 'ABC 123'));
+        $this->assertSame('ABC 123', FleetReportBuilder::label(null, 'ABC 123'));
+        $this->assertSame('ABC 123', FleetReportBuilder::label('', 'ABC 123'));
+        $this->assertSame('—', FleetReportBuilder::label(null, null));
+        $this->assertSame('—', FleetReportBuilder::label('', ''));
+    }
+
+    public function test_label_keeps_a_zero_string(): void
+    {
+        $this->assertSame('0', FleetReportBuilder::label('0', 'ABC 123'));
+        $this->assertSame('0', FleetReportBuilder::label(null, '0'));
+    }
+
     public function test_figures_for_nothing_are_zero(): void
     {
         $this->assertSame(
