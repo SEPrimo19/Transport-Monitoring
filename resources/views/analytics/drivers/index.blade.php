@@ -120,7 +120,7 @@
                                     <span class="text-muted small">no trips</span>
                                 @else
                                     {{ $row['trips'] }}
-                                    <div class="small text-muted">{{ $row['hours'] }} h &middot; {{ $row['distance_km'] }} km</div>
+                                    <div class="small text-muted">{{ $row['hours'] }} h &middot; {{ $row['distance_km'] !== null ? $row['distance_km'].' km' : 'distance unknown' }}</div>
                                 @endif
                             </td>
                             <td class="text-end">

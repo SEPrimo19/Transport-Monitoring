@@ -225,7 +225,7 @@ class DriverPerformanceController extends Controller
                 "driver_profile_id,
                  count(*) as trips,
                  coalesce(sum(duration_min), 0) as minutes,
-                 coalesce(sum(distance_km), 0) as distance_km,
+                 sum(distance_km) as distance_km,
                  count(*) filter (where punctuality = 'on_time') as on_time,
                  count(*) filter (where punctuality = 'early') as early,
                  count(*) filter (where punctuality = 'late') as late,
@@ -243,7 +243,7 @@ class DriverPerformanceController extends Controller
                 return [(string) $a['driver_profile_id'] => [
                     'trips' => (int) $a['trips'],
                     'minutes' => (int) $a['minutes'],
-                    'distance_km' => (float) $a['distance_km'],
+                    'distance_km' => $a['distance_km'] === null ? null : (float) $a['distance_km'],
                     'on_time' => (int) $a['on_time'],
                     'early' => (int) $a['early'],
                     'late' => (int) $a['late'],

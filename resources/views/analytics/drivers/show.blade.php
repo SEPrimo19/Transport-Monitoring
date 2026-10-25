@@ -49,7 +49,7 @@
             <div class="card border-0 shadow-sm h-100"><div class="card-body">
                 <div class="text-muted small">Trips</div>
                 <div class="h4 mb-0">{{ $row['trips'] }}</div>
-                <div class="small text-muted">{{ $row['hours'] }} h &middot; {{ $row['distance_km'] }} km</div>
+                <div class="small text-muted">{{ $row['hours'] }} h &middot; {{ $row['distance_km'] !== null ? $row['distance_km'].' km' : 'distance unknown' }}</div>
             </div></div>
         </div>
         <div class="col-6 col-lg-3">

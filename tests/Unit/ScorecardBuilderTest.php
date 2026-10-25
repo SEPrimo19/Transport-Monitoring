@@ -155,6 +155,13 @@ class ScorecardBuilderTest extends TestCase
         $this->assertSame(120.4, $row['distance_km']);
     }
 
+    public function test_distance_nobody_measured_is_null_not_zero_km(): void
+    {
+        $row = $this->row([$this->driver('d1')], ['d1' => $this->agg(['distance_km' => null])], []);
+
+        $this->assertNull($row['distance_km']);
+    }
+
     public function test_rows_are_ordered_by_name_never_by_complaints(): void
     {
         $drivers = [$this->driver('3', 'zed'), $this->driver('1', 'Ana'), $this->driver('2', 'bob')];

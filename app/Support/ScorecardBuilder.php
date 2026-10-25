@@ -81,7 +81,8 @@ final class ScorecardBuilder
 
             'trips' => $trips,
             'hours' => round(((int) ($agg['minutes'] ?? 0)) / 60, 1),
-            'distance_km' => round((float) ($agg['distance_km'] ?? 0), 1),
+            // null, not 0: a driver whose GPS was purged has no measured distance, which is not zero km.
+            'distance_km' => isset($agg['distance_km']) ? round((float) $agg['distance_km'], 1) : null,
 
             'scored' => $scored,
             'on_time' => $onTime,
