@@ -178,6 +178,21 @@ class DriverPerformanceController extends Controller
      */
     public function show(Driver $driver, Request $request, AdminContext $ctx): View
     {
+        return view('analytics.drivers.show', $this->detail($driver, $request, $ctx));
+    }
+
+    /**
+     * Everything one driver's performance page shows, in one place so the page and the driver
+     * profile cannot disagree. The complaints join below is pinned to the signed-in organization
+     * and exists nowhere else: keep it that way.
+     *
+     * `$recentTrips` null paginates the period's trips (the performance page); an int returns just
+     * that many, newest first, as a plain collection (the profile).
+     *
+     * @return array<string, mixed>
+     */
+    public function detail(Driver $driver, Request $request, AdminContext $ctx, ?int $recentTrips = null): array
+    {
         $id = (string) $driver->profile_id;
         $card = $this->scorecard($request, $ctx, $id);
         $from = $card['from'];
@@ -235,14 +250,18 @@ class DriverPerformanceController extends Controller
             ->orderByDesc('reports.created_at')
             ->get(['reports.*']);
 
-        return view('analytics.drivers.show', [
+        return [
             'driver' => $driver,
             'row' => $row,
             'from' => $from,
             'to' => $to,
             'routeId' => $routeId,
             'byRoute' => $byRoute,
-            'trips' => (clone $periodTrips)->with('route')->orderByDesc('started_at')->paginate(25)->withQueryString(),
+            'trips' => $recentTrips === null
+                ? (clone $periodTrips)->with('route')->orderByDesc('started_at')->paginate(25)->withQueryString()
+                : (clone $periodTrips)->with('route')->orderByDesc('started_at')->limit($recentTrips)->get(),
+            'notice' => $card['notice'],
+            'preset' => $card['preset'],
             'complaints' => $complaints,
             'overspeedLimit' => $card['overspeedLimit'],
             'minTripsForRate' => $card['minTripsForRate'],
@@ -251,7 +270,7 @@ class DriverPerformanceController extends Controller
                 'to' => $to->format('Y-m-d'),
                 'route' => $routeId,
             ]),
-        ]);
+        ];
     }
 
     /**

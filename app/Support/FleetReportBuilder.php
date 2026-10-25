@@ -25,6 +25,18 @@ final class FleetReportBuilder
     private const DASH = '—';
 
     /**
+     * How a vehicle is named on a page: its fleet code, else its plate, else a dash. Only an empty
+     * string or null falls through, so a code or plate that is the string "0" is kept.
+     */
+    public static function label(?string $fleetCode, ?string $plate): string
+    {
+        $fleet = (string) $fleetCode;
+        $plate = (string) $plate;
+
+        return $fleet !== '' ? $fleet : ($plate !== '' ? $plate : self::DASH);
+    }
+
+    /**
      * @param  array<int, array<string, mixed>>  $aggregates
      * @param  array<string, array{fleet_code: ?string, plate: ?string, status: string}>  $vehicles
      * @return array<int, array<string, mixed>>
@@ -46,7 +58,7 @@ final class FleetReportBuilder
 
             $fleet = (string) ($vehicle['fleet_code'] ?? '');
             $plate = (string) ($vehicle['plate'] ?? '');
-            $label = $fleet !== '' ? $fleet : ($plate !== '' ? $plate : self::DASH);
+            $label = self::label($fleet, $plate);
 
             $rows[] = self::vehicleRow($label, $plate === $label ? '' : $plate, $vehicle['status'], $a);
         }
@@ -78,7 +90,7 @@ final class FleetReportBuilder
 
             $fleet = (string) ($v['fleet_code'] ?? '');
             $plate = (string) ($v['plate'] ?? '');
-            $label = $fleet !== '' ? $fleet : ($plate !== '' ? $plate : self::DASH);
+            $label = self::label($fleet, $plate);
             $rows[] = ['label' => $label, 'plate' => $plate === $label ? '' : $plate];
         }
 

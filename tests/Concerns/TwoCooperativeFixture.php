@@ -62,8 +62,25 @@ trait TwoCooperativeFixture
             $b->string('profile_id')->primary();
             $b->string('organization_id')->nullable();
             $b->string('employee_code')->nullable();
+            $b->string('license_number')->nullable();
+            $b->string('phone')->nullable();
             $b->boolean('is_active')->default(true);
         });
+        Schema::create('assignments', function (Blueprint $b) {
+            $b->string('id')->primary();
+            $b->string('organization_id')->nullable();
+            $b->string('driver_profile_id')->nullable();
+            $b->string('vehicle_id')->nullable();
+            $b->string('route_id')->nullable();
+            $b->string('starts_at')->nullable();
+            $b->string('ends_at')->nullable();
+            $b->boolean('is_active')->default(true);
+            $b->string('created_by_profile_id')->nullable();
+        });
+        // Sign-in accounts live in the auth schema, which SQLite does not have. Attaching a second
+        // in-memory database under that name lets the real cross-schema join run in tests.
+        DB::statement("ATTACH DATABASE ':memory:' AS auth");
+        DB::statement('CREATE TABLE auth.users (id TEXT PRIMARY KEY, email TEXT)');
         Schema::create('routes', function (Blueprint $b) {
             $b->string('id')->primary();
             $b->string('organization_id')->nullable();

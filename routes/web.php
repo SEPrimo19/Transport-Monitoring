@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AdminActivityController;
 use App\Http\Controllers\DriverPerformanceController;
+use App\Http\Controllers\DriverProfileController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
@@ -58,6 +59,7 @@ Route::middleware('supabase.admin')->group(function () {
         Route::get('/operations/data', [OperationsController::class, 'data'])->name('operations.data');
         Route::resource('vehicles', VehicleController::class)->except(['show']);
         Route::resource('drivers', DriverController::class)->except(['show']);
+        Route::get('drivers/{driver}', [DriverProfileController::class, 'show'])->whereUuid('driver')->name('drivers.show');
         // Create a driver login outright (no self-registration) and reset a
         // driver's password — both proxy the driver-account Supabase Edge
         // Function. Kept off the drivers resource's own verbs/URIs. Throttled like
