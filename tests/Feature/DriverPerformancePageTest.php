@@ -98,6 +98,7 @@ class DriverPerformancePageTest extends TestCase
             $b->float('avg_moving_speed_kmh')->nullable();
             $b->float('max_speed_kmh')->nullable();
             $b->float('overspeed_share')->nullable();
+            $b->integer('overspeed_limit_kmh_used')->nullable();
             $b->string('scheduled_departure')->nullable();
             $b->integer('departure_delta_min')->nullable();
             $b->string('punctuality');
@@ -260,6 +261,20 @@ class DriverPerformancePageTest extends TestCase
 
         $this->assertSame(1, $this->rows($this->get('/analytics/drivers')->assertOk())[0]['trips']);
         $this->assertSame(2, $this->rows($this->get('/analytics/drivers?from='.now()->subDays(300)->format('Y-m-d').'&to='.now()->format('Y-m-d'))->assertOk())[0]['trips']);
+    }
+
+    public function test_overspeed_only_averages_trips_computed_against_the_current_limit(): void
+    {
+        // Cooperative B's limit is 60. A trip summarised when the limit was 80 counted a different
+        // set of readings, so it must not be averaged under a label that says 60.
+        $this->seedTrip($this->orgB, $this->benId, 'on_time', ['overspeed_share' => 0.2, 'overspeed_limit_kmh_used' => 60]);
+        $this->seedTrip($this->orgB, $this->benId, 'on_time', ['overspeed_share' => 0.9, 'overspeed_limit_kmh_used' => 80]);
+
+        $this->actAs('org_admin', $this->orgB);
+        $rows = $this->rows($this->get('/analytics/drivers')->assertOk());
+        $ben = collect($rows)->firstWhere('driver_id', $this->benId);
+
+        $this->assertEquals(0.2, $ben['overspeed_share']);
     }
 
     public function test_the_overspeed_limit_is_this_cooperatives_own_and_empty_means_not_set(): void

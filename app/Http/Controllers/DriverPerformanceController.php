@@ -216,6 +216,11 @@ class DriverPerformanceController extends Controller
                 'is_active' => (bool) $d->is_active,
             ])->all();
 
+        // The signed-in cooperative's own setting. NULL means not set, and is shown as such.
+        $overspeedLimit = $ctx->organizationId === null
+            ? null
+            : Organization::find($ctx->organizationId)?->overspeed_limit_kmh;
+
         $aggregates = TripMetric::query()
             ->whereBetween('started_at', [$from, $to])
             ->when($driverId, static fn ($q) => $q->where('driver_profile_id', $driverId))
@@ -234,7 +239,9 @@ class DriverPerformanceController extends Controller
                  count(*) filter (where data_quality = 'partial') as partial,
                  avg(avg_moving_speed_kmh) as avg_speed_kmh,
                  max(max_speed_kmh) as max_speed_kmh,
-                 avg(overspeed_share) as overspeed_share"
+                 avg(overspeed_share) filter (where overspeed_limit_kmh_used = ?) as overspeed_share",
+                // Only trips computed against the limit the page names are averaged. NULL matches nothing.
+                [$overspeedLimit]
             )
             ->get()
             ->mapWithKeys(static function (TripMetric $m): array {
@@ -294,10 +301,7 @@ class DriverPerformanceController extends Controller
             'routes' => Route::query()->orderBy('code')->get(['id', 'code', 'name']),
             'unattributed' => $unattributed,
             'lastComputed' => $lastComputed === null ? null : Carbon::parse($lastComputed),
-            // The signed-in cooperative's own setting. NULL means not set, and is shown as such.
-            'overspeedLimit' => $ctx->organizationId === null
-                ? null
-                : Organization::find($ctx->organizationId)?->overspeed_limit_kmh,
+            'overspeedLimit' => $overspeedLimit,
             'minTripsForRate' => ScorecardPolicy::MIN_TRIPS_FOR_RATE,
         ];
     }
