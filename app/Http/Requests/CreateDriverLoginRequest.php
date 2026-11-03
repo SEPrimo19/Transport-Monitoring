@@ -75,7 +75,7 @@ class CreateDriverLoginRequest extends FormRequest
     {
         return [
             'employee_code' => 'username',
-            'license_number' => 'license number',
+            'license_number' => "driver's license no",
             'organization_id' => 'organization',
         ];
     }

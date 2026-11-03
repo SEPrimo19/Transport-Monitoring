@@ -89,7 +89,7 @@ class UpdateDriverRequest extends FormRequest
     {
         return [
             'employee_code' => 'employee code',
-            'license_number' => 'license number',
+            'license_number' => "driver's license no",
         ];
     }
 

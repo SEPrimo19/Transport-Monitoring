@@ -24,7 +24,7 @@
                         <th>Name</th>
                         <th>Signs in with</th>
                         <th>Employee code</th>
-                        <th>License no.</th>
+                        <th>Driver's License No</th>
                         <th>Phone</th>
                         <th>Status</th>
                         @if ($ctx->isSuperAdmin())
