@@ -58,7 +58,7 @@
                 </dd>
                 <dt class="col-sm-3 text-muted fw-normal">Employee code</dt>
                 <dd class="col-sm-9">{{ ($driver->employee_code ?? '') !== '' ? $driver->employee_code : '—' }}</dd>
-                <dt class="col-sm-3 text-muted fw-normal">License number</dt>
+                <dt class="col-sm-3 text-muted fw-normal">Driver's License No</dt>
                 <dd class="col-sm-9">{{ ($driver->license_number ?? '') !== '' ? $driver->license_number : '—' }}</dd>
                 <dt class="col-sm-3 text-muted fw-normal">Phone</dt>
                 <dd class="col-sm-9 mb-0">{{ ($driver->phone ?? '') !== '' ? $driver->phone : '—' }}</dd>

@@ -75,7 +75,7 @@
                                 </div>
 
                                 <div class="mb-3">
-                                    <label for="login_license_number" class="form-label">License number <span class="text-danger">*</span></label>
+                                    <label for="login_license_number" class="form-label">Driver's License No <span class="text-danger">*</span></label>
                                     <input type="text" name="license_number" id="login_license_number"
                                            value="{{ old('license_number') }}"
                                            class="form-control @error('license_number') is-invalid @enderror"
@@ -164,7 +164,7 @@
                                 </div>
 
                                 <div class="mb-3">
-                                    <label for="license_number" class="form-label">License number <span class="text-danger">*</span></label>
+                                    <label for="license_number" class="form-label">Driver's License No <span class="text-danger">*</span></label>
                                     <input type="text" name="license_number" id="license_number" value="{{ old('license_number') }}"
                                            class="form-control @error('license_number') is-invalid @enderror"
                                            required minlength="3" maxlength="64">
