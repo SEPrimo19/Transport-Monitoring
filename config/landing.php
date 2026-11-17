@@ -13,10 +13,10 @@
 */
 
 return [
-    'version' => '1.1.10',
+    'version' => '1.1.11',
     'min_android' => 'Android 7.0 (API 24) or newer',
     'apk_size' => '41 MB',
-    'sha256' => '477C90E09FB5F683B137AC8679B817F87C6E438CCFEA46515C4295B27241FC05',
+    'sha256' => 'D316ED78C68C81E0E13101081E82ADADA8EF40B05E69243D6F99194CA5A4E778',
 
     'repo_url' => 'https://github.com/SEPrimo19/Transport-Monitoring',
     'apk_url' => 'https://github.com/SEPrimo19/Transport-Monitoring/releases/latest/download/AMOEC-Track-release.apk',
