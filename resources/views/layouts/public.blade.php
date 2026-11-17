@@ -9,7 +9,7 @@
     <meta property="og:title" content="AMOEC Track">
     <meta property="og:description" content="Know where your bus is before you leave. Live bus tracking for passengers, drivers and cooperatives.">
     <meta property="og:type" content="website">
-    <meta property="og:image" content="{{ asset('images/landing/card.jpg') }}">
+    <meta property="og:image" content="{{ asset('images/landing/live.jpg') }}">
 
     <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/favicon-32.png') }}">
