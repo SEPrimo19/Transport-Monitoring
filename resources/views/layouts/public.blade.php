@@ -39,7 +39,7 @@
     <nav class="navbar navbar-expand-lg fixed-top site-nav @yield('navclass')" id="siteNav">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center gap-2" href="{{ route('home') }}">
-                <img src="{{ asset('images/amoec-logo.png') }}" alt="" width="34" height="34">
+                <img src="{{ asset('images/logo-white.svg') }}" alt="" width="34" height="34">
                 <span>AMOEC Track</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu"
@@ -75,7 +75,7 @@
             <div class="row g-4 align-items-start">
                 <div class="col-lg-5">
                     <div class="d-flex align-items-center gap-2 mb-2">
-                        <img src="{{ asset('images/amoec-logo.png') }}" alt="" width="34" height="34">
+                        <img src="{{ asset('images/logo-white.svg') }}" alt="" width="34" height="34">
                         <strong>AMOEC Track</strong>
                     </div>
                     <p class="small mb-1">A Transport Monitoring and Passenger Information System.</p>
