@@ -61,40 +61,79 @@
         items.forEach(function (el) { el.classList.add('in'); });
     }
 
-    // ---------- the bus driving along the route ----------
+    // ---------- one ride: a passenger waits, the bus comes, the passenger boards, the bus goes on ----------
     var stage = document.getElementById('routeStage');
     var path = document.getElementById('routePath');
     var done = document.getElementById('routeDone');
     var bus = document.getElementById('busMarker');
     var bubble = document.getElementById('etaBubble');
     var etaText = document.getElementById('etaText');
-    if (stage && path && done && bus && bubble && etaText) {
+    var waiter = document.getElementById('waiter');
+    var stepItems = document.querySelectorAll('#routeSteps li');
+    if (stage && path && done && bus && bubble && etaText && waiter) {
         var len = path.getTotalLength();
-        var PERIOD = 11000, PAUSE = 1400;
-        var place = function (t) {
+        var STOP = 0.42;                                   // where along the route the passenger waits
+        var A = 6500, B = 1800, C = 6500, D = 1800;        // approach, boarding, ride, arrival (ms)
+        var CYCLE = A + B + C + D;
+
+        // put the passenger beside the route at the stop, on the side with more room (up and to the left)
+        (function () {
+            var p = path.getPointAtLength(len * STOP), q = path.getPointAtLength(len * STOP + 3);
+            var dx = q.x - p.x, dy = q.y - p.y, n = Math.sqrt(dx * dx + dy * dy) || 1;
+            var nx = -dy / n, ny = dx / n;                 // a normal of the route
+            if (ny > 0) { nx = -nx; ny = -ny; }            // pick the one that points up
+            waiter.setAttribute('transform', 'translate(' + (p.x + nx * 36) + ' ' + (p.y + ny * 36) + ')');
+        })();
+
+        var ease = function (x) { return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2; };
+        var setStep = function (n) {
+            stepItems.forEach(function (li) { li.classList.toggle('active', Number(li.getAttribute('data-step')) === n); });
+        };
+        var place = function (t, label) {
             var p = path.getPointAtLength(len * t);
-            var q = path.getPointAtLength(Math.min(len, len * t + 2));
-            var ang = Math.atan2(q.y - p.y, q.x - p.x) * 180 / Math.PI * 0.45; // lean a little with the road
-            bus.setAttribute('transform', 'translate(' + p.x + ' ' + p.y + ') rotate(' + ang + ')');
-            var bx = Math.min(548, Math.max(56, p.x)), by = Math.max(64, p.y);
+            var a0 = path.getPointAtLength(Math.max(0, len * t - 6)), a1 = path.getPointAtLength(Math.min(len, len * t + 6));
+            var heading = Math.atan2(a1.y - a0.y, a1.x - a0.x) * 180 / Math.PI + 90;   // the marker points up at 0 deg
+            bus.setAttribute('transform', 'translate(' + p.x + ' ' + p.y + ') rotate(' + heading.toFixed(1) + ')');
+            var bx = Math.min(536, Math.max(64, p.x)), by = Math.max(68, p.y - 20);
             bubble.setAttribute('transform', 'translate(' + bx + ' ' + by + ')');
             done.setAttribute('stroke-dasharray', (len * t) + ' ' + len);
-            etaText.textContent = t > 0.985 ? 'Arrived' : 'ETA ' + Math.max(1, Math.ceil(12 * (1 - t))) + ' min';
+            etaText.textContent = label;
+        };
+        var frameAt = function (el) {
+            var t, label, step, show = 1;
+            if (el < A) {                                  // the bus comes to the passenger
+                var p = el / A;
+                t = ease(p) * STOP;
+                label = p > 0.97 ? 'Bus is here' : 'ETA ' + Math.max(1, Math.ceil(6 * (1 - p))) + ' min';
+                step = p < 0.16 ? 1 : 2;
+            } else if (el < A + B) {                       // boarding
+                var k = (el - A) / B;
+                t = STOP; label = k < 0.5 ? 'Boarding' : 'Boarded'; step = 3; show = k < 0.5 ? 1 : 0;
+            } else if (el < A + B + C) {                   // the ride to the destination
+                var r = (el - A - B) / C;
+                t = STOP + ease(r) * (1 - STOP);
+                label = r > 0.97 ? 'Arriving' : 'Calbayog in ' + Math.max(1, Math.ceil(8 * (1 - r))) + ' min';
+                step = 3; show = 0;
+            } else {                                       // arrived
+                t = 1; label = 'Arrived'; step = 4; show = 0;
+            }
+            place(t, label);
+            waiter.style.opacity = show;
+            setStep(step);
         };
         if (reduce) {
-            place(0.45);                                  // one still picture, no loop
+            frameAt(A * 0.55);                             // one still picture, no loop
         } else {
             var raf = 0, startedAt = null;
-            var ease = function (x) { return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2; };
             var frame = function (ts) {
                 if (startedAt === null) startedAt = ts;
-                var el = (ts - startedAt) % (PERIOD + PAUSE);
-                place(el >= PERIOD ? 1 : ease(el / PERIOD) * 0.995 + (el / PERIOD) * 0.005);
+                frameAt((ts - startedAt) % CYCLE);
                 raf = requestAnimationFrame(frame);
             };
             whileVisible(stage,
                 function () { if (!raf) raf = requestAnimationFrame(frame); },
                 function () { if (raf) { cancelAnimationFrame(raf); raf = 0; } });
+            frameAt(0);                                    // a first frame at once, before the loop starts
         }
     }
 
