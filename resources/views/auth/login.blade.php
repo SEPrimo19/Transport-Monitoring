@@ -28,7 +28,7 @@
         // "165935", malformed, etc.) can't silently make --amoec-brand invalid
         // CSS, which would render .btn-primary / .login-icon white-on-nothing.
         $rawLoginBrand = strtolower(ltrim(trim((string) ($brandColor ?? '')), '#'));
-        $loginBrand = preg_match('/^[0-9a-f]{6}$/', $rawLoginBrand) ? '#' . $rawLoginBrand : '#0d6efd';
+        $loginBrand = preg_match('/^[0-9a-f]{6}$/', $rawLoginBrand) ? '#' . $rawLoginBrand : '#165935';   // AMOEC green, the same as the public landing page, so signing in feels like the same product
         $loginHex = ltrim($loginBrand, '#');
         $loginBrandRgb = hexdec(substr($loginHex, 0, 2)) . ', ' . hexdec(substr($loginHex, 2, 2)) . ', ' . hexdec(substr($loginHex, 4, 2));
     @endphp
@@ -383,6 +383,19 @@
         @media (prefers-reduced-motion: reduce) {
             * { transition: none !important; animation: none !important; }
         }
+
+        /* Way back to the public home page. Top-left of the artwork on wide screens;
+           above the card on small screens, where the artwork is hidden. */
+        .auth-back {
+            display: inline-flex; align-items: center; gap: .4rem;
+            color: var(--auth-ink-soft); font-size: .9rem; font-weight: 500; text-decoration: none;
+            padding: .4rem .7rem; border-radius: 999px;
+            background: rgba(255, 255, 255, .72); border: 1px solid rgba(15, 23, 42, .1);
+        }
+        .auth-back:hover, .auth-back:focus-visible { color: var(--auth-ink); background: #fff; }
+        .auth-back-hero { position: absolute; top: 1.25rem; left: 1.5rem; z-index: 3; }
+        .auth-appnote { color: var(--auth-ink-muted); }
+        .auth-appnote a, .auth-footnote a { color: var(--auth-ink-soft); }
     </style>
 </head>
 <body>
@@ -393,6 +406,7 @@
         {{-- Full-bleed artwork behind a centred copy column — see
              .auth-hero::before (image) and .auth-hero::after (light veil). --}}
         <div class="col-lg-6 auth-hero d-none d-lg-flex align-items-center justify-content-center">
+            <a href="{{ route('home') }}" class="auth-back auth-back-hero"><i class="bi bi-arrow-left" aria-hidden="true"></i>Back to home</a>
             <div class="hero-copy">
                 {{-- alt="" — decorative here: the h1 directly below already names the
                      product, so announcing the mark too would just repeat it. --}}
@@ -425,6 +439,7 @@
         {{-- ── Form ─────────────────────────────────────────────────────── --}}
         <div class="col-lg-6 auth-panel-col d-flex align-items-center justify-content-center p-3 p-sm-4 p-lg-4">
             <div class="auth-card p-4 p-sm-5">
+                <a href="{{ route('home') }}" class="auth-back mb-3 d-lg-none"><i class="bi bi-arrow-left" aria-hidden="true"></i>Back to home</a>
                 {{-- Centred over a left-aligned form: the title block is a header, not
                      part of the field flow, so centring it reads as deliberate rather
                      than as a stray indent. --}}
@@ -502,8 +517,14 @@
                     </button>
                 </form>
 
-                <p class="auth-footnote small text-center mt-4 mb-0">
+                <p class="auth-footnote small text-center mt-4 mb-2">
                     Trouble signing in? Contact your system administrator.
+                </p>
+                {{-- Passengers and drivers sometimes arrive here by mistake: this console is for cooperative
+                     administrators only, and they sign in inside the Android app. --}}
+                <p class="auth-appnote small text-center mb-0">
+                    Passenger or driver? Sign in on the Android app.
+                    <a href="{{ route('home') }}#download">Get the app</a> &middot; <a href="{{ route('privacy') }}">Privacy</a>
                 </p>
             </div>
         </div>

@@ -13,14 +13,15 @@
                     <p class="lead mt-3 mb-4">AMOEC Track shows passengers where their bus is and when it will arrive, helps drivers share their trip,
                         and gives cooperatives one console to run the service.</p>
                     <div class="d-flex flex-wrap gap-2">
-                        <a class="btn btn-warning btn-lg px-4 fw-semibold" href="#download"><i class="bi bi-android2 me-2"></i>Download Android app</a>
+                        <a class="btn btn-warning btn-lg px-4 fw-semibold" id="heroDownload" href="#download" data-apk="{{ $app['apk_url'] }}"><i class="bi bi-android2 me-2"></i>Download Android app</a>
                         @if ($hasAdminSession)
                             <a class="btn btn-outline-light btn-lg px-4" href="{{ route('dashboard') }}"><i class="bi bi-speedometer2 me-2"></i>Open dashboard</a>
                         @else
                             <a class="btn btn-outline-light btn-lg px-4" href="{{ route('login') }}"><i class="bi bi-box-arrow-in-right me-2"></i>Administrator sign-in</a>
                         @endif
                     </div>
-                    <ul class="hero-points list-unstyled mt-4 mb-0">
+                    <p class="hero-note small mt-3 mb-0" id="heroNote">Android app &middot; {{ $app['apk_size'] }} &middot; {{ $app['min_android'] }}</p>
+                    <ul class="hero-points list-unstyled mt-3 mb-0">
                         <li><i class="bi bi-check-circle-fill"></i> Free for passengers</li>
                         <li><i class="bi bi-check-circle-fill"></i> Works with weak signal</li>
                         <li><i class="bi bi-check-circle-fill"></i> Anonymous reporting</li>
@@ -32,6 +33,8 @@
                          the arrival time counts down, the passenger boards, and the bus carries on to the destination.
                          The bus is the same top-down marker the app and the console draw on their maps. --}}
                     <div class="route-stage" id="routeStage">
+                        <button type="button" class="motion-toggle" id="motionToggle" aria-pressed="false" aria-label="Pause the animation">
+                            <i class="bi bi-pause-fill" aria-hidden="true"></i><span>Pause</span></button>
                         <svg viewBox="0 0 600 400" class="route-svg" role="img"
                              aria-label="A passenger waits at a stop on the route from Allen to Calbayog. A bus approaches while its arrival time counts down, the passenger boards, and the bus continues to Calbayog.">
                             <defs>
@@ -274,6 +277,12 @@
                         <a class="btn btn-warning btn-lg fw-semibold px-4" href="{{ $app['apk_url'] }}" rel="noopener"><i class="bi bi-download me-2"></i>Download APK</a>
                         <a class="btn btn-outline-light btn-lg px-4" href="{{ asset($app['manual_path']) }}"><i class="bi bi-file-earmark-pdf me-2"></i>User manual (PDF)</a>
                     </div>
+                    {{-- Shown by landing.js on iPhone and iPad: the app is Android only for now. --}}
+                    <div class="ios-note" id="iosNote" hidden>
+                        <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
+                        <span><strong>AMOEC Track is Android only for now.</strong> A version for iPhone is planned for later.
+                            Administrators can still sign in to the console from any browser.</span>
+                    </div>
                     <p class="small opacity-75 mb-1">Checksum (SHA-256), to check the file is genuine:</p>
                     <button type="button" class="checksum" id="checksum" data-hash="{{ $app['sha256'] }}" aria-describedby="copyNote"
                             title="Click to copy the checksum">{{ $app['sha256'] }}</button>
@@ -282,6 +291,12 @@
                 </div>
                 <div class="col-lg-6 reveal">
                     <div class="install-card">
+                        {{-- For visitors on a computer: scan to download on the phone. Hidden on phones, where it is no use. --}}
+                        <div class="qr-box d-none d-md-flex">
+                            <img src="{{ asset('images/landing/download-qr.svg') }}" width="132" height="132" loading="lazy"
+                                 alt="QR code that downloads the AMOEC Track Android app">
+                            <div><strong>On a computer?</strong><span>Point your phone camera at this code to download the app.</span></div>
+                        </div>
                         <h3 class="h5 mb-3">Install in four steps</h3>
                         <ol class="install-steps">
                             <li><strong>Download</strong> the APK to your phone and open it.</li>
@@ -308,7 +323,8 @@
                     ['What happens when there is no signal?', 'Drivers’ phones keep saving their position and send it when the connection returns. Passengers see the last position and an estimated arrival time.'],
                     ['Is my location shared?', 'Passengers’ locations stay on the phone and are sent only inside a report you submit. Drivers share the bus location during a trip. See the Privacy page for the full list.'],
                     ['How do I report a problem?', 'Open Menu, tap Report misconduct, choose the bus and the issue, add a photo if you have one, and send it. You can follow it under My reports.'],
-                    ['Can my cooperative use AMOEC Track?', 'Yes. The system is built for many cooperatives; each one sees only its own vehicles, drivers and reports. Open an issue on GitHub to ask.'],
+                    ['Is there an iPhone app?', 'Not yet. AMOEC Track is Android only for now, and a version for iPhone is planned for later. Cooperative administrators can use the console from any browser.'],
+                    ['Can my cooperative use AMOEC Track?', 'Yes. The system is built for many cooperatives; each one sees only its own vehicles, drivers and reports. Use the contact link in the footer to ask.'],
                 ];
             @endphp
             <div class="accordion faq" id="faqList">

@@ -27,4 +27,9 @@ return [
     'manual_path' => 'downloads/AMOEC-Track-User-Manual.pdf',
 
     'privacy_updated' => 'November 2026',
+
+    // A contact route for people who are not on GitHub (a Facebook page or Messenger link). Set it on Render as
+    // LANDING_CONTACT_URL without touching the code; while it is empty the pages fall back to GitHub issues.
+    'contact_url' => env('LANDING_CONTACT_URL'),
+    'contact_label' => env('LANDING_CONTACT_LABEL', 'Message us'),
 ];

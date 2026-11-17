@@ -84,7 +84,11 @@
 
             <h2>Changes and contact</h2>
             <p>When the system changes how it handles information, this page is updated and the date at the top changes.
-                Questions can be sent through <a href="{{ $app['issues_url'] }}" rel="noopener" target="_blank">the project page on GitHub</a>.</p>
+                Questions can be sent
+                @if (! empty($app['contact_url']))
+                    through <a href="{{ $app['contact_url'] }}" rel="noopener" target="_blank">{{ $app['contact_label'] }}</a> or
+                @endif
+                through <a href="{{ $app['issues_url'] }}" rel="noopener" target="_blank">the project page on GitHub</a>.</p>
             <p><a href="{{ route('home') }}" class="btn btn-outline-success"><i class="bi bi-arrow-left me-1"></i>Back to the home page</a></p>
         </article>
     </div>
