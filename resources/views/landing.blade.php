@@ -216,7 +216,7 @@
                     <div class="phone-scene" id="phoneScene">
                         <div class="phone" id="phone">
                             <div class="face front"><img id="phoneImg" src="{{ asset('images/landing/live.jpg') }}" alt="Live map with the closest bus, its distance and its arrival time" width="310" height="690"></div>
-                            <div class="face back"><img src="{{ asset('images/amoec-logo.png') }}" alt="" width="96" height="96"><span>AMOEC Track</span></div>
+                            <div class="face back"><img src="{{ asset('images/logo-white.svg') }}" alt="" width="96" height="96"><span>AMOEC Track</span></div>
                             <div class="side side-l"></div><div class="side side-r"></div><div class="side side-t"></div><div class="side side-b"></div>
                         </div>
                     </div>

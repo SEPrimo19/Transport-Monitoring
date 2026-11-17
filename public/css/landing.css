@@ -16,8 +16,6 @@ body { font-family: Arial, Helvetica, sans-serif; color: var(--ink); background:
 .js .site-nav { background: transparent; }
 .js .site-nav.scrolled, .js .site-nav.show-bg, .no-motion .site-nav { background: var(--brand-dark); box-shadow: 0 2px 14px rgba(0, 0, 0, .25); }
 .site-nav .navbar-brand { color: #fff; font-weight: 700; }
-/* the logo is dark, so it sits on a white disc to stay visible on the green bar */
-.site-nav .navbar-brand img, .site-footer img { background: #fff; border-radius: 50%; padding: 3px; }
 .site-nav .nav-link { color: rgba(255, 255, 255, .85); font-size: .95rem; }
 .site-nav .nav-link:hover, .site-nav .nav-link:focus { color: #fff; }
 .site-nav .navbar-toggler { color: #fff; border: 0; font-size: 1.6rem; padding: 0 .25rem; }
