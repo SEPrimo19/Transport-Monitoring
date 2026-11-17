@@ -10,6 +10,41 @@
     var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var fine = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
     var hasIO = 'IntersectionObserver' in window;
+    var ua = navigator.userAgent || '';
+    var isAndroid = /Android/i.test(ua);
+    var isIOS = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var paused = false;              // the visitor pressed Pause (WCAG 2.2.2: moving content must be stoppable)
+    var motionHooks = [];
+
+    // ---------- hero download button: straight to the file on an Android phone, to the Download section elsewhere ----------
+    var heroBtn = document.getElementById('heroDownload');
+    var heroNote = document.getElementById('heroNote');
+    var iosNote = document.getElementById('iosNote');
+    if (heroBtn && isAndroid) {
+        heroBtn.href = heroBtn.getAttribute('data-apk');
+        if (heroNote) heroNote.textContent = 'Tap to download now, then open the file to install it.';
+    } else if (isIOS) {
+        if (heroNote) heroNote.textContent = 'AMOEC Track is Android only for now. A version for iPhone is planned.';
+        if (iosNote) iosNote.hidden = false;
+    }
+
+    // ---------- pause / play for the animations ----------
+    var toggle = document.getElementById('motionToggle');
+    if (toggle) {
+        if (reduce) {
+            toggle.hidden = true;                     // nothing moves, so nothing to pause
+        } else {
+            toggle.addEventListener('click', function () {
+                paused = !paused;
+                document.documentElement.classList.toggle('motion-paused', paused);
+                toggle.setAttribute('aria-pressed', paused ? 'true' : 'false');
+                toggle.setAttribute('aria-label', paused ? 'Play the animation' : 'Pause the animation');
+                toggle.querySelector('i').className = 'bi ' + (paused ? 'bi-play-fill' : 'bi-pause-fill');
+                toggle.querySelector('span').textContent = paused ? 'Play' : 'Pause';
+                motionHooks.forEach(function (h) { h(); });
+            });
+        }
+    }
 
     /** Calls start() while `el` is on screen and stop() when it is not (or always start once when there is no observer). */
     function whileVisible(el, start, stop) {
@@ -124,15 +159,19 @@
         if (reduce) {
             frameAt(A * 0.55);                             // one still picture, no loop
         } else {
-            var raf = 0, startedAt = null;
+            var raf = 0, clock = 0, last = null, onScreen = false;
             var frame = function (ts) {
-                if (startedAt === null) startedAt = ts;
-                frameAt((ts - startedAt) % CYCLE);
+                if (paused) { raf = 0; last = null; return; }          // stop the loop while paused
+                if (last === null) last = ts;
+                clock += ts - last; last = ts;
+                frameAt(clock % CYCLE);
                 raf = requestAnimationFrame(frame);
             };
+            var kick = function () { if (onScreen && !paused && !raf) { last = null; raf = requestAnimationFrame(frame); } };
+            motionHooks.push(kick);
             whileVisible(stage,
-                function () { if (!raf) raf = requestAnimationFrame(frame); },
-                function () { if (raf) { cancelAnimationFrame(raf); raf = 0; } });
+                function () { onScreen = true; kick(); },
+                function () { onScreen = false; if (raf) { cancelAnimationFrame(raf); raf = 0; last = null; } });
             frameAt(0);                                    // a first frame at once, before the loop starts
         }
     }
@@ -165,7 +204,7 @@
         var rx = 0, ry = 0, trx = 0, tryy = 0, dragging = false, startX = 0, baseSpin = 0, hover = false, t0 = performance.now();
         var rafP = 0;
         var run = function (now) {
-            var idle = (!hover && !dragging) ? Math.sin((now - t0) / 1600) * 8 : 0;
+            var idle = (!hover && !dragging && !paused) ? Math.sin((now - t0) / 1600) * 8 : 0;
             var target = tryy + spin + idle;
             rx += (trx - rx) * 0.12;
             ry += (target - ry) * 0.12;

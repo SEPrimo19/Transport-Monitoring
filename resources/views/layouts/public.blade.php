@@ -96,7 +96,10 @@
                     <ul class="list-unstyled small mb-0">
                         <li><a href="{{ route('privacy') }}">Privacy</a></li>
                         <li><a href="{{ route('login') }}">Administrator sign-in</a></li>
-                        <li><a href="{{ $app['issues_url'] }}" rel="noopener" target="_blank">Report a problem</a></li>
+                        @if (! empty($app['contact_url']))
+                            <li><a href="{{ $app['contact_url'] }}" rel="noopener" target="_blank">{{ $app['contact_label'] }}</a></li>
+                        @endif
+                        <li><a href="{{ $app['issues_url'] }}" rel="noopener" target="_blank">Report a bug on GitHub</a></li>
                         <li><a href="{{ $app['repo_url'] }}" rel="noopener" target="_blank">Project on GitHub</a></li>
                     </ul>
                 </div>

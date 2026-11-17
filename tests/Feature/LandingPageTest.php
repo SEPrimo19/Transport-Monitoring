@@ -84,6 +84,61 @@ class LandingPageTest extends TestCase
         $this->get('/')->assertSee('data-hash="'.config('landing.sha256').'"', false);
     }
 
+    public function test_the_hero_button_scrolls_to_the_download_section_and_carries_the_file_address_for_android(): void
+    {
+        // On a computer the file is useless, so the button scrolls to the Download section (QR code included);
+        // landing.js sends an Android phone straight to the file using data-apk.
+        $this->get('/')
+            ->assertSee('id="heroDownload" href="#download"', false)
+            ->assertSee('data-apk="'.config('landing.apk_url').'"', false);
+    }
+
+    public function test_the_download_section_has_a_qr_code_for_visitors_on_a_computer(): void
+    {
+        $this->get('/')->assertSee('images/landing/download-qr.svg', false);
+
+        $qr = file_get_contents(public_path('images/landing/download-qr.svg'));
+        $this->assertStringContainsString(
+            config('landing.apk_url'),
+            $qr,
+            'download-qr.svg was made for a different address: regenerate it when landing.apk_url changes'
+        );
+    }
+
+    public function test_the_animation_can_be_paused_and_iphone_visitors_are_told_the_app_is_android_only(): void
+    {
+        $this->get('/')
+            ->assertSee('id="motionToggle"', false)
+            ->assertSee('id="iosNote"', false)
+            ->assertSee('Android only for now', false);
+    }
+
+    public function test_the_contact_link_appears_when_configured_and_the_github_route_stays(): void
+    {
+        $this->get('/')->assertSee(config('landing.issues_url'), false)->assertDontSee('LANDING_CONTACT', false);
+
+        config(['landing.contact_url' => 'https://m.me/example-page', 'landing.contact_label' => 'Message us']);
+        $this->get('/')->assertSee('https://m.me/example-page', false)->assertSee('Message us', false);
+        $this->get('/privacy')->assertSee('https://m.me/example-page', false);
+    }
+
+    public function test_the_sign_in_page_links_back_to_the_home_page_and_points_passengers_to_the_app(): void
+    {
+        $this->get('/login')
+            ->assertOk()
+            ->assertSee('Back to home', false)
+            ->assertSee(route('home'), false)
+            ->assertSee('Passenger or driver? Sign in on the Android app.', false)
+            ->assertSee(route('home').'#download', false)
+            ->assertSee('--amoec-brand: #165935', false);   // the landing page's green, not Bootstrap blue
+    }
+
+    public function test_the_health_route_the_keep_warm_workflow_calls_answers(): void
+    {
+        // .github/workflows/keep-warm.yml requests /up every 10 minutes; if this route goes, the pings fail quietly.
+        $this->get('/up')->assertOk();
+    }
+
     public function test_the_public_pages_do_not_expose_the_console(): void
     {
         $this->get('/dashboard')->assertRedirect(route('login'));
