@@ -30,8 +30,9 @@
                             <td>Nothing about where you are while you only look at the map. When you send a report: its category, your description, your location and the time, the photo or video you attach (optional), and whether you chose to be anonymous.</td>
                             <td>So the cooperative can check where and when a problem happened.</td></tr>
                         <tr><td><strong>Drivers</strong></td>
-                            <td>The position, speed and heading of the bus while a trip is running, the start and end of the trip, the seat status you set, and your assignment.</td>
-                            <td>To show the bus to passengers and to measure the service.</td></tr>
+                            <td>Your employee code, licence number and phone number, as entered by the cooperative. While a trip is running: the position, speed and heading of the bus, the start and end of the trip, the seat status you set, your assignment, and an identifier of the phone used for the trip.
+                                From these the cooperative works out figures for each driver, such as the share of time over the speed limit, the top speed and punctuality.</td>
+                            <td>To show the bus to passengers, and so the cooperative can review the service and each driver&rsquo;s performance.</td></tr>
                         <tr><td><strong>Administrators</strong></td>
                             <td>Their actions on the vehicles, drivers, routes, schedules and reports they manage. Some account changes, such as creating or changing an administrator, are kept in an activity log.</td>
                             <td>To keep the service accountable.</td></tr>
@@ -49,19 +50,22 @@
             <ul>
                 <li><strong>Passengers</strong> see the buses of the cooperative they chose: position, route and seat status. They see their own reports.</li>
                 <li><strong>Cooperative administrators</strong> see the vehicles, drivers, trips and reports of their own cooperative only. Each cooperative is kept apart from the others by rules in the database.</li>
-                <li><strong>Anonymous reports:</strong> if you switch on <em>Submit anonymously</em>, the administrators do not see your name on the report. The report still appears in your own list of reports.</li>
-                <li><strong>Platform administrators</strong> run the system itself, for example creating cooperatives and their first administrators.</li>
+                <li><strong>Anonymous reports:</strong> if you switch on <em>Submit anonymously</em>, your name is hidden from administrators on the report screen. The system still records which account sent the report, so that it appears in your own list.
+                    The exact location and time of the report, and the name of any file you attach, remain visible to the cooperative&rsquo;s administrators, so do not put your name or other personal details in the description or in the file name.</li>
+                <li><strong>Platform administrators</strong> run the system itself, for example creating cooperatives and their first administrators, and can reach the data of every cooperative as far as running the system needs.</li>
             </ul>
 
             <h2>Where it is stored and which services we use</h2>
             <ul>
                 <li><strong>Supabase</strong> holds the database, the sign-in service and the files attached to reports.</li>
-                <li><strong>Google</strong> is used only if you choose Continue with Google.</li>
-                <li><strong>Firebase Crashlytics</strong> receives the crash information described above.</li>
+                <li><strong>Google</strong> provides the optional Continue with Google sign-in, Google Play services (which gives the app the location of the phone), and Firebase Crashlytics, which receives the crash information described above.</li>
                 <li><strong>OpenFreeMap</strong> supplies the map pictures; the map area you look at is requested from its servers.</li>
-                <li><strong>Render</strong> hosts this website and the administration console.</li>
+                <li><strong>Nominatim (OpenStreetMap)</strong> turns coordinates into place names. The app can send the position of a bus to it for that purpose, and falls back to the phone&rsquo;s own address lookup if it is not reachable. The console also uses it to search for places.</li>
+                <li><strong>For administrators only:</strong> the route editor uses OSRM to draw a route along roads, and when you choose a password the console checks it against known leaks with Have I Been Pwned, sending only the first five characters of a scrambled copy of it, never the password.</li>
+                <li><strong>GitHub</strong> hosts the download of the Android app, and <strong>Render</strong> hosts this website and the administration console.</li>
             </ul>
-            <p>Connections to the website and the services are encrypted. On the phone, your sign-in is kept in encrypted storage.</p>
+            <p>Connections to the website and the services are encrypted. On the phone, your sign-in is normally kept in encrypted storage; if the secure storage of a phone is broken, the app may fall back to ordinary storage.</p>
+            <p><strong>Cookies:</strong> visiting this website sets one session cookie that keeps the pages secure and, for administrators, keeps the sign-in. There are no advertising or tracking cookies.</p>
 
             <h2>How long we keep it</h2>
             <ul>

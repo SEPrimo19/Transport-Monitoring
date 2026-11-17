@@ -22,8 +22,14 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"
           integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+" crossorigin="anonymous">
     <link href="{{ asset('css/landing.css') }}" rel="stylesheet">
-    {{-- Tells the stylesheet that scroll animations may hide content until it is revealed. --}}
-    <script>document.documentElement.classList.add('js');</script>
+    {{-- Tells the stylesheet that scroll animations may hide content until it is revealed. If landing.js has not
+         announced itself after 2.5 s (blocked, failed, slow network) the page falls back to the plain, fully visible version. --}}
+    <script>
+        (function (h) {
+            h.classList.add('js');
+            setTimeout(function () { if (!window.__landingReady) h.classList.add('no-motion'); }, 2500);
+        })(document.documentElement);
+    </script>
     @stack('head')
 </head>
 <body>

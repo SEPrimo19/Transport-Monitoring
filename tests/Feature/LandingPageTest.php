@@ -56,6 +56,34 @@ class LandingPageTest extends TestCase
             ->assertSee('Submit anonymously', false);
     }
 
+    public function test_the_privacy_page_discloses_what_the_review_found_missing(): void
+    {
+        // Pinned from a code review: these are real data flows, and the page must keep naming them.
+        $this->get('/privacy')
+            ->assertOk()
+            ->assertSee('licence number', false)          // driver details held by the cooperative
+            ->assertSee('Nominatim', false)               // coordinates leave the app for place names
+            ->assertSee('Have I Been Pwned', false)       // password check in the console
+            ->assertSee('GitHub', false)                  // hosts the APK
+            ->assertSee('still records which account sent the report', false)   // anonymity is a console-side mask
+            ->assertSee('Cookies', false);
+    }
+
+    public function test_the_page_stays_readable_when_the_script_does_not_load(): void
+    {
+        // The head falls back to the plain page after 2.5 s unless landing.js announces itself.
+        $html = $this->get('/')->getContent();
+        $this->assertStringContainsString('__landingReady', $html);
+        $this->assertStringContainsString('no-motion', $html);
+        $this->assertStringContainsString('no-motion', file_get_contents(public_path('css/landing.css')));
+        $this->assertStringContainsString('__landingReady', file_get_contents(public_path('js/landing.js')));
+    }
+
+    public function test_the_checksum_is_copied_from_a_data_attribute_not_from_visible_text(): void
+    {
+        $this->get('/')->assertSee('data-hash="'.config('landing.sha256').'"', false);
+    }
+
     public function test_the_public_pages_do_not_expose_the_console(): void
     {
         $this->get('/dashboard')->assertRedirect(route('login'));

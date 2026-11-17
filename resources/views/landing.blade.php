@@ -43,7 +43,7 @@
                             <path id="routeDone" d="M40 330 C 140 300, 150 170, 250 195 S 400 305, 470 160 S 550 80, 565 60"
                                   fill="none" stroke="url(#routeGrad)" stroke-width="4" stroke-linecap="round" stroke-dasharray="0 2000"/>
                             <g class="stop"><circle cx="40" cy="330" r="9"/><text x="40" y="360" text-anchor="middle">Allen</text></g>
-                            <g class="stop"><circle cx="565" cy="60" r="9"/><text x="565" y="94" text-anchor="middle">Calbayog</text></g>
+                            <g class="stop"><circle cx="565" cy="60" r="9"/><text x="588" y="94" text-anchor="end">Calbayog</text></g>
                             <g id="busMarker">
                                 <circle r="22" class="pulse"/>
                                 <g class="bus-body">
@@ -199,15 +199,15 @@
                 <div class="col-lg-6">
                     <h3 class="h4 mb-3">Choose a screen</h3>
                     <div class="d-grid gap-2" id="phoneTabs">
-                        <button type="button" class="screen-tab active" data-src="{{ asset('images/landing/card.jpg') }}" data-alt="Live map with the closest bus, its distance and its arrival time">
+                        <button type="button" class="screen-tab active" aria-pressed="true" data-src="{{ asset('images/landing/card.jpg') }}" data-alt="Live map with the closest bus, its distance and its arrival time">
                             <i class="bi bi-geo-alt-fill"></i><span><strong>Live map</strong><small>Closest bus, distance, ETA and seats</small></span></button>
-                        <button type="button" class="screen-tab" data-src="{{ asset('images/landing/offline.jpg') }}" data-alt="Offline ETA Mode when a bus has no signal">
+                        <button type="button" class="screen-tab" aria-pressed="false" data-src="{{ asset('images/landing/offline.jpg') }}" data-alt="Offline ETA Mode when a bus has no signal">
                             <i class="bi bi-wifi-off"></i><span><strong>Offline ETA Mode</strong><small>Keeps estimating when the signal is lost</small></span></button>
-                        <button type="button" class="screen-tab" data-src="{{ asset('images/landing/schedules.jpg') }}" data-alt="Schedules with the next departure of each route">
+                        <button type="button" class="screen-tab" aria-pressed="false" data-src="{{ asset('images/landing/schedules.jpg') }}" data-alt="Schedules with the next departure of each route">
                             <i class="bi bi-calendar3"></i><span><strong>Schedules</strong><small>Timetables and the next departure</small></span></button>
-                        <button type="button" class="screen-tab" data-src="{{ asset('images/landing/reportform.jpg') }}" data-alt="The report form with evidence and anonymous option">
+                        <button type="button" class="screen-tab" aria-pressed="false" data-src="{{ asset('images/landing/reportform.jpg') }}" data-alt="The report form with evidence and anonymous option">
                             <i class="bi bi-flag-fill"></i><span><strong>Report a problem</strong><small>With a photo or video, even anonymously</small></span></button>
-                        <button type="button" class="screen-tab" data-src="{{ asset('images/landing/start.jpg') }}" data-alt="The driver&rsquo;s Start Trip screen">
+                        <button type="button" class="screen-tab" aria-pressed="false" data-src="{{ asset('images/landing/start.jpg') }}" data-alt="The driver&rsquo;s Start Trip screen">
                             <i class="bi bi-person-badge-fill"></i><span><strong>Driver: start a trip</strong><small>Checks, direction and depart</small></span></button>
                     </div>
                 </div>
@@ -248,7 +248,9 @@
                         <a class="btn btn-outline-light btn-lg px-4" href="{{ asset($app['manual_path']) }}"><i class="bi bi-file-earmark-pdf me-2"></i>User manual (PDF)</a>
                     </div>
                     <p class="small opacity-75 mb-1">Checksum (SHA-256), to check the file is genuine:</p>
-                    <code class="checksum" id="checksum">{{ $app['sha256'] }}</code>
+                    <button type="button" class="checksum" id="checksum" data-hash="{{ $app['sha256'] }}" aria-describedby="copyNote"
+                            title="Click to copy the checksum">{{ $app['sha256'] }}</button>
+                    <span class="copy-note" id="copyNote" role="status" aria-live="polite"></span>
                     <p class="small mt-2"><a class="link-light" href="{{ $app['release_url'] }}" rel="noopener" target="_blank">All releases and notes on GitHub</a></p>
                 </div>
                 <div class="col-lg-6 reveal">

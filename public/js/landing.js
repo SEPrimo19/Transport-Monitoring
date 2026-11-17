@@ -1,11 +1,24 @@
 /* AMOEC Track public pages: navbar, scroll reveal, the animated route, the 3D phone and tilting cards.
-   Plain JavaScript, no libraries beyond Bootstrap. Everything degrades to a normal static page when
-   this file does not run, and the motion is skipped for visitors who ask for reduced motion. */
+   Plain JavaScript, no libraries beyond Bootstrap. Everything degrades to a normal static page when this file
+   does not run (the page head falls back to the plain version after 2.5 s), and the motion is skipped for
+   visitors who ask for reduced motion. The two animation loops run only while their scene is on screen. */
 (function () {
     'use strict';
 
+    window.__landingReady = true;    // tells the page head that the script loaded (see layouts/public.blade.php)
+
     var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var fine = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
+    var hasIO = 'IntersectionObserver' in window;
+
+    /** Calls start() while `el` is on screen and stop() when it is not (or always start once when there is no observer). */
+    function whileVisible(el, start, stop) {
+        if (!el) return;
+        if (!hasIO) { start(); return; }
+        new IntersectionObserver(function (entries) {
+            entries.forEach(function (e) { if (e.isIntersecting) start(); else stop(); });
+        }, { threshold: 0.05 }).observe(el);
+    }
 
     // ---------- navbar: solid once the page is scrolled or the mobile menu is open ----------
     var nav = document.getElementById('siteNav');
@@ -29,7 +42,7 @@
 
     // ---------- reveal on scroll ----------
     var items = document.querySelectorAll('.reveal');
-    if ('IntersectionObserver' in window && !reduce) {
+    if (hasIO && !reduce) {
         var io = new IntersectionObserver(function (entries) {
             entries.forEach(function (e) {
                 if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
@@ -49,12 +62,13 @@
     }
 
     // ---------- the bus driving along the route ----------
+    var stage = document.getElementById('routeStage');
     var path = document.getElementById('routePath');
     var done = document.getElementById('routeDone');
     var bus = document.getElementById('busMarker');
     var bubble = document.getElementById('etaBubble');
     var etaText = document.getElementById('etaText');
-    if (path && done && bus && bubble && etaText) {
+    if (stage && path && done && bus && bubble && etaText) {
         var len = path.getTotalLength();
         var PERIOD = 11000, PAUSE = 1400;
         var place = function (t) {
@@ -68,17 +82,19 @@
             etaText.textContent = t > 0.985 ? 'Arrived' : 'ETA ' + Math.max(1, Math.ceil(12 * (1 - t))) + ' min';
         };
         if (reduce) {
-            place(0.45);
+            place(0.45);                                  // one still picture, no loop
         } else {
-            var start = null;
+            var raf = 0, startedAt = null;
             var ease = function (x) { return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2; };
             var frame = function (ts) {
-                if (start === null) start = ts;
-                var el = (ts - start) % (PERIOD + PAUSE);
+                if (startedAt === null) startedAt = ts;
+                var el = (ts - startedAt) % (PERIOD + PAUSE);
                 place(el >= PERIOD ? 1 : ease(el / PERIOD) * 0.995 + (el / PERIOD) * 0.005);
-                requestAnimationFrame(frame);
+                raf = requestAnimationFrame(frame);
             };
-            requestAnimationFrame(frame);
+            whileVisible(stage,
+                function () { if (!raf) raf = requestAnimationFrame(frame); },
+                function () { if (raf) { cancelAnimationFrame(raf); raf = 0; } });
         }
     }
 
@@ -86,18 +102,40 @@
     var scene = document.getElementById('phoneScene');
     var phone = document.getElementById('phone');
     var phoneImg = document.getElementById('phoneImg');
-    if (scene && phone) {
-        var rx = 0, ry = 0, trx = 0, tryy = 0, spin = 0, dragging = false, startX = 0, baseSpin = 0, hover = false, t0 = performance.now();
+    var tabs = document.querySelectorAll('#phoneTabs .screen-tab');
+
+    // screen picker (works with or without the 3D motion)
+    tabs.forEach(function (b) {
+        b.addEventListener('click', function () {
+            tabs.forEach(function (x) { x.classList.remove('active'); x.setAttribute('aria-pressed', 'false'); });
+            b.classList.add('active');
+            b.setAttribute('aria-pressed', 'true');
+            if (!phoneImg) return;
+            phoneImg.classList.add('swap');
+            setTimeout(function () {
+                phoneImg.src = b.getAttribute('data-src');
+                phoneImg.alt = b.getAttribute('data-alt') || '';
+                phoneImg.classList.remove('swap');
+            }, 160);
+            if (scene && !reduce) spin += 360;           // a full spin shows the change
+        });
+    });
+
+    var spin = 0;
+    if (scene && phone && !reduce) {
+        var rx = 0, ry = 0, trx = 0, tryy = 0, dragging = false, startX = 0, baseSpin = 0, hover = false, t0 = performance.now();
+        var rafP = 0;
         var run = function (now) {
-            var idle = (!hover && !dragging && !reduce) ? Math.sin((now - t0) / 1600) * 8 : 0;
-            if (!dragging && !hover) { trx = 0; }
+            var idle = (!hover && !dragging) ? Math.sin((now - t0) / 1600) * 8 : 0;
             var target = tryy + spin + idle;
             rx += (trx - rx) * 0.12;
             ry += (target - ry) * 0.12;
             phone.style.transform = 'rotateX(' + rx.toFixed(2) + 'deg) rotateY(' + ry.toFixed(2) + 'deg)';
-            requestAnimationFrame(run);
+            rafP = requestAnimationFrame(run);
         };
-        requestAnimationFrame(run);
+        whileVisible(scene,
+            function () { if (!rafP) rafP = requestAnimationFrame(run); },
+            function () { if (rafP) { cancelAnimationFrame(rafP); rafP = 0; } });
 
         scene.addEventListener('pointermove', function (e) {
             var r = scene.getBoundingClientRect();
@@ -123,23 +161,6 @@
         };
         scene.addEventListener('pointerup', release);
         scene.addEventListener('pointercancel', release);
-
-        // screen picker
-        var tabs = document.querySelectorAll('#phoneTabs .screen-tab');
-        tabs.forEach(function (b) {
-            b.addEventListener('click', function () {
-                tabs.forEach(function (x) { x.classList.remove('active'); });
-                b.classList.add('active');
-                if (!phoneImg) return;
-                phoneImg.classList.add('swap');
-                setTimeout(function () {
-                    phoneImg.src = b.getAttribute('data-src');
-                    phoneImg.alt = b.getAttribute('data-alt') || '';
-                    phoneImg.classList.remove('swap');
-                }, 160);
-                if (!reduce) spin += 360;                // a full spin shows the change
-            });
-        });
     }
 
     // ---------- tilt on hover for the browser frames ----------
@@ -154,15 +175,22 @@
         });
     }
 
-    // ---------- click the checksum to copy it ----------
+    // ---------- click the checksum to copy it (the hash itself is never rewritten) ----------
     var sum = document.getElementById('checksum');
+    var note = document.getElementById('copyNote');
     if (sum && navigator.clipboard) {
-        sum.style.cursor = 'copy';
-        sum.title = 'Click to copy';
+        var timer = 0;
         sum.addEventListener('click', function () {
-            navigator.clipboard.writeText(sum.textContent.trim()).then(function () {
-                var old = sum.textContent; sum.textContent = 'Copied'; setTimeout(function () { sum.textContent = old; }, 1200);
-            });
+            var say = function (msg) {
+                if (!note) return;
+                note.textContent = msg;
+                clearTimeout(timer);
+                timer = setTimeout(function () { note.textContent = ''; }, 2200);
+            };
+            navigator.clipboard.writeText(sum.getAttribute('data-hash')).then(
+                function () { say('Checksum copied'); },
+                function () { say('Could not copy. Select the checksum and copy it by hand.'); }   // blocked or page not focused
+            );
         });
     }
 })();
