@@ -5,19 +5,19 @@ namespace Tests\Feature;
 use Tests\TestCase;
 
 /**
- * Smoke tests for the two routes reachable without a Supabase session.
+ * Smoke tests for the pages reachable without a Supabase session.
  *
- * This replaces Laravel's stub, which asserted `GET /` returns 200. It does not, and
- * never has in this application: `/` is a redirect to the dashboard (routes/web.php),
- * so the stub had been failing since the day that redirect was added. A test suite with
- * a known-failing example in it trains everyone to ignore red, which is worse than
- * having no suite at all.
+ * `/` used to redirect to the dashboard, which made Laravel's stub (GET / is 200) fail for
+ * a long time; a suite with a known-failing example trains everyone to ignore red. `/` is
+ * now the public landing page, so the plain 200 check is correct again.
  */
 class ExampleTest extends TestCase
 {
-    public function test_the_root_url_redirects_to_the_dashboard(): void
+    public function test_the_root_url_shows_the_public_landing_page(): void
     {
-        $this->get('/')->assertRedirect('/dashboard');
+        // `/` used to redirect to the dashboard; it is now the public landing page
+        // (see LandingPageTest for what it must contain).
+        $this->get('/')->assertOk();
     }
 
     public function test_the_login_page_renders_for_a_guest(): void

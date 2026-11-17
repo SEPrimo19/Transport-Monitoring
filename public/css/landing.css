@@ -1,0 +1,143 @@
+/* AMOEC Track public pages (landing + privacy). Brand green #165935. Bootstrap 5.3 is loaded before this file. */
+:root {
+    --brand: #165935;
+    --brand-dark: #0d3b23;
+    --brand-light: #e8f3ec;
+    --accent: #ffc107;
+    --ink: #1c2a22;
+}
+html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+body { font-family: Arial, Helvetica, sans-serif; color: var(--ink); background: #fff; }
+.skip-link { position: absolute; left: 8px; top: 8px; z-index: 2000; }
+
+/* ---------- top bar ---------- */
+.site-nav { background: transparent; transition: background .25s, box-shadow .25s; padding-block: .75rem; }
+.site-nav.scrolled, .site-nav.show-bg { background: var(--brand-dark); box-shadow: 0 2px 14px rgba(0, 0, 0, .25); }
+.site-nav .navbar-brand { color: #fff; font-weight: 700; }
+/* the logo is dark, so it sits on a white disc to stay visible on the green bar */
+.site-nav .navbar-brand img, .site-footer img { background: #fff; border-radius: 50%; padding: 3px; }
+.site-nav .nav-link { color: rgba(255, 255, 255, .85); font-size: .95rem; }
+.site-nav .nav-link:hover, .site-nav .nav-link:focus { color: #fff; }
+.site-nav .navbar-toggler { color: #fff; border: 0; font-size: 1.6rem; padding: 0 .25rem; }
+@media (max-width: 991.98px) { .site-nav .navbar-collapse { background: var(--brand-dark); margin: .75rem -.75rem 0; padding: .75rem 1rem 1rem; border-radius: .75rem; } }
+
+/* ---------- hero ---------- */
+.hero { position: relative; color: #fff; padding: 9rem 0 6rem; overflow: hidden; }
+.hero-bg {
+    position: absolute; inset: 0;
+    background:
+        radial-gradient(900px 500px at 85% 10%, rgba(255, 193, 7, .18), transparent 60%),
+        radial-gradient(700px 500px at 0% 100%, rgba(46, 158, 91, .35), transparent 60%),
+        linear-gradient(135deg, #0d3b23 0%, #165935 55%, #1d7a47 100%);
+}
+.hero-bg::after { content: ""; position: absolute; inset: 0; opacity: .08;
+    background-image: linear-gradient(rgba(255, 255, 255, .5) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, .5) 1px, transparent 1px);
+    background-size: 46px 46px; }
+.eyebrow { display: inline-block; background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .25); padding: .3rem .8rem; border-radius: 99px; font-size: .85rem; }
+.accent { color: var(--accent); }
+.hero .lead { color: rgba(255, 255, 255, .88); max-width: 34rem; }
+.hero-points li { display: inline-block; margin-right: 1.25rem; font-size: .9rem; color: rgba(255, 255, 255, .85); }
+.hero-points i { color: var(--accent); margin-right: .25rem; }
+
+.route-stage { background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .18); border-radius: 1.5rem; padding: 1rem; backdrop-filter: blur(3px); box-shadow: 0 20px 50px rgba(0, 0, 0, .25); }
+.route-svg { width: 100%; height: auto; display: block; }
+.route-svg .stop circle { fill: #fff; stroke: var(--accent); stroke-width: 4; }
+.route-svg .stop text { fill: #fff; font-size: 17px; font-weight: 700; }
+.route-svg #etaText { fill: var(--brand); font-size: 15px; font-weight: 700; }
+.route-svg .pulse { fill: rgba(255, 193, 7, .3); animation: pulse 1.8s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes pulse { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(1.7); opacity: 0; } }
+
+/* ---------- sections ---------- */
+.section { padding: 5.5rem 0; }
+.section-tint { background: var(--brand-light); }
+.section-dark { background: linear-gradient(135deg, #0d3b23, #165935); color: #fff; }
+.section-title { font-weight: 800; color: var(--brand); margin-bottom: 1rem; }
+.check-list li { display: flex; gap: .7rem; align-items: flex-start; margin-bottom: .6rem; }
+.check-list i { color: var(--brand); font-size: 1.25rem; line-height: 1.4; }
+
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.stat { background: var(--brand-light); border-radius: 1rem; padding: 1.25rem; transition: transform .2s; }
+.stat:hover { transform: translateY(-4px); }
+.stat strong { display: block; font-size: 2rem; color: var(--brand); }
+.stat span { font-size: .9rem; color: #46594e; }
+
+.step-card, .feature-card, .user-card { position: relative; background: #fff; border-radius: 1.25rem; padding: 1.75rem; box-shadow: 0 6px 24px rgba(13, 59, 35, .08); height: 100%; transition: transform .2s, box-shadow .2s; }
+.step-card:hover, .feature-card:hover, .user-card:hover { transform: translateY(-6px); box-shadow: 0 14px 34px rgba(13, 59, 35, .16); }
+.step-card > i, .feature-card > i { font-size: 2.2rem; color: var(--brand); }
+.step-card h3, .feature-card h3, .user-card h3 { font-size: 1.2rem; font-weight: 700; margin: .75rem 0 .5rem; }
+.step-no { position: absolute; top: 1rem; right: 1.25rem; font-size: 2.6rem; font-weight: 800; color: var(--brand-light); }
+.user-card ul { padding-left: 1.1rem; color: #46594e; }
+
+/* ---------- 3D phone ---------- */
+.phone-scene { perspective: 1400px; display: inline-block; padding: 2rem 3rem; touch-action: pan-y; cursor: grab; }
+.phone-scene.dragging { cursor: grabbing; }
+.phone { --w: 240px; --h: 500px; --d: 22px; width: var(--w); height: var(--h); position: relative; transform-style: preserve-3d; will-change: transform; }
+.phone .face { position: absolute; inset: 0; border-radius: 34px; background: #0b0f0d; border: 7px solid #0b0f0d; overflow: hidden; backface-visibility: hidden; }
+.phone .front { transform: translateZ(calc(var(--d) / 2)); box-shadow: 0 30px 60px rgba(0, 0, 0, .35); }
+.phone .front img { width: 100%; height: 100%; object-fit: cover; object-position: top; border-radius: 27px; display: block; transition: opacity .25s; user-select: none; -webkit-user-drag: none; }
+.phone .front img.swap { opacity: 0; }
+.phone .back { transform: rotateY(180deg) translateZ(calc(var(--d) / 2)); background: linear-gradient(160deg, #1d7a47, #0d3b23); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .6rem; color: #fff; font-weight: 700; }
+.phone .side { position: absolute; background: #151a17; }
+.phone .side-l { top: 34px; height: calc(100% - 68px); width: var(--d); left: calc(var(--d) / -2); transform: rotateY(-90deg); }
+.phone .side-r { top: 34px; height: calc(100% - 68px); width: var(--d); left: calc(100% - var(--d) / 2); transform: rotateY(90deg); }
+.phone .side-t { left: 34px; width: calc(100% - 68px); height: var(--d); top: calc(var(--d) / -2); transform: rotateX(90deg); }
+.phone .side-b { left: 34px; width: calc(100% - 68px); height: var(--d); top: calc(100% - var(--d) / 2); transform: rotateX(-90deg); }
+
+.screen-tab { display: flex; align-items: center; gap: 1rem; text-align: left; border: 2px solid transparent; background: #fff; border-radius: 1rem; padding: .85rem 1rem; box-shadow: 0 4px 16px rgba(13, 59, 35, .08); transition: all .2s; color: var(--ink); }
+.screen-tab i { font-size: 1.6rem; color: var(--brand); }
+.screen-tab strong, .screen-tab small { display: block; }
+.screen-tab small { color: #5b6e63; }
+.screen-tab:hover { transform: translateX(4px); }
+.screen-tab.active { border-color: var(--brand); background: var(--brand-light); }
+
+/* ---------- browser frames ---------- */
+.browser { margin: 0; background: #fff; border-radius: .9rem; overflow: hidden; box-shadow: 0 12px 34px rgba(13, 59, 35, .18); transform-style: preserve-3d; transition: box-shadow .2s; will-change: transform; }
+.browser-bar { display: flex; align-items: center; gap: .35rem; padding: .5rem .8rem; background: #e9efeb; }
+.browser-bar i { width: 10px; height: 10px; border-radius: 50%; background: #c2cdc6; display: inline-block; }
+.browser-bar span { margin-left: .6rem; background: #fff; border-radius: 99px; padding: .1rem .8rem; font-size: .72rem; color: #5b6e63; }
+.browser img { display: block; width: 100%; height: auto; }
+.browser figcaption { padding: .7rem 1rem; font-size: .9rem; color: #46594e; }
+
+/* ---------- download ---------- */
+.checksum { display: block; word-break: break-all; background: rgba(0, 0, 0, .25); padding: .6rem .8rem; border-radius: .6rem; color: #d7f2e1; font-size: .78rem; }
+.install-card { background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .22); border-radius: 1.25rem; padding: 1.75rem; }
+.install-steps { padding-left: 1.2rem; }
+.install-steps li { margin-bottom: .6rem; }
+
+/* ---------- faq ---------- */
+.faq .accordion-item { border: 0; margin-bottom: .75rem; border-radius: .9rem !important; overflow: hidden; box-shadow: 0 4px 16px rgba(13, 59, 35, .08); }
+.faq .accordion-button { font-weight: 700; color: var(--brand); }
+.faq .accordion-button:not(.collapsed) { background: var(--brand-light); color: var(--brand); box-shadow: none; }
+
+/* ---------- footer ---------- */
+.site-footer { background: var(--brand-dark); color: #fff; padding: 3.5rem 0 2rem; }
+.site-footer a { color: rgba(255, 255, 255, .8); text-decoration: none; }
+.site-footer a:hover { color: #fff; text-decoration: underline; }
+.site-footer li { margin-bottom: .35rem; }
+
+/* ---------- privacy page ---------- */
+.page-head { background: linear-gradient(135deg, #0d3b23, #165935); color: #fff; padding: 8rem 0 3.5rem; }
+.prose { max-width: 820px; }
+.prose h2 { font-size: 1.35rem; font-weight: 800; color: var(--brand); margin-top: 2.25rem; }
+.prose h3 { font-size: 1.05rem; font-weight: 700; margin-top: 1.25rem; }
+.prose table { font-size: .93rem; }
+.prose .note { background: var(--brand-light); border-left: 4px solid var(--brand); padding: .9rem 1.1rem; border-radius: .5rem; }
+
+/* ---------- reveal on scroll ---------- */
+/* Visible by default; hidden only when the inline script in the page head has set the "js" class. */
+.js .reveal { opacity: 0; transform: translateY(24px); transition: opacity .6s ease, transform .6s ease; }
+.js .reveal.in { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .js .reveal { opacity: 1; transform: none; transition: none; }
+    .route-svg .pulse { animation: none; }
+    .stat:hover, .step-card:hover, .feature-card:hover, .user-card:hover, .screen-tab:hover { transform: none; }
+}
+@media (max-width: 575.98px) {
+    .hero { padding: 7rem 0 4rem; }
+    .section { padding: 4rem 0; }
+    .phone-scene { padding: 1.5rem 1rem; }
+    .phone { --w: 210px; --h: 440px; }
+    .stat-grid { grid-template-columns: 1fr 1fr; }
+}

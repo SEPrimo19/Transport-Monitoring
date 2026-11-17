@@ -8,6 +8,7 @@ use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DriverController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\OperationsController;
@@ -29,10 +30,12 @@ use App\Http\Controllers\TripScheduleController;
 use App\Http\Controllers\VehicleController;
 use Illuminate\Support\Facades\Route;
 
-// Route::redirect, not a closure: `php artisan route:cache` serializes the route
-// table and cannot serialize a Closure action — one closure here disables route
-// caching for the entire application.
-Route::redirect('/', '/dashboard');
+// Public pages: the landing page replaces the old redirect to /dashboard, so a first
+// visit explains the project instead of dropping the visitor on a sign-in form.
+// Controller actions, not closures: `php artisan route:cache` cannot serialize a
+// Closure action — one closure here disables route caching for the whole application.
+Route::get('/', [LandingController::class, 'index'])->name('home');
+Route::get('/privacy', [LandingController::class, 'privacy'])->name('privacy');
 
 // Guest auth — Supabase GoTrue password grant → access token in the session.
 Route::get('/login', [AuthController::class, 'show'])->name('login');
