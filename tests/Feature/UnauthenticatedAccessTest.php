@@ -17,7 +17,7 @@ use Tests\TestCase;
  */
 class UnauthenticatedAccessTest extends TestCase
 {
-    private const PUBLIC_URIS = ['login', 'logout', 'up', '/'];
+    private const PUBLIC_URIS = ['login', 'logout', 'up', '/', 'privacy'];
 
     public function test_every_console_route_redirects_an_anonymous_browser_to_login(): void
     {
