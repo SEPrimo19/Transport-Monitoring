@@ -37,7 +37,7 @@
                             <td>Their actions on the vehicles, drivers, routes, schedules and reports they manage. Some account changes, such as creating or changing an administrator, are kept in an activity log.</td>
                             <td>To keep the service accountable.</td></tr>
                         <tr><td><strong>The app on your phone</strong></td>
-                            <td>Technical crash information (for example the phone model, the Android version and the error) sent through Firebase Crashlytics when the app stops unexpectedly.</td>
+                            <td>Technical crash information (for example the phone model, the Android version and the error) sent through Firebase Crashlytics when the app stops unexpectedly. To look for updates, the app asks GitHub for the newest version number when it starts and twice a day in the background; GitHub sees the phone&rsquo;s internet address, as any website does.</td>
                             <td>To find and fix bugs.</td></tr>
                     </tbody>
                 </table>
@@ -62,7 +62,7 @@
                 <li><strong>OpenFreeMap</strong> supplies the map pictures; the map area you look at is requested from its servers.</li>
                 <li><strong>Nominatim (OpenStreetMap)</strong> turns coordinates into place names. The app can send the position of a bus to it for that purpose, and falls back to the phone&rsquo;s own address lookup if it is not reachable. The console also uses it to search for places.</li>
                 <li><strong>For administrators only:</strong> the route editor uses OSRM to draw a route along roads, and when you choose a password the console checks it against known leaks with Have I Been Pwned, sending only the first five characters of a scrambled copy of it, never the password.</li>
-                <li><strong>GitHub</strong> hosts the download of the Android app, and <strong>Render</strong> hosts this website and the administration console.</li>
+                <li><strong>GitHub</strong> hosts the download of the Android app and the information about its newest version. The app downloads an update from GitHub only when you tap Update. <strong>Render</strong> hosts this website and the administration console.</li>
             </ul>
             <p>Connections to the website and the services are encrypted. On the phone, your sign-in is normally kept in encrypted storage; if the secure storage of a phone is broken, the app may fall back to ordinary storage.</p>
             <p><strong>Cookies:</strong> visiting this website sets one session cookie that keeps the pages secure and, for administrators, keeps the sign-in. There are no advertising or tracking cookies.</p>
