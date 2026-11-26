@@ -69,6 +69,24 @@ class LandingPageTest extends TestCase
             ->assertSee('Cookies', false);
     }
 
+    public function test_the_privacy_page_explains_account_deletion_in_plain_words(): void
+    {
+        // Deleting an account removes the person but keeps their reports. The page must say what
+        // goes, what stays and why, and where to do it, or the in-app screen and this page disagree.
+        $this->get('/privacy')
+            ->assertOk()
+            ->assertSee('Delete my account', false)                 // where a passenger does it
+            ->assertSee('former passenger', false)                  // how a kept report reads afterwards
+            ->assertSee('position recorded with the report is erased', false)
+            ->assertSee('legitimate interest', false)               // why the reports stay
+            ->assertSee('still records which account sent the report', false)   // existing promise kept
+            // senior review of Task 9: what the page must not leave out or overclaim
+            ->assertSee('keeps any details your camera stored', false)       // photo/video metadata
+            ->assertSee('stays anonymous', false)                              // anonymous reports are not relabelled
+            ->assertSee('service providers&rsquo; own logs', false)          // traces outside our tables
+            ->assertSee('new, empty account', false);                          // same Google account again
+    }
+
     public function test_the_page_stays_readable_when_the_script_does_not_load(): void
     {
         // The head falls back to the plain page after 2.5 s unless landing.js announces itself.
