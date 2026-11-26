@@ -53,7 +53,7 @@ plan, schema-reconciliation table, and phase order live in the Android repo's
   each pair on GeoJSON import or the mobile overlay/snap will be transposed.
 - **driver record** = join `profiles` (full_name, role, is_active) + `drivers` (employee_code,
   license_number, phone) + `auth.users` (email).
-- **anonymous reports** = dropped from the web UI (`reports.passenger_profile_id` is NOT NULL).
+- **reporter on a report**: anonymous reports (`is_anonymous`) are shown masked as "Anonymous" (the reporter FK is still stored). Since migration 049 `reports.passenger_profile_id` is NULLABLE: a passenger who deleted their account leaves the report with a null reporter, `reporter_deleted_at` set and `former_reporter_id` kept only so admins can still open the evidence. `Report::reporterDisplayName()` is the single place that resolves it (anonymous, then "Former passenger (account deleted)", then the name). Never render `reporter->full_name` directly, and never write the erasure columns (a database trigger refuses it).
 
 ## Commands
 - `php artisan serve` → http://127.0.0.1:8000

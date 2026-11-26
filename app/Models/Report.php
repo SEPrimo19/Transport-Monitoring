@@ -34,6 +34,7 @@ class Report extends Model
         'resolved_at' => 'datetime',
         'created_at' => 'datetime',
         'passenger_reported_at' => 'datetime',
+        'reporter_deleted_at' => 'datetime',
         'passenger_latitude' => 'float',
         'passenger_longitude' => 'float',
         'is_anonymous' => 'boolean',
@@ -96,12 +97,37 @@ class Report extends Model
             return 'Anonymous';
         }
 
+        // The passenger deleted their account (migration 049): the report and its evidence stay,
+        // the reporter is gone. Checked AFTER anonymity (an anonymous report stays "Anonymous")
+        // and BEFORE the name lookup.
+        if ($this->reporterAccountDeleted()) {
+            return 'Former passenger (account deleted)';
+        }
+
         // `reporter_name` is present when the row came from a query that JOINED
         // profiles instead of eager-loading the relation (the dashboard does this to
         // save a round trip). Falling back to the relation keeps every other caller
         // working unchanged — and keeps this the single place a reporter's identity
         // is resolved, whichever way the row was fetched.
         return $this->reporter_name ?? $this->reporter?->full_name;
+    }
+
+    /**
+     * True when the reporting passenger deleted their account. Keyed on the reporter id being
+     * NULL (or the deletion timestamp), never on a missing NAME: a live profile with no name is
+     * not a deleted one. A row from a query that did not load `passenger_profile_id` at all is
+     * "unknown", not "deleted", so the attribute must be present to count.
+     */
+    public function reporterAccountDeleted(): bool
+    {
+        // Raw attribute, not the datetime cast: only "is it set" matters here, and the cast would
+        // need a database connection just to read a timestamp.
+        if (($this->attributes['reporter_deleted_at'] ?? null) !== null) {
+            return true;
+        }
+
+        return array_key_exists('passenger_profile_id', $this->attributes)
+            && $this->attributes['passenger_profile_id'] === null;
     }
 
     public function resolvedBy(): BelongsTo

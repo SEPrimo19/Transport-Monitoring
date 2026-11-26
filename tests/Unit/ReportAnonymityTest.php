@@ -102,4 +102,77 @@ class ReportAnonymityTest extends TestCase
 
         $this->assertSame('Ana Reyes', $report->reporterDisplayName());
     }
+
+    // ---- a passenger who deleted their account (migration 049) ----------------------------
+
+    public function test_a_report_whose_passenger_deleted_their_account_is_labelled_so(): void
+    {
+        // The reporter id is null once the account is gone. That, not a missing name, is what
+        // says "deleted": a live profile with an empty name must stay a plain null.
+        $report = $this->report([
+            'is_anonymous' => false,
+            'passenger_profile_id' => null,
+            'reporter_name' => null,
+        ]);
+
+        $this->assertSame('Former passenger (account deleted)', $report->reporterDisplayName());
+    }
+
+    public function test_anonymity_still_wins_over_the_deleted_label(): void
+    {
+        $report = $this->report([
+            'is_anonymous' => true,
+            'passenger_profile_id' => null,
+            'reporter_name' => null,
+        ]);
+
+        $this->assertSame('Anonymous', $report->reporterDisplayName());
+    }
+
+    public function test_a_live_passenger_with_no_name_is_not_called_deleted(): void
+    {
+        $report = $this->report([
+            'is_anonymous' => false,
+            'passenger_profile_id' => '11111111-1111-1111-1111-111111111111',
+            'reporter_name' => null,
+        ]);
+
+        $this->assertNull($report->reporterDisplayName());
+    }
+
+    public function test_a_row_that_did_not_load_the_reporter_column_is_not_mislabelled(): void
+    {
+        // A query that selects only some columns has no passenger_profile_id attribute at all.
+        // "Not loaded" is not "deleted": without this guard every such row would be mislabelled.
+        $report = $this->report([
+            'is_anonymous' => false,
+            'reporter_name' => null,
+        ]);
+
+        $this->assertNull($report->reporterDisplayName());
+    }
+
+    public function test_the_deletion_timestamp_alone_also_marks_a_deleted_reporter(): void
+    {
+        // Raw attributes, as a real query result carries them: setAttribute() on a datetime
+        // cast needs a database connection, which a bare unit test does not have.
+        $report = new Report;
+        $report->setRawAttributes([
+            'is_anonymous' => false,
+            'reporter_deleted_at' => '2026-11-26 10:00:00',
+            'reporter_name' => null,
+        ]);
+        $report->setRelation('reporter', null);
+
+        $this->assertSame('Former passenger (account deleted)', $report->reporterDisplayName());
+    }
+
+    public function test_the_deleted_flag_is_exposed_for_the_views(): void
+    {
+        $deleted = $this->report(['passenger_profile_id' => null]);
+        $live = $this->report(['passenger_profile_id' => '11111111-1111-1111-1111-111111111111']);
+
+        $this->assertTrue($deleted->reporterAccountDeleted());
+        $this->assertFalse($live->reporterAccountDeleted());
+    }
 }

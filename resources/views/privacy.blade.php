@@ -51,7 +51,8 @@
                 <li><strong>Passengers</strong> see the buses of the cooperative they chose: position, route and seat status. They see their own reports.</li>
                 <li><strong>Cooperative administrators</strong> see the vehicles, drivers, trips and reports of their own cooperative only. Each cooperative is kept apart from the others by rules in the database.</li>
                 <li><strong>Anonymous reports:</strong> if you switch on <em>Submit anonymously</em>, your name is hidden from administrators on the report screen. The system still records which account sent the report, so that it appears in your own list.
-                    The exact location and time of the report, and the name of any file you attach, remain visible to the cooperative&rsquo;s administrators, so do not put your name or other personal details in the description or in the file name.</li>
+                    The exact location and time of the report, and the name of any file you attach, remain visible to the cooperative&rsquo;s administrators, so do not put your name or other personal details in the description or in the file name.
+                    If you later delete your account, an internal identifier is kept with each report only so that its attached file can still be opened; it is not your name and it no longer points to any account, although reports from the same former passenger carry the same identifier.</li>
                 <li><strong>Platform administrators</strong> run the system itself, for example creating cooperatives and their first administrators, and can reach the data of every cooperative as far as running the system needs.</li>
             </ul>
 
@@ -72,15 +73,25 @@
                 <li><strong>Location history</strong> of trips is deleted after the number of days each cooperative sets (from 1 to 3650 days). If a cooperative sets no limit, the history is kept until it is deleted. The deletion runs once a day.</li>
                 <li>The <strong>current position</strong> of a bus is one record that is replaced at every update.</li>
                 <li><strong>Trip summaries</strong> (counts, durations and punctuality, without raw positions) stay so that reports remain possible.</li>
-                <li><strong>Reports and their attachments</strong> are kept while the cooperative needs them to review the service. Ask the cooperative to remove one if you want it gone.</li>
+                <li><strong>Reports and their attachments</strong> are kept while the cooperative needs them to review the service. If you want one removed, ask the cooperative; the console has no delete button for reports, so the system&rsquo;s administrators remove it directly in the database.
+                    If a passenger deletes their account, their reports are kept without their name (see below), and no time limit has been set for them yet.</li>
             </ul>
 
             <h2>Your choices</h2>
             <ul>
                 <li>You can turn the location permission off in the phone settings. You can still see the buses on the map, but the app cannot place you, and a report cannot be sent because it needs a location.</li>
                 <li>You can send reports anonymously and sign out at any time from the Menu.</li>
-                <li>To correct or delete your account or your reports, ask the administrator of your cooperative. If you cannot reach one, open an issue at the project page below.</li>
+                <li><strong>Delete your account (passengers):</strong> open <em>Menu</em> and choose <em>Delete my account</em>. This cannot be undone.</li>
+                <li>To correct or delete your reports, or if you are a driver or an administrator, ask the administrator of your cooperative. If you cannot reach one, open an issue at the project page below.</li>
             </ul>
+
+            <h2>What happens when you delete your account</h2>
+            <p><strong>Removed:</strong> your sign-in and your profile. You cannot sign in with that account again, and it cannot be restored. Signing in again with the same Google account creates a new, empty account.</p>
+            <p><strong>Kept, without your name:</strong> the reports you submitted, with their description, category, dates and attached files. They then show to the cooperative as coming from a former passenger (a report you sent anonymously stays anonymous). The position recorded with the report is erased.
+                We keep them because the cooperative has a legitimate interest in handling a complaint about the service, and in the record of complaints about its drivers, even after the person who made it has left.</p>
+            <p>Anything you wrote in a report&rsquo;s description stays as you wrote it, so do not put details there that you would not want kept. A photo or video you attached keeps any details your camera stored in it, which can include where it was taken.
+                An internal identifier (not your name, and it no longer points to any account) stays with each kept report so that its attached file can still be opened; reports from the same former passenger carry the same identifier, and it also appears in the file&rsquo;s storage path.</p>
+            <p>Some traces are outside our own tables and follow other schedules that we do not control: backups, if any, and the service providers&rsquo; own logs (for example the sign-in service&rsquo;s record that an account existed, and crash reports).</p>
 
             <h2>Changes and contact</h2>
             <p>When the system changes how it handles information, this page is updated and the date at the top changes.

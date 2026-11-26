@@ -37,6 +37,11 @@
                         <dt class="col-sm-3">Submitted</dt>
                         <dd class="col-sm-9">{{ $report->created_at?->format('M j, Y g:i A') ?? '—' }}</dd>
 
+                        @if ($report->reporterAccountDeleted() && ! $report->is_anonymous && ! $report->hasPassengerLocation())
+                            <dt class="col-sm-3">Reported from</dt>
+                            <dd class="col-sm-9 text-muted">Erased when the reporter deleted their account</dd>
+                        @endif
+
                         @if ($report->hasPassengerLocation())
                             <dt class="col-sm-3">Reported from</dt>
                             <dd class="col-sm-9">
