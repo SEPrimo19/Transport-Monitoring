@@ -243,9 +243,15 @@
         ['phoneScene', 'phoneTabs', 'screenNav'].forEach(function (id) {
             var el = document.getElementById(id);
             if (!el) return;
-            el.addEventListener('pointerenter', function () { slideHeld = true; });
+            // Hold only for a mouse pointer or for keyboard focus. A finger tap, or a mouse click that leaves a
+            // button focused, must not stop the slideshow: on a phone that is what made it stall after the first tap.
+            el.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') slideHeld = true; });
             el.addEventListener('pointerleave', function () { slideHeld = false; slideStart(); });
-            el.addEventListener('focusin', function () { slideHeld = true; });
+            el.addEventListener('focusin', function (e) {
+                var keyboard = true;
+                try { keyboard = e.target.matches(':focus-visible'); } catch (err) { /* older browsers: assume keyboard */ }
+                if (keyboard) slideHeld = true;
+            });
             el.addEventListener('focusout', function () { slideHeld = false; slideStart(); });
         });
         slideStart();
