@@ -263,13 +263,13 @@
             border-radius: .25rem;
         }
 
-        /* On small screens the hero collapses away, so the Home gradient becomes the page backdrop
-           and the white card sits on it, as on the hero above. */
+        /* On small screens the hero collapses away: a light page behind the white card, like the right panel
+           on a wide screen. */
         @media (max-width: 991.98px) {
             body {
                 background:
-                    radial-gradient(600px 400px at 85% 0%, rgba(255, 193, 7, .18), transparent 60%),
-                    linear-gradient(160deg, var(--auth-green-dark) 0%, var(--auth-green) 60%, #1d7a47 100%);
+                    radial-gradient(65% 40% at 50% 0%, rgba(var(--amoec-brand-rgb), .07), transparent 70%),
+                    linear-gradient(180deg, var(--auth-panel-tint) 0%, var(--auth-page-bg) 100%);
                 background-attachment: fixed;
             }
             .auth-panel-col { background: transparent; }
