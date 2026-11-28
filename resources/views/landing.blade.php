@@ -208,7 +208,7 @@
         <div class="container">
             <div class="text-center mb-4 reveal">
                 <h2 class="section-title">See it in action</h2>
-                <p class="text-muted mb-0">Move your mouse over a screen, or drag the phone, to turn it.</p>
+                <p class="text-muted mb-0">The screens change by themselves. Use the arrows or pick one, and drag the phone to turn it.</p>
             </div>
 
             <div class="row align-items-center gy-4 mb-5 reveal">
@@ -219,6 +219,13 @@
                             <div class="face back"><img src="{{ asset('images/logo-white.svg') }}" alt="" width="96" height="96"><span>AMOEC Track</span></div>
                             <div class="side side-l"></div><div class="side side-r"></div><div class="side side-t"></div><div class="side side-b"></div>
                         </div>
+                    </div>
+                    {{-- Previous / next, and an auto-play that landing.js runs while this section is on screen. --}}
+                    <div class="screen-nav" id="screenNav" role="group" aria-label="Screen slideshow controls">
+                        <button type="button" class="screen-nav-btn" id="screenPrev" aria-label="Previous screen"><i class="bi bi-chevron-left"></i></button>
+                        <button type="button" class="screen-nav-btn" id="screenPlay" aria-label="Pause the automatic slideshow" aria-pressed="true"><i class="bi bi-pause-fill"></i></button>
+                        <span class="screen-nav-count" id="screenCount" aria-live="off">1 / 6</span>
+                        <button type="button" class="screen-nav-btn" id="screenNext" aria-label="Next screen"><i class="bi bi-chevron-right"></i></button>
                     </div>
                 </div>
                 <div class="col-lg-6">

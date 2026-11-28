@@ -182,22 +182,74 @@
     var phoneImg = document.getElementById('phoneImg');
     var tabs = document.querySelectorAll('#phoneTabs .screen-tab');
 
-    // screen picker (works with or without the 3D motion)
-    tabs.forEach(function (b) {
-        b.addEventListener('click', function () {
-            tabs.forEach(function (x) { x.classList.remove('active'); x.setAttribute('aria-pressed', 'false'); });
-            b.classList.add('active');
-            b.setAttribute('aria-pressed', 'true');
-            if (!phoneImg) return;
-            phoneImg.classList.add('swap');
-            setTimeout(function () {
-                phoneImg.src = b.getAttribute('data-src');
-                phoneImg.alt = b.getAttribute('data-alt') || '';
-                phoneImg.classList.remove('swap');
-            }, 160);
-            if (scene && !reduce) spin += 360;           // a full spin shows the change
-        });
+    // screen picker (works with or without the 3D motion). One function shows a screen, so the tabs,
+    // the previous / next buttons and the automatic slideshow all behave the same way.
+    var current = 0;
+    var showScreen = function (i) {
+        if (!tabs.length) return;
+        current = (i + tabs.length) % tabs.length;
+        var b = tabs[current];
+        tabs.forEach(function (x) { x.classList.remove('active'); x.setAttribute('aria-pressed', 'false'); });
+        b.classList.add('active');
+        b.setAttribute('aria-pressed', 'true');
+        var count = document.getElementById('screenCount');
+        if (count) count.textContent = (current + 1) + ' / ' + tabs.length;
+        if (!phoneImg) return;
+        phoneImg.classList.add('swap');
+        setTimeout(function () {
+            phoneImg.src = b.getAttribute('data-src');
+            phoneImg.alt = b.getAttribute('data-alt') || '';
+            phoneImg.classList.remove('swap');
+        }, 160);
+        if (scene && !reduce) spin += 360;           // a full spin shows the change
+    };
+
+    // Automatic slideshow: moves on every 5.5 s while the section is on screen, the tab is visible and the
+    // visitor is not pointing at or dragging the phone, the picker or the buttons. It never starts for visitors who
+    // asked for reduced motion, and the pause button (WCAG 2.2.2) stops it for good; any manual choice restarts the clock.
+    var SLIDE_MS = 5500;
+    var slideTimer = 0, slideOn = !reduce, slideVisible = false, slideHeld = false;
+    var playBtn = document.getElementById('screenPlay');
+    var slideTick = function () {
+        slideTimer = 0;
+        if (slideOn && slideVisible && !slideHeld && !paused && !document.hidden) showScreen(current + 1);
+        slideStart();
+    };
+    var slideStart = function () {
+        if (slideTimer) clearTimeout(slideTimer);
+        slideTimer = slideOn ? setTimeout(slideTick, SLIDE_MS) : 0;
+    };
+    var syncPlayBtn = function () {
+        if (!playBtn) return;
+        playBtn.setAttribute('aria-pressed', slideOn ? 'true' : 'false');
+        playBtn.setAttribute('aria-label', slideOn ? 'Pause the automatic slideshow' : 'Play the automatic slideshow');
+        var ic = playBtn.querySelector('i');
+        if (ic) ic.className = 'bi ' + (slideOn ? 'bi-pause-fill' : 'bi-play-fill');
+    };
+
+    tabs.forEach(function (b, i) {
+        b.addEventListener('click', function () { showScreen(i); slideStart(); });
     });
+    var prevBtn = document.getElementById('screenPrev');
+    var nextBtn = document.getElementById('screenNext');
+    if (prevBtn) prevBtn.addEventListener('click', function () { showScreen(current - 1); slideStart(); });
+    if (nextBtn) nextBtn.addEventListener('click', function () { showScreen(current + 1); slideStart(); });
+    if (playBtn) playBtn.addEventListener('click', function () { slideOn = !slideOn; syncPlayBtn(); slideStart(); });
+    syncPlayBtn();
+
+    var slideArea = document.getElementById('screens');
+    if (slideArea && tabs.length) {
+        whileVisible(slideArea, function () { slideVisible = true; }, function () { slideVisible = false; });
+        ['phoneScene', 'phoneTabs', 'screenNav'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('pointerenter', function () { slideHeld = true; });
+            el.addEventListener('pointerleave', function () { slideHeld = false; slideStart(); });
+            el.addEventListener('focusin', function () { slideHeld = true; });
+            el.addEventListener('focusout', function () { slideHeld = false; slideStart(); });
+        });
+        slideStart();
+    }
 
     var spin = 0;
     if (scene && phone && !reduce) {

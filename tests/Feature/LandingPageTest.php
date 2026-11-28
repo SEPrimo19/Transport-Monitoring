@@ -30,6 +30,16 @@ class LandingPageTest extends TestCase
         $this->assertStringContainsString('/releases/latest/download/', config('landing.apk_url'));
     }
 
+    public function test_the_screens_slideshow_has_previous_next_and_pause_controls(): void
+    {
+        $this->get('/')
+            ->assertSee('id="screenPrev"', false)
+            ->assertSee('id="screenNext"', false)
+            ->assertSee('id="screenPlay"', false)
+            ->assertSee('aria-label="Next screen"', false)
+            ->assertSee('aria-label="Pause the automatic slideshow"', false);
+    }
+
     public function test_the_landing_page_lists_the_checksum_and_the_manual(): void
     {
         $this->get('/')
