@@ -147,7 +147,6 @@
             /* Softer and shorter than the dark version: a heavy shadow on a light
                panel reads as grime rather than elevation. */
             box-shadow: 0 18px 44px -20px rgba(15, 23, 42, .28), 0 2px 6px rgba(15, 23, 42, .06);
-            border-top: 4px solid var(--amoec-brand);
         }
 
         .auth-card h2 { color: var(--auth-ink); }
