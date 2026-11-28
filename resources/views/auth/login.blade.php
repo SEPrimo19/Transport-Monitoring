@@ -42,7 +42,10 @@
                about the panel and the card disagreeing, so they agree here instead —
                both light — and the sign-in side now carries its own luminance rather
                than borrowing the hero's. The vivid photo panel supplies the contrast. */
-            --auth-page-bg: #eef2f9;
+            --auth-green: #165935;        /* the Home page's brand colours */
+            --auth-green-dark: #0d3b23;
+            --auth-accent: #ffc107;
+            --auth-page-bg: #eef5f0;
             --auth-panel-tint: #ffffff;
             --auth-card-bg: #ffffff;
             --auth-card-border: rgba(15, 23, 42, .08);
@@ -68,41 +71,20 @@
 
         .auth-shell { min-height: 100vh; }
 
-        /* ── Left: imagery + value proposition (lg and up) ───────────────── */
+        /* ── Left: the public Home page's hero, so signing in feels like the same product ──
+           Same dark-green gradient, faint grid and soft yellow glow as the landing hero; white copy
+           with yellow icons; the transport illustration stays as a faded strip along the bottom. */
         .auth-hero {
             position: relative;
             isolation: isolate;
-            /* Base paint shown for the instant before the PNG decodes. The artwork
-               (::before) and the veil (::after) fully cover this once loaded. */
-            background: linear-gradient(160deg,
-                #ffffff 0%,
-                var(--auth-panel-tint) 45%,
-                var(--auth-page-bg) 100%);
+            color: #fff;
             padding: 3rem;
+            background:
+                radial-gradient(900px 500px at 85% 10%, rgba(255, 193, 7, .18), transparent 60%),
+                radial-gradient(700px 500px at 0% 100%, rgba(46, 158, 91, .35), transparent 60%),
+                linear-gradient(135deg, var(--auth-green-dark) 0%, var(--auth-green) 55%, #1d7a47 100%);
         }
-
-        /*
-         * The artwork layer — full-bleed, edge to edge, top to bottom.
-         *
-         * Every subject in the asset (map, monitor, bus, van, jeepney, shelter, sign)
-         * lives inside its left ~845px of 1536; the right ~45% is deliberately empty
-         * space. The hero panel is TALLER than it is wide (width/height ≈ 0.89 at both
-         * 1366 and 1920 — it's driven by the row's 100vh, not the viewport width),
-         * while the asset is landscape (1536×1024, ratio 1.5). Those two facts do the
-         * framing for us: on a panel narrower (relatively) than the image, `cover` can
-         * only ever be scaled by HEIGHT, so it always reveals a fixed ~911px-wide
-         * window of the 1536px-wide asset — regardless of the panel's absolute size.
-         * Anchor that window at the image's own left edge (`background-position:
-         * left`) and it covers native x 0–911: every subject (they end at ~885) plus
-         * a small margin, with exactly the empty right portion cropped away. No band,
-         * no oversized percentage hack, and — because it falls out of the *ratio*
-         * between panel and image, not a magic number — it holds at both viewports.
-         *
-         * Because the scale is height-bound, the image fills the panel's full height
-         * with zero overflow. The old banded version was sized by width and anchored
-         * bottom, which left blank space above it — that blank strip against plain
-         * gradient was the hard top edge. There's no unfilled strip left to seam here.
-         */
+        /* the illustration: multiplied into the green so its white backdrop disappears, faded out towards the top */
         .auth-hero::before {
             content: "";
             position: absolute;
@@ -110,126 +92,40 @@
             z-index: -2;
             background-image: url('{{ asset('images/authscreen_bg.jpeg') }}');
             background-repeat: no-repeat;
-            background-size: cover;
-            background-position: left center;
+            background-size: auto 70%;
+            background-position: left bottom;
+            mix-blend-mode: multiply;
+            opacity: .55;
+            -webkit-mask-image: linear-gradient(to top, #000 45%, transparent 90%);
+            mask-image: linear-gradient(to top, #000 45%, transparent 90%);
         }
-
-        /*
-         * The veil — directional and LIGHT, not a uniform scrim.
-         *
-         * The copy sits over the busiest part of the illustration: the western half of
-         * the map and the Samar callout. A dark veil would raise contrast too, but a
-         * dark veil is what buried the map and the bus before: at the ~78% strength AA
-         * would need over near-white art, the artwork all but disappears. White lifts
-         * local luminance instead of crushing it toward black, so shapes underneath
-         * read as soft silhouettes rather than vanishing — and because the asset's own
-         * background is already light, a much lower peak (0.74) clears AA comfortably.
-         *
-         * It fades to fully transparent by 56% of the panel width, well before the
-         * jeepney, shelter and sign — those render at full, unveiled strength.
-         *
-         * CONTRAST FIGURES REMOVED, DELIBERATELY. This block used to carry measured
-         * ratios (~10.6:1 for the heading, ~6.1:1 for the lead) taken at the single
-         * worst pocket in the previous asset: the dark navy bezel of the
-         * dashboard-monitor icon. That asset has been replaced, and in the new one the
-         * monitor is pale while the dark mass is the row of buses along the bottom
-         * edge — below the copy, not behind it. The old numbers therefore described a
-         * picture that is no longer here, and leaving them would have been worse than
-         * having none: they looked authoritative and measured.
-         *
-         * The approach is unchanged and still sound. The figures need re-measuring
-         * against the new artwork before anyone cites them again.
-         */
+        /* the faint grid of the Home hero */
         .auth-hero::after {
             content: "";
             position: absolute;
             inset: 0;
             z-index: -1;
-            /* Raised across the copy column specifically. The copy runs to ~42% of the
-               panel, where the old ramp had already decayed to .22 — so the ENDS of the
-               longer feature lines were sitting on essentially bare artwork while their
-               beginnings had .74. That unevenness is what made the text look patchy
-               rather than merely light. Hold the veil closer to full strength for the
-               copy's whole width, then drop it quickly so the vehicles keep theirs. */
-            background: linear-gradient(to right,
-                rgba(255, 255, 255, .88) 0%,
-                rgba(255, 255, 255, .82) 26%,
-                rgba(255, 255, 255, .62) 42%,
-                rgba(255, 255, 255, .24) 54%,
-                rgba(255, 255, 255, 0) 64%);
+            opacity: .08;
+            background-image: linear-gradient(rgba(255, 255, 255, .5) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255, 255, 255, .5) 1px, transparent 1px);
+            background-size: 46px 46px;
         }
 
-        /* Base measure — full-bleed frees the width the old band used to hold
-           hostage, so the copy column gets some of it back (was 20rem) while
-           staying well inside the veil's 56%-of-panel safe zone at 1920 (~30rem
-           of budget there). */
-        /* The BLOCK is centred in the column (justify-content on .auth-hero); the copy
-           inside it is NOT, and that distinction is the whole design here.
-           Centre-aligning the text as well cost three things at this measure: the lead
-           wraps to four centred lines, so the reader loses the left edge on every
-           return sweep; the mark drifted off its own left edge onto the artwork's
-           circular inset; and with the feature rows still left-aligned the column ran
-           two alignment systems at once. One left edge down mark, heading, lead and
-           rows reads as placed — while the block as a whole still sits centred against
-           the card opposite. */
+        /* The BLOCK is centred in the column; the copy inside it keeps one left edge. */
         .hero-copy { max-width: 22rem; }
-        /* Left edge, not centred: this mark leads the column's single left edge. The
-           card's copy of it keeps the centring from the base rule — that header IS
-           centred. */
-        .hero-copy .brand-logo { margin-inline: 0; }
-        /* This has to come AFTER the unconditional rule above, not before it: a
-           plain selector beats a media-scoped one of equal specificity if it's
-           later in source order, so putting the override first would make it a
-           no-op below 1400px — the panel narrows enough there that 22rem starts
-           crowding the veil's safe zone, so give it back down to 18rem instead. */
+        .hero-copy .brand-logo { margin-inline: 0; width: 5rem; height: 5rem; filter: none; }
         @media (max-width: 1399.98px) {
             .auth-hero { padding: 2.5rem; }
             .hero-copy { max-width: 18rem; }
         }
-        /* Dark ink: the artwork is a near-white illustration (luminance ~.85). White
-           copy over it would need a ~78% DARK scrim to clear AA — exactly the overlay
-           that used to bury the bus and the map. Dark copy needs only the light veil
-           above, which never lowers contrast, so the artwork keeps full strength
-           everywhere the copy isn't. */
-        .hero-copy h1 { color: var(--auth-ink); }
-        /* Full-strength ink, not the softer tone. Body copy on the FORM side sits on
-           flat white and can afford to be muted; this copy sits on an illustration and
-           cannot. Bootstrap's .lead also ships font-weight 300 — hairline strokes at
-           1.25rem over artwork were most of why this read as washed out. */
-        .hero-copy .lead {
-            color: var(--auth-ink);
-            opacity: 1;
-            font-weight: 400;
-        }
+        .hero-copy h1 { color: #fff; }
+        .hero-copy .lead { color: rgba(255, 255, 255, .88); opacity: 1; font-weight: 400; }
         .hero-feature {
             display: flex; gap: .75rem; align-items: flex-start;
-            color: var(--auth-ink);
+            color: rgba(255, 255, 255, .92);
             font-weight: 500;
         }
-        .hero-feature i { font-size: 1.1rem; line-height: 1.45; color: var(--amoec-brand); }
-
-        /*
-         * Local halo, instead of a heavier veil.
-         *
-         * The remaining problem is positional, not chromatic: the feature rows cross
-         * the dashboard-monitor vignette, the one dark object in a pale asset. The
-         * obvious fix — raise the veil — punishes the whole panel to solve a collision
-         * that happens in one small pocket, and washing the bus back out is exactly
-         * what we spent the last few rounds undoing.
-         *
-         * A text-shadow only paints immediately around the glyphs, so the copy lifts
-         * off whatever is behind it while the artwork a few pixels away is untouched.
-         * Three stacked white shadows: a tight one for edge definition, a wider one for
-         * the halo, and a 1px drop so the baseline doesn't merge into busy detail.
-         */
-        .hero-copy h1,
-        .hero-copy .lead,
-        .hero-feature {
-            text-shadow:
-                0 0 4px rgba(255, 255, 255, .95),
-                0 0 12px rgba(255, 255, 255, .9),
-                0 1px 0 rgba(255, 255, 255, .85);
-        }
+        .hero-feature i { font-size: 1.1rem; line-height: 1.45; color: var(--auth-accent); }
 
         /* ── Right: light panel + elevated card ──────────────────────────── */
         .auth-panel-col {
@@ -251,6 +147,7 @@
             /* Softer and shorter than the dark version: a heavy shadow on a light
                panel reads as grime rather than elevation. */
             box-shadow: 0 18px 44px -20px rgba(15, 23, 42, .28), 0 2px 6px rgba(15, 23, 42, .06);
+            border-top: 4px solid var(--amoec-brand);
         }
 
         .auth-card h2 { color: var(--auth-ink); }
@@ -338,6 +235,7 @@
         }
         .btn-primary:hover { filter: brightness(.93); }
         .btn-primary:active, .btn-primary:focus-visible { filter: brightness(.86); }
+        .btn-primary:focus-visible { outline: 2px solid var(--auth-accent); outline-offset: 2px; }
 
         .auth-card .btn-reveal {
             border: 1px solid var(--auth-field-border);
@@ -366,15 +264,13 @@
             border-radius: .25rem;
         }
 
-        /* On small screens the hero collapses away, so the photo becomes the page
-           backdrop instead of being lost entirely. A LIGHT scrim now, matching the
-           desktop panel — the white card sits on it the same way at every width. */
+        /* On small screens the hero collapses away, so the Home gradient becomes the page backdrop
+           and the white card sits on it, as on the hero above. */
         @media (max-width: 991.98px) {
             body {
-                background-image: linear-gradient(rgba(238, 242, 249, .90), rgba(238, 242, 249, .94)),
-                                  url('{{ asset('images/authscreen_bg.jpeg') }}');
-                background-size: cover;
-                background-position: center;
+                background:
+                    radial-gradient(600px 400px at 85% 0%, rgba(255, 193, 7, .18), transparent 60%),
+                    linear-gradient(160deg, var(--auth-green-dark) 0%, var(--auth-green) 60%, #1d7a47 100%);
                 background-attachment: fixed;
             }
             .auth-panel-col { background: transparent; }
@@ -393,7 +289,10 @@
             background: rgba(255, 255, 255, .72); border: 1px solid rgba(15, 23, 42, .1);
         }
         .auth-back:hover, .auth-back:focus-visible { color: var(--auth-ink); background: #fff; }
-        .auth-back-hero { position: absolute; top: 1.25rem; left: 1.5rem; z-index: 3; }
+        .auth-back-hero { position: absolute; top: 1.25rem; left: 1.5rem; z-index: 3;
+            color: #fff; background: rgba(255, 255, 255, .12); border-color: rgba(255, 255, 255, .3); }
+        .auth-back-hero:hover, .auth-back-hero:focus-visible { color: #fff; background: rgba(255, 255, 255, .22); }
+        .auth-back-hero:focus-visible { outline-color: var(--auth-accent); }
         .auth-appnote { color: var(--auth-ink-muted); }
         .auth-appnote a, .auth-footnote a { color: var(--auth-ink-soft); }
     </style>
@@ -410,8 +309,8 @@
             <div class="hero-copy">
                 {{-- alt="" — decorative here: the h1 directly below already names the
                      product, so announcing the mark too would just repeat it. --}}
-                <img src="{{ asset('images/amoec-logo.png') }}" alt="" class="brand-logo mb-1"
-                     width="128" height="128" decoding="async">
+                <img src="{{ asset('images/logo-white.svg') }}" alt="" class="brand-logo mb-3"
+                     width="80" height="80" decoding="async">
                 <h1 class="display-6 fw-bold mb-3">Transport Monitoring</h1>
                 {{-- No .opacity-75: it is an !important rule that would win over the
                      ink token and grey the copy back out against the light artwork. --}}
