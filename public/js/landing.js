@@ -28,6 +28,21 @@
         if (iosNote) iosNote.hidden = false;
     }
 
+    // ---------- download buttons on a computer: a code to scan with the phone, not a file for the computer ----------
+    // Only for a computer. A phone (Android or iPhone, any "Mobile" browser) keeps the plain link and downloads the
+    // file; so does any browser where the dialog script is missing, because the link underneath still works.
+    var isComputer = !isAndroid && !isIOS && !/Mobile|Tablet|Silk|Kindle/i.test(ua);
+    var qrModalEl = document.getElementById('qrModal');
+    if (isComputer && qrModalEl) {
+        document.querySelectorAll('[data-qr-download]').forEach(function (a) {
+            a.addEventListener('click', function (e) {
+                if (!window.bootstrap || !window.bootstrap.Modal) return;
+                e.preventDefault();
+                window.bootstrap.Modal.getOrCreateInstance(qrModalEl).show();
+            });
+        });
+    }
+
     // ---------- pause / play for the animations ----------
     var toggle = document.getElementById('motionToggle');
     if (toggle) {

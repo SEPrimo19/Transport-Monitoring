@@ -172,3 +172,7 @@ body { font-family: Arial, Helvetica, sans-serif; color: var(--ink); background:
 .qr-box img { background: #fff; border-radius: .6rem; padding: 6px; flex: none; }
 .qr-box strong, .qr-box span { display: block; }
 .qr-box span { font-size: .88rem; opacity: .85; }
+
+/* ---------- download code (computer) ---------- */
+.qr-frame { width: 240px; max-width: 100%; background: #fff; border: 1px solid #dfe8e2; border-radius: .75rem; padding: .5rem; }
+.qr-frame img { width: 100%; height: auto; display: block; }

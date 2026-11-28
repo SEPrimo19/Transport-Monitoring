@@ -13,7 +13,7 @@
                     <p class="lead mt-3 mb-4">AMOEC Track shows passengers where their bus is and when it will arrive, helps drivers share their trip,
                         and gives cooperatives one console to run the service.</p>
                     <div class="d-flex flex-wrap gap-2">
-                        <a class="btn btn-warning btn-lg px-4 fw-semibold" id="heroDownload" href="#download" data-apk="{{ $app['apk_url'] }}"><i class="bi bi-android2 me-2"></i>Download Android app</a>
+                        <a class="btn btn-warning btn-lg px-4 fw-semibold" id="heroDownload" href="#download" data-apk="{{ $app['apk_url'] }}" data-qr-download><i class="bi bi-android2 me-2"></i>Download Android app</a>
                         @if ($hasAdminSession)
                             <a class="btn btn-outline-light btn-lg px-4" href="{{ route('dashboard') }}"><i class="bi bi-speedometer2 me-2"></i>Open dashboard</a>
                         @else
@@ -281,7 +281,7 @@
                     <h2 class="section-title text-white">Download the Android app</h2>
                     <p class="opacity-75">Free for passengers and drivers. Version {{ $app['version'] }} &middot; {{ $app['apk_size'] }} &middot; {{ $app['min_android'] }}.</p>
                     <div class="d-flex flex-wrap gap-2 mb-4">
-                        <a class="btn btn-warning btn-lg fw-semibold px-4" href="{{ $app['apk_url'] }}" rel="noopener"><i class="bi bi-download me-2"></i>Download APK</a>
+                        <a class="btn btn-warning btn-lg fw-semibold px-4" href="{{ $app['apk_url'] }}" rel="noopener" data-qr-download><i class="bi bi-download me-2"></i>Download APK</a>
                         <a class="btn btn-outline-light btn-lg px-4" href="{{ asset($app['manual_path']) }}"><i class="bi bi-file-earmark-pdf me-2"></i>User manual (PDF)</a>
                     </div>
                     {{-- Shown by landing.js on iPhone and iPad: the app is Android only for now. --}}
@@ -349,4 +349,25 @@
             </div>
         </div>
     </section>
+{{-- Shown by landing.js when someone on a computer presses a download button: a computer cannot install an Android app,
+     so it shows a code to scan with the phone. A phone, or a browser without scripts, just downloads the file. --}}
+<div class="modal fade" id="qrModal" tabindex="-1" aria-labelledby="qrModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h2 class="modal-title h5" id="qrModalTitle">Scan with your Android phone</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="qr-frame mx-auto mb-3">
+                    <img src="{{ asset('images/landing/download-qr.svg') }}" alt="QR code that downloads the AMOEC Track Android app" width="240" height="240">
+                </div>
+                <p class="mb-1">Open the camera on your Android phone and point it at this code. The download starts on the phone.</p>
+                <p class="small text-muted mb-3">Version {{ $app['version'] }} &middot; {{ $app['apk_size'] }} &middot; {{ $app['min_android'] }}</p>
+                <a class="small" href="{{ $app['apk_url'] }}" rel="noopener">Download the file to this computer instead</a>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection

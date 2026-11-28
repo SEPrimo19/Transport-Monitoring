@@ -40,6 +40,18 @@ class LandingPageTest extends TestCase
             ->assertSee('aria-label="Pause the automatic slideshow"', false);
     }
 
+    public function test_both_download_buttons_open_the_scan_code_on_a_computer_but_keep_the_real_link(): void
+    {
+        $html = $this->get('/')->getContent();
+
+        // Two buttons carry the hook, and the link underneath is still the real file, so a phone
+        // (or a browser without the script) simply downloads it.
+        $this->assertSame(2, substr_count($html, 'data-qr-download'));
+        $this->assertStringContainsString('href="'.config('landing.apk_url').'" rel="noopener" data-qr-download', $html);
+        $this->assertStringContainsString('id="qrModal"', $html);
+        $this->assertStringContainsString('Scan with your Android phone', $html);
+    }
+
     public function test_the_landing_page_lists_the_checksum_and_the_manual(): void
     {
         $this->get('/')
